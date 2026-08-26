@@ -54,10 +54,10 @@ export const LandingPage = () => {
 
             <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-2">
               <button
-                onClick={() => loginAsRole('student')}
+                onClick={() => setCurrentPage('login')}
                 className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-brand-600 hover:bg-brand-500 text-white font-bold text-base shadow-xl shadow-brand-500/25 hover:shadow-2xl hover:scale-105 transition-all flex items-center justify-center space-x-2 group"
               >
-                <span>Login Demo (Parth Sharma)</span>
+                <span>Enter Pilot Portal</span>
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </button>
 
@@ -226,7 +226,7 @@ export const LandingPage = () => {
             </div>
             <h3 className="text-lg font-bold text-slate-900 dark:text-white">Warden Executive Portal</h3>
             <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-              Chief Warden Pathak Sir gets full visibility into Mess Quality Index, food waste analytics, complaint resolution, and 1-click weekly menu approvals.
+              Chief Warden gets full visibility into Mess Quality Index, food waste analytics, complaint resolution, and 1-click weekly menu approvals.
             </p>
           </div>
 
@@ -319,7 +319,7 @@ export const LandingPage = () => {
             { step: '01', title: 'Menu Uploaded', desc: 'Mess Committee uploads daily dishes with calories, protein & allergen info.' },
             { step: '02', title: 'Students Track & Rate', desc: 'Students check Gym Mode protein goals and rate meals from 1 to 5 stars.' },
             { step: '03', title: 'Voting Poll Launched', desc: 'Dishes scoring below 2.5 stars trigger a 24-hour replacement vote.' },
-            { step: '04', title: 'Warden Governance', desc: 'Pathak Sir approves the updated menu based on real-time analytics.' },
+            { step: '04', title: 'Warden Governance', desc: 'Hostel Administration approves the updated menu based on real-time analytics.' },
           ].map((item, idx) => (
             <div key={idx} className="p-6 rounded-3xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 space-y-3">
               <span className="text-3xl font-black text-brand-600 dark:text-brand-400">{item.step}</span>
@@ -346,10 +346,10 @@ export const LandingPage = () => {
               "Gym Mode is a lifesaver! I used to struggle hitting 120g protein in hostel. Now MessMate tells me exactly when Paneer or Soya is served."
             </p>
             <div className="flex items-center space-x-3 pt-2">
-              <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150" alt="Parth" className="w-9 h-9 rounded-full object-cover" />
+              <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150" alt="Student" className="w-9 h-9 rounded-full object-cover" />
               <div>
-                <h5 className="text-xs font-bold text-slate-900 dark:text-white">Parth Sharma</h5>
-                <p className="text-[10px] text-slate-400">3rd Year Mech • Hostel Block B</p>
+                <h5 className="text-xs font-bold text-slate-900 dark:text-white">Hostel Resident</h5>
+                <p className="text-[10px] text-slate-400">3rd Year Student • DNB Block</p>
               </div>
             </div>
           </div>
@@ -380,8 +380,8 @@ export const LandingPage = () => {
             <div className="flex items-center space-x-3 pt-2">
               <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=150" alt="Warden" className="w-9 h-9 rounded-full object-cover" />
               <div>
-                <h5 className="text-xs font-bold text-slate-900 dark:text-white">Pathak Sir</h5>
-                <p className="text-[10px] text-slate-400">Chief Warden</p>
+                <h5 className="text-xs font-bold text-slate-900 dark:text-white">Chief Warden</h5>
+                <p className="text-[10px] text-slate-400">Hostel Administration</p>
               </div>
             </div>
           </div>

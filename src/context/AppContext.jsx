@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { db, MESS_BLOCK_MAP } from '../services/db';
+import { useAuth } from './AuthContext';
 
 const AppContext = createContext();
 
@@ -10,37 +11,34 @@ const getTodayDayName = () => {
 };
 
 export const AppProvider = ({ children }) => {
+  const { 
+    user: authUser, 
+    profile: authProfile, 
+    role: authRole, 
+    loading: authLoading,
+    login: authLogin,
+    register: authRegister,
+    logout: authLogout,
+    updateProfile: authUpdateProfile,
+    resetPassword: authResetPassword
+  } = useAuth();
+
   const todayDay = getTodayDayName();
   const [selectedDay, setSelectedDay] = useState(todayDay);
 
-  // Authentication State
-  const [currentUser, setCurrentUser] = useState(() => {
-    try {
-      const savedId = localStorage.getItem('messmate_session_uid');
-      if (savedId) {
-        const user = db.getUserById(savedId);
-        if (user) return user;
-      }
-      // Default to initial pilot student for immediate preview
-      const defaultStudent = db.getUserById('usr_rahul') || db.getUsers()[0];
-      return defaultStudent;
-    } catch (e) {
-      return db.getUsers()[0];
-    }
-  });
+  // Synchronize current user with AuthContext profile or fallback
+  const currentUser = authProfile || (authUser ? {
+    uid: authUser.uid,
+    id: authUser.uid,
+    name: authUser.displayName || 'Student',
+    email: authUser.email,
+    role: authRole || 'student',
+    hostelBlock: 'DNB Block',
+    proteinTarget: 120,
+    rewardPoints: 200
+  } : null);
 
-  const [currentRole, setCurrentRole] = useState(() => {
-    try {
-      const savedId = localStorage.getItem('messmate_session_uid');
-      if (savedId) {
-        const user = db.getUserById(savedId);
-        if (user) return user.role;
-      }
-      return 'student';
-    } catch (e) {
-      return 'student';
-    }
-  });
+  const currentRole = authRole || currentUser?.role || 'student';
 
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [darkMode, setDarkMode] = useState(false);
@@ -60,7 +58,7 @@ export const AppProvider = ({ children }) => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [notifications, setNotifications] = useState([
-    { id: 'n_1', title: 'Welcome to MessMate', message: 'Rate today meals to earn health points.', time: 'Today', type: 'info', read: false }
+    { id: 'n_1', title: 'Welcome to MessMate', message: 'Know your meal before you eat it.', time: 'Today', type: 'info', read: false }
   ]);
   const [menuApproved, setMenuApproved] = useState(false);
 
@@ -75,63 +73,41 @@ export const AppProvider = ({ children }) => {
 
   const toggleDarkMode = () => setDarkMode(prev => !prev);
 
-  // Refresh user data from db when updated
-  const refreshUserData = () => {
-    if (currentUser?.id) {
-      const freshUser = db.getUserById(currentUser.id);
-      if (freshUser) setCurrentUser(freshUser);
-    }
-  };
-
-  // REAL AUTHENTICATION
-  const login = (email, password) => {
-    const user = db.getUserByEmail(email);
-    if (!user) {
-      throw new Error('No account found with this email.');
-    }
-    if (user.password && user.password !== password) {
-      throw new Error('Incorrect password.');
-    }
-    localStorage.setItem('messmate_session_uid', user.id);
-    setCurrentUser(user);
-    setCurrentRole(user.role);
+  // AUTH ACTIONS
+  const login = async (email, password) => {
+    const res = await authLogin(email, password);
     setCurrentPage('dashboard');
-    addNotification('Login Successful', `Welcome back, ${user.name}!`, 'success');
-    return user;
+    addNotification('Login Successful', `Welcome back, ${res.profile?.name || 'User'}!`, 'success');
+    return res;
   };
 
-  const register = (userData) => {
-    const newUser = db.registerUser(userData);
-    localStorage.setItem('messmate_session_uid', newUser.id);
-    setCurrentUser(newUser);
-    setCurrentRole(newUser.role);
+  const register = async (userData) => {
+    const res = await authRegister(userData);
     setCurrentPage('dashboard');
-    addNotification('Registration Complete', `Welcome to MessMate, ${newUser.name}!`, 'success');
-    return newUser;
+    addNotification('Registration Complete', `Welcome to MessMate, ${res.profile?.name || 'Student'}!`, 'success');
+    return res;
   };
 
-  const loginAsUser = (userId) => {
-    const user = db.getUserById(userId);
-    if (user) {
-      localStorage.setItem('messmate_session_uid', user.id);
-      setCurrentUser(user);
-      setCurrentRole(user.role);
-      setCurrentPage('dashboard');
-      addNotification('Switched Account', `Logged in as ${user.name} (${user.role.toUpperCase()})`, 'info');
+  const loginAsUser = async (userId) => {
+    const target = db.getUserById(userId);
+    if (target) {
+      try {
+        await authLogin(target.email, target.password || 'password123');
+      } catch (e) {
+        // Fallback for immediate test switching
+        localStorage.setItem('messmate_session_uid', target.id);
+        window.location.reload();
+      }
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('messmate_session_uid');
-    setCurrentUser(null);
-    setCurrentRole('landing');
+  const logout = async () => {
+    await authLogout();
     setCurrentPage('login');
   };
 
-  const updateUserProfile = (updates) => {
-    if (!currentUser?.id) return;
-    const updated = db.updateUserProfile(currentUser.id, updates);
-    setCurrentUser(updated);
+  const updateUserProfile = async (updates) => {
+    await authUpdateProfile(updates);
     addNotification('Profile Updated', 'Your profile details have been saved.', 'success');
   };
 
@@ -171,7 +147,7 @@ export const AppProvider = ({ children }) => {
     if (!currentUser) return;
     const meal = db.getMealById(mealId);
     db.submitRating({
-      userId: currentUser.id,
+      userId: currentUser.uid || currentUser.id,
       userName: currentUser.name,
       mealId,
       mealName: meal?.name || 'Mess Meal',
@@ -180,23 +156,22 @@ export const AppProvider = ({ children }) => {
       tags
     });
     setRatingsVersion(v => v + 1);
-    refreshUserData();
     addNotification('Rating Saved 🌟', `+20 Health Points awarded to ${currentUser.name}.`, 'success');
   };
 
   const getUserRating = (mealId) => {
     if (!currentUser) return null;
-    return db.getUserRatingForMeal(currentUser.id, mealId);
+    return db.getUserRatingForMeal(currentUser.uid || currentUser.id, mealId);
   };
 
   // REAL COMPLAINTS
   const allComplaints = db.getAllComplaints();
-  const userComplaints = currentUser ? db.getUserComplaints(currentUser.id) : [];
+  const userComplaints = currentUser ? db.getUserComplaints(currentUser.uid || currentUser.id) : [];
 
   const createComplaint = (category, description) => {
     if (!currentUser) return;
     const newComp = db.createComplaint({
-      userId: currentUser.id,
+      userId: currentUser.uid || currentUser.id,
       userName: currentUser.name,
       block: currentUser.hostelBlock || 'DNB Block',
       category,
@@ -215,19 +190,18 @@ export const AppProvider = ({ children }) => {
 
   // REAL VOTING & POLLS
   const currentPoll = db.getPoll();
-  const userVotedOptionId = currentUser ? db.hasUserVoted(currentPoll.id, currentUser.id) : null;
+  const userVotedOptionId = currentUser ? db.hasUserVoted(currentPoll.id, currentUser.uid || currentUser.id) : null;
 
   const voteDish = (optionId) => {
     if (!currentUser) return;
     try {
       db.castVote({
         pollId: currentPoll.id,
-        userId: currentUser.id,
+        userId: currentUser.uid || currentUser.id,
         userName: currentUser.name,
         optionId
       });
       setPollsVersion(v => v + 1);
-      refreshUserData();
       addNotification('Vote Recorded 🗳️', `+30 Health Points earned by ${currentUser.name}.`, 'success');
     } catch (err) {
       addNotification('Vote Failed', err.message, 'warning');
@@ -241,36 +215,33 @@ export const AppProvider = ({ children }) => {
   };
 
   // REAL PROTEIN & MUSCLE PASS
-  const consumedProtein = currentUser ? db.getTodayUserProtein(currentUser.id) : 0;
+  const consumedProtein = currentUser ? db.getTodayUserProtein(currentUser.uid || currentUser.id) : 0;
   const proteinTarget = currentUser?.proteinTarget || 120;
 
   const logProtein = (dishName, proteinGrams) => {
     if (!currentUser) return;
     db.logProtein({
-      userId: currentUser.id,
+      userId: currentUser.uid || currentUser.id,
       dishName,
       protein: proteinGrams
     });
-    refreshUserData();
-    setRatingsVersion(v => v + 1); // trigger state update
+    setRatingsVersion(v => v + 1);
     addNotification('Protein Logged 💪', `+${proteinGrams}g protein added to today's log.`, 'success');
   };
 
   const setProteinTarget = (newTarget) => {
     if (!currentUser) return;
-    db.updateUserProfile(currentUser.id, { proteinTarget: Number(newTarget) });
-    refreshUserData();
+    updateUserProfile({ proteinTarget: Number(newTarget) });
   };
 
   // REWARDS
   const rewardsCatalog = db.getRewardsCatalog();
-  const userRedemptions = currentUser ? db.getUserRedemptions(currentUser.id) : [];
+  const userRedemptions = currentUser ? db.getUserRedemptions(currentUser.uid || currentUser.id) : [];
 
   const redeemReward = (rewardItem) => {
     if (!currentUser) return false;
     try {
-      const claimed = db.redeemReward(currentUser.id, currentUser.name, rewardItem);
-      refreshUserData();
+      const claimed = db.redeemReward(currentUser.uid || currentUser.id, currentUser.name, rewardItem);
       setClaimedRewardModal(claimed);
       addNotification('Reward Claimed 🎉', `Claim code: ${claimed.claimCode}`, 'success');
       return true;

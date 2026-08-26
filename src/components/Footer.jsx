@@ -56,8 +56,10 @@ export const Footer = () => {
               Ready for campus integration with ERP, Firebase Auth, and IoT smart mess display boards.
             </p>
             <div className="p-3 rounded-xl bg-slate-800/80 border border-slate-700 text-xs">
-              <span className="text-slate-300 font-semibold block">Demo Account Loaded:</span>
-              <span className="text-slate-400 text-[11px]">Student: Hello Parth Sharma</span>
+              <span className="text-slate-300 font-semibold block">Active Session:</span>
+              <span className="text-emerald-400 text-[11px] font-bold">
+                {currentUser ? `${currentUser.name} (${currentUser.role})` : 'Not Logged In'}
+              </span>
             </div>
           </div>
 
