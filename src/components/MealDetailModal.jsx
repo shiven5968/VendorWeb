@@ -14,7 +14,9 @@ export const MealDetailModal = () => {
   const meal = selectedMealModal;
   const userExistingRating = getUserRating(meal.id);
   const currentRatingVal = userExistingRating?.rating || 0;
-  const liveStats = getMealStats ? getMealStats(meal.id) : { rating: meal.rating || 4.5, ratingCount: meal.ratingCount || 0 };
+  const liveStats = getMealStats ? getMealStats(meal.id) : { rating: null, ratingDisplay: 'No ratings yet', ratingCount: 0 };
+
+  const hasNutrition = meal.calories > 0 || meal.protein > 0;
 
   const handleRateSubmit = (stars) => {
     rateMeal(meal.id, stars, feedbackText, selectedTag ? [selectedTag] : []);
@@ -57,13 +59,19 @@ export const MealDetailModal = () => {
           
           <div className="absolute bottom-4 left-5 right-5 text-white flex items-end justify-between">
             <div>
-              <h2 className="text-2xl font-black">{meal.name}</h2>
+              <h2 className="text-xl sm:text-2xl font-black">{meal.name}</h2>
               <span className="text-xs text-slate-300 font-semibold">{meal.time}</span>
             </div>
 
-            <div className="bg-emerald-600 text-white px-3 py-1 rounded-xl text-xs font-black flex items-center space-x-1 shadow-md">
-              <Star className="w-3.5 h-3.5 fill-current" />
-              <span>{liveStats.rating} ({liveStats.ratingCount} reviews)</span>
+            <div className="bg-black/70 backdrop-blur-md text-white px-3 py-1 rounded-xl text-xs font-black flex items-center space-x-1 shadow-md">
+              {liveStats.rating ? (
+                <>
+                  <Star className="w-3.5 h-3.5 text-amber-400 fill-current" />
+                  <span>{liveStats.rating} ★ ({liveStats.ratingCount})</span>
+                </>
+              ) : (
+                <span className="text-slate-300 text-[11px]">No ratings yet</span>
+              )}
             </div>
           </div>
         </div>
@@ -72,47 +80,55 @@ export const MealDetailModal = () => {
         <div className="p-5 space-y-5">
           
           {/* Nutrition Cards */}
-          <div className="grid grid-cols-4 gap-2 bg-slate-50 dark:bg-slate-800/60 p-3 rounded-2xl border border-slate-200/80 dark:border-slate-800 text-center">
-            <div>
-              <span className="text-[10px] font-bold text-slate-400 uppercase">Calories</span>
-              <p className="text-base font-black text-slate-900 dark:text-white">{meal.calories}</p>
-              <span className="text-[9px] text-slate-400">kcal</span>
+          {hasNutrition ? (
+            <div className="grid grid-cols-4 gap-2 bg-slate-50 dark:bg-slate-800/60 p-3 rounded-2xl border border-slate-200/80 dark:border-slate-800 text-center">
+              <div>
+                <span className="text-[10px] font-bold text-slate-400 uppercase">Calories</span>
+                <p className="text-base font-black text-slate-900 dark:text-white">{meal.calories}</p>
+                <span className="text-[9px] text-slate-400">kcal</span>
+              </div>
+              <div>
+                <span className="text-[10px] font-bold text-emerald-500 uppercase">Protein</span>
+                <p className="text-base font-black text-emerald-600 dark:text-emerald-400">{meal.protein}g</p>
+                <span className="text-[9px] text-slate-400">protein</span>
+              </div>
+              <div>
+                <span className="text-[10px] font-bold text-slate-400 uppercase">Carbs</span>
+                <p className="text-base font-black text-slate-900 dark:text-white">{meal.carbs || 0}g</p>
+                <span className="text-[9px] text-slate-400">carbs</span>
+              </div>
+              <div>
+                <span className="text-[10px] font-bold text-slate-400 uppercase">Fats</span>
+                <p className="text-base font-black text-slate-900 dark:text-white">{meal.fats || 0}g</p>
+                <span className="text-[9px] text-slate-400">fats</span>
+              </div>
             </div>
-            <div>
-              <span className="text-[10px] font-bold text-emerald-500 uppercase">Protein</span>
-              <p className="text-base font-black text-emerald-600 dark:text-emerald-400">{meal.protein}g</p>
-              <span className="text-[9px] text-slate-400">muscle</span>
+          ) : (
+            <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 text-center text-xs font-bold text-slate-400 border">
+              Nutrition details not available yet.
             </div>
-            <div>
-              <span className="text-[10px] font-bold text-slate-400 uppercase">Carbs</span>
-              <p className="text-base font-black text-slate-900 dark:text-white">{meal.carbs}g</p>
-              <span className="text-[9px] text-slate-400">energy</span>
-            </div>
-            <div>
-              <span className="text-[10px] font-bold text-slate-400 uppercase">Fats</span>
-              <p className="text-base font-black text-slate-900 dark:text-white">{meal.fats}g</p>
-              <span className="text-[9px] text-slate-400">essential</span>
-            </div>
-          </div>
+          )}
 
           {/* Ingredients */}
-          <div>
-            <h4 className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 mb-2">Ingredients</h4>
-            <div className="flex flex-wrap gap-1.5">
-              {meal.ingredients?.map((ing, i) => (
-                <span key={i} className="px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold border border-slate-200 dark:border-slate-700">
-                  {ing}
-                </span>
-              ))}
+          {meal.ingredients && meal.ingredients.length > 0 && (
+            <div>
+              <h4 className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 mb-2">Ingredients</h4>
+              <div className="flex flex-wrap gap-1.5">
+                {meal.ingredients.map((ing, i) => (
+                  <span key={i} className="px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold border border-slate-200 dark:border-slate-700">
+                    {ing}
+                  </span>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Inline Rating & Feedback Box */}
+          {/* Inline Rating Box */}
           {showRatingBox && (
             <div className="p-4 rounded-2xl bg-slate-900 text-white space-y-3 border border-emerald-500/30">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-emerald-400">Rate this meal</span>
-                <span className="text-[10px] text-slate-400">+20 Health Pts</span>
+                <span className="text-[10px] text-slate-400">Feedback</span>
               </div>
 
               {/* 5 Stars */}
@@ -156,7 +172,7 @@ export const MealDetailModal = () => {
               <div className="flex space-x-1.5 pt-1">
                 <input
                   type="text"
-                  placeholder="Optional feedback..."
+                  placeholder="Optional comment..."
                   value={feedbackText}
                   onChange={e => setFeedbackText(e.target.value)}
                   className="flex-1 px-3 py-1.5 rounded-xl bg-slate-800 border border-slate-700 text-xs text-white outline-none"
@@ -173,7 +189,7 @@ export const MealDetailModal = () => {
               {ratingSubmitted && (
                 <div className="p-2 rounded-xl bg-emerald-500/20 text-emerald-300 text-xs font-bold text-center flex items-center justify-center space-x-1">
                   <Check className="w-4 h-4" />
-                  <span>Rating & feedback saved to database!</span>
+                  <span>Rating saved!</span>
                 </div>
               )}
             </div>

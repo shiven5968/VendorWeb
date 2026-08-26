@@ -23,18 +23,18 @@ export const formatAuthError = (error) => {
     case 'auth/email-already-in-use':
       return 'An account is already registered with this email.';
     case 'auth/invalid-email':
-      return 'Please enter a valid email address.';
+      return 'Please enter a valid college email format (e.g. student@abes.ac.in).';
     case 'auth/weak-password':
-      return 'Password should be at least 6 characters long.';
+      return 'Password should be at least 6 characters.';
     case 'auth/user-not-found':
       return 'No registered account found with this email.';
     case 'auth/wrong-password':
     case 'auth/invalid-credential':
-      return 'Incorrect email or password. Please try again.';
+      return 'Incorrect email or password.';
     case 'auth/network-request-failed':
       return 'Network connection error. Check your internet connection.';
     case 'auth/too-many-requests':
-      return 'Too many failed attempts. Please try again later.';
+      return 'Too many failed attempts. Please try again in a few minutes.';
     default:
       return error.message || 'Authentication failed. Please check your details.';
   }
@@ -46,9 +46,10 @@ export const formatAuthError = (error) => {
  * 2. Updates display name
  * 3. Creates Firestore document in 'users' collection with role = 'student'
  */
-export const signUpStudent = async ({ name, email, password, gender, hostelBlock }) => {
+export const signUpStudent = async ({ name, admissionNumber, email, password, gender, hostelBlock }) => {
   const cleanEmail = email.trim().toLowerCase();
   const cleanName = name.trim();
+  const cleanAdmission = admissionNumber ? admissionNumber.trim() : '';
 
   if (isFirebaseConfigured) {
     try {
@@ -62,20 +63,20 @@ export const signUpStudent = async ({ name, email, password, gender, hostelBlock
       const userProfile = {
         uid: user.uid,
         name: cleanName,
+        admissionNumber: cleanAdmission,
         email: cleanEmail,
         role: 'student',
         gender: gender || 'Male',
         hostelBlock: hostelBlock || 'DNB Block',
         dietPreference: 'High Protein / Eggetarian',
         proteinTarget: 120,
-        rewardPoints: 200,
+        rewardPoints: 0,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
 
       await setDoc(doc(db, 'users', user.uid), userProfile);
       
-      // Also sync to local database cache for fast offline access
       localDb.registerUser({
         ...userProfile,
         id: user.uid,
@@ -87,9 +88,10 @@ export const signUpStudent = async ({ name, email, password, gender, hostelBlock
       throw new Error(formatAuthError(err));
     }
   } else {
-    // Local-First Fallback if live Firebase keys are not in environment yet
+    // Local-First Fallback
     const localUser = localDb.registerUser({
       name: cleanName,
+      admissionNumber: cleanAdmission,
       email: cleanEmail,
       password,
       role: 'student',
@@ -109,24 +111,32 @@ export const signUpStudent = async ({ name, email, password, gender, hostelBlock
  * 2. Fetches user document from Firestore 'users/{uid}'
  * 3. Returns user & profile with role ('student' | 'mess_committee' | 'warden')
  */
-export const signInUser = async (email, password) => {
-  const cleanEmail = email.trim().toLowerCase();
+export const signInUser = async (emailOrAdmission, password) => {
+  const cleanInput = emailOrAdmission.trim().toLowerCase();
+  
+  // Resolve email if user entered admission number
+  let targetEmail = cleanInput;
+  if (!cleanInput.includes('@')) {
+    const matchedUser = localDb.getUsers().find(u => (u.admissionNumber || '').toLowerCase() === cleanInput);
+    if (matchedUser) {
+      targetEmail = matchedUser.email;
+    }
+  }
 
   if (isFirebaseConfigured) {
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, cleanEmail, password);
+      const userCredential = await signInWithEmailAndPassword(auth, targetEmail, password);
       const user = userCredential.user;
 
       // Fetch Firestore Profile
       let profile = await getUserProfile(user.uid);
 
       if (!profile) {
-        // Create initial fallback profile if doc was missing
         profile = {
           uid: user.uid,
-          name: user.displayName || cleanEmail.split('@')[0],
-          email: cleanEmail,
-          role: cleanEmail.includes('warden') ? 'warden' : cleanEmail.includes('committee') ? 'mess_committee' : 'student',
+          name: user.displayName || targetEmail.split('@')[0],
+          email: targetEmail,
+          role: targetEmail.includes('warden') ? 'warden' : targetEmail.includes('committee') ? 'mess_committee' : 'student',
           hostelBlock: 'DNB Block',
           createdAt: new Date().toISOString()
         };
@@ -139,9 +149,13 @@ export const signInUser = async (email, password) => {
     }
   } else {
     // Local-First Fallback
-    const localUser = localDb.getUserByEmail(cleanEmail);
+    let localUser = localDb.getUserByEmail(targetEmail);
+    if (!localUser && !targetEmail.includes('@')) {
+      localUser = localDb.getUsers().find(u => (u.admissionNumber || '').toLowerCase() === targetEmail.toLowerCase());
+    }
+
     if (!localUser || localUser.password !== password) {
-      throw new Error('Invalid email or password.');
+      throw new Error('Invalid college email/admission number or password.');
     }
     return {
       user: { uid: localUser.id, email: localUser.email, displayName: localUser.name },

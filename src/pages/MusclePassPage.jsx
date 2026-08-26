@@ -19,7 +19,6 @@ export const MusclePassPage = () => {
   const remainingProtein = Math.max(0, proteinTarget - consumedProtein);
   const proteinPercent = Math.min(100, Math.round((consumedProtein / proteinTarget) * 100));
 
-  // Dynamic Rule-based recommendations strictly from today's active mess meals
   const recommendedToday = (todayMeals || [])
     .filter(m => Number(m.protein) >= 7)
     .sort((a, b) => Number(b.protein) - Number(a.protein));
@@ -42,7 +41,7 @@ export const MusclePassPage = () => {
             <Dumbbell className="w-6 h-6" />
           </div>
           <div>
-            <h1 className="text-2xl font-black text-slate-900 dark:text-white">Muscle Pass</h1>
+            <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">Muscle Pass</h1>
             <p className="text-xs text-slate-500 font-semibold">{currentUser?.name || 'Student'}</p>
           </div>
         </div>
@@ -79,7 +78,7 @@ export const MusclePassPage = () => {
       {savedSuccess && (
         <div className="p-3 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-bold text-center flex items-center justify-center space-x-1">
           <Check className="w-4 h-4" />
-          <span>Protein goal updated in database!</span>
+          <span>Protein target updated.</span>
         </div>
       )}
 
@@ -87,24 +86,24 @@ export const MusclePassPage = () => {
       <div className="grid grid-cols-3 gap-3">
         <div className="glass-card p-4 rounded-3xl border border-slate-200/80 dark:border-slate-800 text-center">
           <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Protein Goal</span>
-          <p className="text-2xl font-black text-slate-900 dark:text-white">{proteinTarget}g</p>
+          <p className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">{proteinTarget}g</p>
         </div>
 
         <div className="glass-card p-4 rounded-3xl border border-slate-200/80 dark:border-slate-800 text-center">
           <span className="text-[10px] font-bold text-emerald-500 uppercase block mb-1">Consumed</span>
-          <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400">{consumedProtein}g</p>
+          <p className="text-xl sm:text-2xl font-black text-emerald-600 dark:text-emerald-400">{consumedProtein}g</p>
         </div>
 
         <div className="glass-card p-4 rounded-3xl border border-slate-200/80 dark:border-slate-800 text-center">
           <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Remaining</span>
-          <p className="text-2xl font-black text-slate-900 dark:text-white">{remainingProtein}g</p>
+          <p className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">{remainingProtein}g</p>
         </div>
       </div>
 
       {/* Progress Bar */}
       <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 space-y-2">
         <div className="flex justify-between text-xs font-bold">
-          <span className="text-slate-500">Daily Goal Progress</span>
+          <span className="text-slate-500">Daily Target Progress</span>
           <span className="text-emerald-600 dark:text-emerald-400">{proteinPercent}%</span>
         </div>
         <div className="w-full h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
@@ -117,7 +116,7 @@ export const MusclePassPage = () => {
 
       {/* Recommended Today Section */}
       <div className="space-y-3">
-        <h2 className="text-base font-black text-slate-900 dark:text-white uppercase tracking-tight">
+        <h2 className="text-sm sm:text-base font-black text-slate-900 dark:text-white uppercase tracking-tight">
           Recommended Today (From Mess Menu)
         </h2>
 
@@ -134,7 +133,7 @@ export const MusclePassPage = () => {
               >
                 <div>
                   <span className="text-[10px] font-bold text-slate-400 uppercase block">{item.category}</span>
-                  <h3 className="text-sm font-black text-slate-900 dark:text-white">{item.name}</h3>
+                  <h3 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white">{item.name}</h3>
                 </div>
 
                 <div className="flex items-center space-x-2">

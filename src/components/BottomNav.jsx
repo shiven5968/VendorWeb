@@ -1,14 +1,16 @@
 import React from 'react';
 import { useApp } from '../context/AppContext';
-import { Home, UtensilsCrossed, MessageSquare, Gift, User, Dumbbell, ShieldAlert, BarChart3 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { Home, UtensilsCrossed, MessageSquare, Gift, User, ShieldAlert, BarChart3 } from 'lucide-react';
 
 export const BottomNav = () => {
-  const { currentRole, currentPage, setCurrentPage } = useApp();
+  const { currentPage, setCurrentPage, currentUser } = useApp();
+  const { user, role } = useAuth();
 
-  if (currentRole === 'landing') return null;
+  if (!user || !currentUser) return null;
 
   const getTabs = () => {
-    if (currentRole === 'student') {
+    if (role === 'student') {
       return [
         { id: 'dashboard', label: 'Home', icon: Home },
         { id: 'menu', label: 'Menu', icon: UtensilsCrossed },
@@ -16,14 +18,14 @@ export const BottomNav = () => {
         { id: 'rewards', label: 'Rewards', icon: Gift },
         { id: 'profile', label: 'Profile', icon: User },
       ];
-    } else if (currentRole === 'committee') {
+    } else if (role === 'mess_committee') {
       return [
         { id: 'dashboard', label: 'Menu Studio', icon: UtensilsCrossed },
         { id: 'analytics', label: 'Analytics', icon: BarChart3 },
         { id: 'activity', label: 'Feedback', icon: MessageSquare },
         { id: 'profile', label: 'Profile', icon: User },
       ];
-    } else if (currentRole === 'warden') {
+    } else if (role === 'warden') {
       return [
         { id: 'dashboard', label: 'Overview', icon: ShieldAlert },
         { id: 'analytics', label: 'Analytics', icon: BarChart3 },

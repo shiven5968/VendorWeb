@@ -11,13 +11,13 @@ export const HealthyRewardsPage = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-black text-slate-900 dark:text-white">Health Points Store</h1>
-          <p className="text-xs text-slate-500 font-semibold">Earn points by rating meals (+20) & voting (+30)</p>
+          <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">Health Points Store</h1>
+          <p className="text-xs text-slate-500 font-semibold">Earn points by rating meals (+20) and voting (+30)</p>
         </div>
 
-        <div className="px-5 py-2.5 rounded-2xl bg-slate-900 text-white border border-emerald-500/30 text-center shadow-md">
+        <div className="px-4 py-2 rounded-2xl bg-slate-900 text-white border border-emerald-500/30 text-center shadow-md">
           <span className="text-[10px] text-emerald-400 font-bold uppercase block">Balance</span>
-          <p className="text-xl font-black text-white">{rewardPoints} Pts</p>
+          <p className="text-lg sm:text-xl font-black text-white">{rewardPoints} Pts</p>
         </div>
       </div>
 
@@ -40,7 +40,7 @@ export const HealthyRewardsPage = () => {
                 </div>
 
                 <div className="p-4 space-y-1">
-                  <h3 className="text-base font-black text-slate-900 dark:text-white">{item.name}</h3>
+                  <h3 className="text-sm sm:text-base font-black text-slate-900 dark:text-white">{item.name}</h3>
                   <p className="text-xs text-slate-500">{item.description}</p>
                   <span className="text-xs font-black text-emerald-600 dark:text-emerald-400 block pt-1">
                     {item.points} Points
@@ -67,17 +67,17 @@ export const HealthyRewardsPage = () => {
       </div>
 
       {/* Claimed Redemptions History */}
-      {userRedemptions.length > 0 && (
+      {userRedemptions.length > 0 ? (
         <div className="pt-4 space-y-3">
-          <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">
-            My Claimed Vouchers ({userRedemptions.length})
+          <h3 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider">
+            My Claimed Items ({userRedemptions.length})
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {userRedemptions.map(red => (
               <div key={red.id} className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-between shadow-sm">
                 <div>
                   <h4 className="text-xs font-black text-slate-900 dark:text-white">{red.rewardName}</h4>
-                  <span className="text-[10px] text-slate-400">Claim Code: <strong className="text-emerald-600 dark:text-emerald-400 font-mono">{red.claimCode}</strong></span>
+                  <span className="text-[10px] text-slate-400">Code: <strong className="text-emerald-600 dark:text-emerald-400 font-mono">{red.claimCode}</strong></span>
                 </div>
                 <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold">
                   {red.status}
@@ -85,6 +85,10 @@ export const HealthyRewardsPage = () => {
               </div>
             ))}
           </div>
+        </div>
+      ) : (
+        <div className="p-8 text-center text-xs font-bold text-slate-400 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800">
+          No items redeemed yet. Rate meals to earn points.
         </div>
       )}
 

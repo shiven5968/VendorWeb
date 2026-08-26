@@ -4,52 +4,21 @@ import { auth, db, isFirebaseConfigured } from './firebase';
 
 export const PILOT_ACCOUNTS = [
   {
-    name: 'Rahul Verma',
-    email: 'rahul.verma@hostel.edu',
+    name: 'Parth Sharma',
+    admissionNumber: '2100320100001',
+    email: 'parth.sharma@abes.ac.in',
     password: 'password123',
     role: 'student',
     gender: 'Male',
     hostelBlock: 'DNB Block',
     dietPreference: 'High Protein / Eggetarian',
     proteinTarget: 120,
-    rewardPoints: 420
-  },
-  {
-    name: 'Ananya Singh',
-    email: 'ananya.singh@hostel.edu',
-    password: 'password123',
-    role: 'student',
-    gender: 'Female',
-    hostelBlock: 'Kalpana Chawla (Girls)',
-    dietPreference: 'Pure Vegetarian',
-    proteinTarget: 100,
-    rewardPoints: 510
-  },
-  {
-    name: 'Priya Sharma',
-    email: 'priya.sharma@hostel.edu',
-    password: 'password123',
-    role: 'student',
-    gender: 'Female',
-    hostelBlock: 'Sarojini Block (Girls)',
-    dietPreference: 'High Protein / Eggetarian',
-    proteinTarget: 110,
-    rewardPoints: 340
-  },
-  {
-    name: 'Parth Sharma',
-    email: 'parth.sharma@hostel.edu',
-    password: 'password123',
-    role: 'student',
-    gender: 'Male',
-    hostelBlock: 'DNB Block',
-    dietPreference: 'High Protein / Eggetarian',
-    proteinTarget: 130,
-    rewardPoints: 480
+    rewardPoints: 0
   },
   {
     name: 'Mess Committee',
-    email: 'committee@hostel.edu',
+    admissionNumber: 'MC-2026-01',
+    email: 'committee@abes.ac.in',
     password: 'password123',
     role: 'mess_committee',
     gender: 'Other',
@@ -59,8 +28,9 @@ export const PILOT_ACCOUNTS = [
     rewardPoints: 0
   },
   {
-    name: 'Pathak Sir',
-    email: 'warden@hostel.edu',
+    name: 'Chief Warden',
+    admissionNumber: 'CW-2026-01',
+    email: 'warden@abes.ac.in',
     password: 'password123',
     role: 'warden',
     gender: 'Male',
@@ -76,7 +46,6 @@ export const PILOT_ACCOUNTS = [
  */
 export const seedPilotAccounts = async () => {
   if (!isFirebaseConfigured) {
-    console.log('Firebase environment keys not set. Pilot accounts active in local database.');
     return { success: true, seeded: 0, message: 'Active in local store' };
   }
 
@@ -91,6 +60,7 @@ export const seedPilotAccounts = async () => {
       const profileDoc = {
         uid: user.uid,
         name: account.name,
+        admissionNumber: account.admissionNumber,
         email: account.email,
         role: account.role,
         gender: account.gender,
@@ -106,8 +76,7 @@ export const seedPilotAccounts = async () => {
       seededCount++;
     } catch (err) {
       if (err.code === 'auth/email-already-in-use') {
-        // Account already exists in Firebase Auth
-        console.log(`Account ${account.email} already exists in Firebase.`);
+        // Account already exists
       } else {
         console.warn(`Error seeding account ${account.email}:`, err.message);
       }
