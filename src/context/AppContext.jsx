@@ -7,19 +7,22 @@ const AppContext = createContext();
 const getTodayDayName = () => {
   const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const dayIdx = new Date().getDay();
-  return days[dayIdx];
+  return days[dayIdx] || 'Friday';
 };
 
 export const AppProvider = ({ children }) => {
-  // Today's day automatically derived from system clock
   const todayDay = getTodayDayName();
   const [selectedDay, setSelectedDay] = useState(todayDay);
 
-  // LocalStorage Persisted Weekly Menu
+  // LocalStorage Persisted Weekly Menu with safe fallback
   const [weeklyMessMenu, setWeeklyMessMenu] = useState(() => {
     try {
       const saved = localStorage.getItem('messmate_weekly_menu');
-      return saved ? JSON.parse(saved) : WEEKLY_MESS_MENU;
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === 'object' && parsed.Friday) return parsed;
+      }
+      return WEEKLY_MESS_MENU;
     } catch (e) {
       return WEEKLY_MESS_MENU;
     }
@@ -29,7 +32,11 @@ export const AppProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(() => {
     try {
       const saved = localStorage.getItem('messmate_user');
-      return saved ? JSON.parse(saved) : DEMO_USERS.student;
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && parsed.name) return parsed;
+      }
+      return DEMO_USERS.student;
     } catch (e) {
       return DEMO_USERS.student;
     }
@@ -37,17 +44,15 @@ export const AppProvider = ({ children }) => {
 
   const [currentRole, setCurrentRole] = useState('landing');
   const [currentPage, setCurrentPage] = useState('home');
-
-  // Dark mode
   const [darkMode, setDarkMode] = useState(false);
 
-  // LocalStorage Persisted Ratings & Protein
+  // LocalStorage Persisted Ratings
   const [userRatings, setUserRatings] = useState(() => {
     try {
       const saved = localStorage.getItem('messmate_ratings');
-      return saved ? JSON.parse(saved) : { mon_b: 5, fri_b: 5, wed_d: 5 };
+      return saved ? JSON.parse(saved) : { fri_b: 5, wed_d: 5 };
     } catch (e) {
-      return { mon_b: 5, fri_b: 5, wed_d: 5 };
+      return { fri_b: 5, wed_d: 5 };
     }
   });
 
@@ -77,11 +82,9 @@ export const AppProvider = ({ children }) => {
     }
   });
 
-  // Notifications
+  // Notifications & Search
   const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
-
-  // Search
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -94,47 +97,37 @@ export const AppProvider = ({ children }) => {
   // Warden Governance
   const [menuApproved, setMenuApproved] = useState(false);
 
-  // Ensure current day's meals are strictly active for Today
-  useEffect(() => {
-    setSelectedDay(getTodayDayName());
-  }, []);
-
-  // Sync Weekly Menu changes to LocalStorage
+  // Sync to LocalStorage safely
   useEffect(() => {
     try {
       localStorage.setItem('messmate_weekly_menu', JSON.stringify(weeklyMessMenu));
     } catch (e) {}
   }, [weeklyMessMenu]);
 
-  // Sync Ratings to LocalStorage
   useEffect(() => {
     try {
       localStorage.setItem('messmate_ratings', JSON.stringify(userRatings));
     } catch (e) {}
   }, [userRatings]);
 
-  // Sync Points to LocalStorage
   useEffect(() => {
     try {
       localStorage.setItem('messmate_points', rewardPoints.toString());
     } catch (e) {}
   }, [rewardPoints]);
 
-  // Sync Poll to LocalStorage
   useEffect(() => {
     try {
       localStorage.setItem('messmate_poll', JSON.stringify(poll));
     } catch (e) {}
   }, [poll]);
 
-  // Sync User Profile
   useEffect(() => {
     try {
       localStorage.setItem('messmate_user', JSON.stringify(currentUser));
     } catch (e) {}
   }, [currentUser]);
 
-  // Theme effect
   useEffect(() => {
     if (darkMode) {
       document.documentElement.classList.add('dark');
@@ -147,16 +140,16 @@ export const AppProvider = ({ children }) => {
     setDarkMode(prev => !prev);
   };
 
-  // Profile & Device Avatar Upload
+  // Profile Update Function
   const updateUserProfile = (updatedFields) => {
     setCurrentUser(prev => ({
       ...prev,
       ...updatedFields,
     }));
-    addNotification('Profile Updated', 'Student details saved successfully.', 'success');
+    addNotification('Profile Updated', 'Student profile details updated.', 'success');
   };
 
-  // Role Switcher
+  // Login Function
   const loginAsRole = (roleKey) => {
     if (roleKey === 'student') {
       setCurrentUser(DEMO_USERS.student);
@@ -179,74 +172,76 @@ export const AppProvider = ({ children }) => {
     setCurrentPage('home');
   };
 
-  // Meal Rating (Strictly for Today's Meals)
+  // Meal Rating Function
   const rateMeal = (mealId, stars) => {
     setUserRatings(prev => ({ ...prev, [mealId]: stars }));
     
     setWeeklyMessMenu(prevMenu => {
       const updated = { ...prevMenu };
       Object.keys(updated).forEach(day => {
-        updated[day] = updated[day].map(m => {
-          if (m.id === mealId) {
-            const newCount = m.ratingCount + 1;
-            const newRating = Number(((m.rating * m.ratingCount + stars) / newCount).toFixed(1));
-            return { ...m, rating: newRating, ratingCount: newCount };
-          }
-          return m;
-        });
+        if (Array.isArray(updated[day])) {
+          updated[day] = updated[day].map(m => {
+            if (m.id === mealId) {
+              const newCount = (m.ratingCount || 100) + 1;
+              const newRating = Number((((m.rating || 4.5) * (m.ratingCount || 100) + stars) / newCount).toFixed(1));
+              return { ...m, rating: newRating, ratingCount: newCount };
+            }
+            return m;
+          });
+        }
       });
       return updated;
     });
 
     setRewardPoints(pts => pts + 20);
-    addNotification('Rating Saved', `You earned +20 health points for rating this meal.`, 'success');
+    addNotification('Rating Saved 🌟', `You earned +20 health points for rating this meal.`, 'success');
   };
 
-  // Voting
+  // Voting Function
   const voteDish = (optionId) => {
-    if (poll.userVoted) return;
-
-    const updatedOptions = poll.options.map(opt => {
-      if (opt.id === optionId) {
-        return { ...opt, votes: opt.votes + 1 };
-      }
-      return opt;
-    });
-
-    const newTotal = poll.totalVotes + 1;
-    const recomputedOptions = updatedOptions.map(opt => ({
-      ...opt,
-      percent: Math.round((opt.votes / newTotal) * 100)
-    }));
-
-    setPoll({
-      ...poll,
-      totalVotes: newTotal,
-      userVoted: optionId,
-      options: recomputedOptions
+    setPoll(prevPoll => {
+      if (prevPoll.userVoted) return prevPoll;
+      const updatedOptions = prevPoll.options.map(opt => {
+        if (opt.id === optionId) {
+          return { ...opt, votes: opt.votes + 1 };
+        }
+        return opt;
+      });
+      const newTotal = prevPoll.totalVotes + 1;
+      const recomputed = updatedOptions.map(opt => ({
+        ...opt,
+        percent: Math.round((opt.votes / newTotal) * 100)
+      }));
+      return {
+        ...prevPoll,
+        totalVotes: newTotal,
+        userVoted: optionId,
+        options: recomputed
+      };
     });
 
     setRewardPoints(pts => pts + 30);
-    addNotification('Vote Recorded', 'Thank you for voting. Earned +30 points.', 'success');
+    addNotification('Vote Recorded 🗳️', 'Thank you for voting. Earned +30 points.', 'success');
   };
 
-  // Redeem Restaurant Coupon
+  // Redeem Restaurant Voucher Function
   const redeemReward = (voucher) => {
     if (rewardPoints < voucher.points) {
-      addNotification('Insufficient Points', `You need ${voucher.points} points. Keep rating mess meals to earn points.`, 'warning');
+      addNotification('Insufficient Points ⚠️', `You need ${voucher.points} points. Keep rating mess meals to earn points.`, 'warning');
       return false;
     }
     setRewardPoints(pts => pts - voucher.points);
     setClaimedRewards(prev => [voucher, ...prev]);
     setClaimedRewardModal(voucher);
-    addNotification('Voucher Claimed', `Redeemed ${voucher.title} for ${voucher.restaurantName}.`, 'success');
+    addNotification('Voucher Claimed 🎉', `Redeemed ${voucher.title} for ${voucher.restaurantName}.`, 'success');
     return true;
   };
 
-  // Committee Actions
-  const saveMeal = (mealData, targetDay = todayDay) => {
+  // Committee Actions: Add / Edit / Delete Menu Item
+  const saveMeal = (mealData, targetDay = selectedDay) => {
     setWeeklyMessMenu(prevMenu => {
-      const dayMeals = prevMenu[targetDay] || [];
+      const dayKey = targetDay || todayDay;
+      const dayMeals = Array.isArray(prevMenu[dayKey]) ? prevMenu[dayKey] : [];
       let updatedDayMeals;
 
       if (mealData.id) {
@@ -263,28 +258,31 @@ export const AppProvider = ({ children }) => {
 
       return {
         ...prevMenu,
-        [targetDay]: updatedDayMeals,
+        [dayKey]: updatedDayMeals,
       };
     });
 
-    addNotification('Menu Saved', `${mealData.name} updated for ${targetDay}.`, 'success');
+    addNotification('Menu Saved 📝', `${mealData.name} updated for ${targetDay}.`, 'success');
   };
 
-  const deleteMeal = (mealId, targetDay = todayDay) => {
-    setWeeklyMessMenu(prevMenu => ({
-      ...prevMenu,
-      [targetDay]: (prevMenu[targetDay] || []).filter(m => m.id !== mealId),
-    }));
-    addNotification('Meal Removed', `Item deleted from ${targetDay} menu.`, 'warning');
+  const deleteMeal = (mealId, targetDay = selectedDay) => {
+    setWeeklyMessMenu(prevMenu => {
+      const dayKey = targetDay || todayDay;
+      return {
+        ...prevMenu,
+        [dayKey]: (prevMenu[dayKey] || []).filter(m => m.id !== mealId),
+      };
+    });
+    addNotification('Meal Removed 🗑️', `Item deleted from ${targetDay} menu.`, 'warning');
   };
 
   // Warden Approval
   const approveWeeklyMenu = () => {
     setMenuApproved(true);
-    addNotification('Menu Approved', 'Chief Warden Pathak Sir approved the weekly menu.', 'success');
+    addNotification('Menu Approved ✅', 'Chief Warden Pathak Sir approved the weekly menu.', 'success');
   };
 
-  // Notifications
+  // Notifications Management
   const addNotification = (title, message, type = 'info') => {
     const newNotif = {
       id: 'n_' + Date.now(),
@@ -306,8 +304,9 @@ export const AppProvider = ({ children }) => {
   const userBlock = currentUser?.hostelBlock || 'DNB Block';
   const currentMessInfo = MESS_BLOCK_MAP[userBlock] || MESS_BLOCK_MAP['DNB Block'];
 
-  // Current active day's meals (Strictly today's day)
-  const currentDayMeals = weeklyMessMenu[todayDay] || weeklyMessMenu.Friday || [];
+  // Current active day's meals - Guaranteed non-empty array fallback
+  const rawMeals = weeklyMessMenu[selectedDay] || weeklyMessMenu[todayDay] || WEEKLY_MESS_MENU[todayDay] || WEEKLY_MESS_MENU.Friday;
+  const currentDayMeals = Array.isArray(rawMeals) && rawMeals.length > 0 ? rawMeals : WEEKLY_MESS_MENU.Friday;
 
   return (
     <AppContext.Provider
@@ -322,7 +321,7 @@ export const AppProvider = ({ children }) => {
         darkMode,
         toggleDarkMode,
         todayDay,
-        selectedDay: todayDay,
+        selectedDay,
         setSelectedDay,
         weeklyMessMenu,
         meals: currentDayMeals,

@@ -1,6 +1,7 @@
 import React from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import { Navbar } from './components/Navbar';
+import { BottomNav } from './components/BottomNav';
 import { RoleSwitcherBar } from './components/RoleSwitcherBar';
 import { Footer } from './components/Footer';
 import { NotificationDrawer } from './components/NotificationDrawer';
@@ -12,11 +13,14 @@ import { AddEditMealModal } from './components/AddEditMealModal';
 import { LandingPage } from './pages/LandingPage';
 import { LoginPage } from './pages/LoginPage';
 import { StudentDashboard } from './pages/StudentDashboard';
+import { MenuPage } from './pages/MenuPage';
 import { MusclePassPage } from './pages/MusclePassPage';
 import { HealthyRewardsPage } from './pages/HealthyRewardsPage';
 import { MessCommitteeDashboard } from './pages/MessCommitteeDashboard';
 import { WardenDashboard } from './pages/WardenDashboard';
 import { VotingPage } from './pages/VotingPage';
+import { ActivityPage } from './pages/ActivityPage';
+import { ProfilePage } from './pages/ProfilePage';
 import { AnalyticsPage } from './pages/AnalyticsPage';
 import { ReportsPage } from './pages/ReportsPage';
 import { AboutPage } from './pages/AboutPage';
@@ -31,6 +35,14 @@ const AppContent = () => {
     if (currentPage === 'contact') return <ContactPage />;
     if (currentPage === 'login') return <LoginPage />;
     if (currentPage === 'voting') return <VotingPage />;
+    if (currentPage === 'activity') return <ActivityPage />;
+    if (currentPage === 'profile') return <ProfilePage />;
+    if (currentPage === 'menu') return <MenuPage />;
+    if (currentPage === 'dashboard') {
+      if (currentRole === 'student') return <StudentDashboard />;
+      if (currentRole === 'committee') return <MessCommitteeDashboard />;
+      if (currentRole === 'warden') return <WardenDashboard />;
+    }
     if (currentPage === 'analytics') return <AnalyticsPage />;
     if (currentPage === 'reports') return <ReportsPage />;
     if (currentPage === 'muscle-pass') return <MusclePassPage />;
@@ -40,7 +52,7 @@ const AppContent = () => {
       if (currentRole === 'landing') return <LandingPage />;
     }
 
-    // Role dashboards
+    // Default role dashboards
     if (currentRole === 'student') return <StudentDashboard />;
     if (currentRole === 'committee') return <MessCommitteeDashboard />;
     if (currentRole === 'warden') return <WardenDashboard />;
@@ -49,7 +61,7 @@ const AppContent = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-between bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 selection:bg-emerald-500 selection:text-white transition-colors duration-300">
+    <div className="min-h-screen flex flex-col justify-between bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 selection:bg-emerald-500 selection:text-white transition-colors duration-300 relative">
       <div>
         <RoleSwitcherBar />
         <Navbar />
@@ -59,6 +71,7 @@ const AppContent = () => {
       </div>
 
       <Footer />
+      <BottomNav />
 
       {/* Global Modals */}
       <NotificationDrawer />

@@ -15,7 +15,11 @@ import {
   Info,
   BarChart3, 
   FileText, 
-  ShieldAlert
+  ShieldAlert,
+  Home,
+  MessageSquare,
+  Gift,
+  User
 } from 'lucide-react';
 
 export const Navbar = () => {
@@ -35,36 +39,35 @@ export const Navbar = () => {
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Exact navigation order requested: Menu -> Voting -> Gym / Muscle Pass -> Healthy Rewards -> About Us
   const getNavItems = () => {
     if (currentRole === 'student') {
       return [
-        { id: 'dashboard', label: 'Mess Menu', icon: UtensilsCrossed },
-        { id: 'voting', label: 'Dish Voting', icon: Vote, badge: 'Active' },
-        { id: 'muscle-pass', label: 'Gym / Muscle Pass', icon: Dumbbell },
-        { id: 'rewards', label: 'Healthy Rewards', icon: Tag, badge: 'Coupons' },
-        { id: 'about', label: 'About Us', icon: Info },
+        { id: 'dashboard', label: 'Home', icon: Home },
+        { id: 'menu', label: 'Menu', icon: UtensilsCrossed },
+        { id: 'muscle-pass', label: 'Muscle Pass', icon: Dumbbell },
+        { id: 'activity', label: 'Activity', icon: MessageSquare },
+        { id: 'rewards', label: 'Rewards', icon: Gift },
       ];
     } else if (currentRole === 'committee') {
       return [
         { id: 'dashboard', label: 'Menu Studio', icon: UtensilsCrossed },
-        { id: 'analytics', label: 'Committee Analytics', icon: BarChart3 },
-        { id: 'reports', label: 'Monthly Reports', icon: FileText },
-        { id: 'about', label: 'About Us', icon: Info },
+        { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+        { id: 'activity', label: 'Feedback', icon: MessageSquare },
+        { id: 'reports', label: 'Reports', icon: FileText },
       ];
     } else if (currentRole === 'warden') {
       return [
         { id: 'dashboard', label: 'Executive Overview', icon: ShieldAlert },
-        { id: 'analytics', label: 'Warden Analytics', icon: BarChart3 },
-        { id: 'reports', label: 'Monthly Governance', icon: FileText },
-        { id: 'about', label: 'About Us', icon: Info },
+        { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+        { id: 'activity', label: 'Complaints', icon: MessageSquare },
+        { id: 'reports', label: 'Governance', icon: FileText },
       ];
     } else {
       return [
         { id: 'home', label: 'Home' },
         { id: 'features', label: 'Features' },
         { id: 'how-it-works', label: 'How It Works' },
-        { id: 'about', label: 'About Us' },
+        { id: 'about', label: 'About' },
         { id: 'contact', label: 'Contact' },
       ];
     }
@@ -76,7 +79,7 @@ export const Navbar = () => {
   };
 
   return (
-    <header className="sticky top-9 z-40 w-full bg-white/85 dark:bg-slate-900/85 backdrop-blur-xl border-b border-slate-200/80 dark:border-slate-800 transition-colors">
+    <header className="sticky top-9 z-40 w-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-b border-slate-200/80 dark:border-slate-800 transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         
         {/* Brand Logo - Plate, Spoon & Fork Icon */}
@@ -90,13 +93,13 @@ export const Navbar = () => {
           <div>
             <div className="flex items-center space-x-1.5">
               <span className="text-xl font-black tracking-tight text-slate-900 dark:text-white">
-                MessMate
+                MessMates
               </span>
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-extrabold border border-emerald-500/20">
-                ABES EC
+                LIVE
               </span>
             </div>
-            <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium hidden sm:block">
+            <p className="text-[10px] text-slate-500 font-semibold hidden sm:block">
               Know Your Meal Before You Eat It
             </p>
           </div>
@@ -111,7 +114,7 @@ export const Navbar = () => {
               <button
                 key={item.id}
                 onClick={() => handleNavClick(item.id)}
-                className={`flex items-center space-x-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
+                className={`flex items-center space-x-1.5 px-3.5 py-2 rounded-xl text-xs font-black transition-all ${
                   isActive
                     ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 shadow-sm border border-emerald-500/20 scale-105'
                     : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60'
@@ -119,11 +122,6 @@ export const Navbar = () => {
               >
                 {Icon && <Icon className="w-4 h-4" />}
                 <span>{item.label}</span>
-                {item.badge && (
-                  <span className="ml-1 px-1.5 py-0.5 text-[9px] font-extrabold rounded-full bg-emerald-600 text-white">
-                    {item.badge}
-                  </span>
-                )}
               </button>
             );
           })}
@@ -167,7 +165,7 @@ export const Navbar = () => {
           {/* User Profile / Login CTA */}
           {currentUser ? (
             <div 
-              onClick={() => setCurrentPage('muscle-pass')}
+              onClick={() => setCurrentPage('profile')}
               className="flex items-center space-x-2 pl-2 border-l border-slate-200 dark:border-slate-800 cursor-pointer group"
             >
               <img
@@ -180,7 +178,7 @@ export const Navbar = () => {
                   {currentUser.name}
                 </p>
                 <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">
-                  {currentUser.role === 'student' ? '2nd Yr AIML' : currentUser.role}
+                  {currentUser.role === 'student' ? 'Student' : currentUser.role}
                 </p>
               </div>
               <button
@@ -230,11 +228,6 @@ export const Navbar = () => {
                   {Icon && <Icon className="w-4 h-4" />}
                   <span>{item.label}</span>
                 </div>
-                {item.badge && (
-                  <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-emerald-600 text-white">
-                    {item.badge}
-                  </span>
-                )}
               </button>
             );
           })}
