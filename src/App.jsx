@@ -27,37 +27,43 @@ import { AboutPage } from './pages/AboutPage';
 import { ContactPage } from './pages/ContactPage';
 
 const AppContent = () => {
-  const { currentRole, currentPage } = useApp();
+  const { currentUser, currentRole, currentPage } = useApp();
 
   const renderMainView = () => {
-    // Specific navigation pages
+    // Unauthenticated or login
+    if (!currentUser || currentPage === 'login') return <LoginPage />;
+    if (currentPage === 'home' && currentRole === 'landing') return <LandingPage />;
     if (currentPage === 'about') return <AboutPage />;
     if (currentPage === 'contact') return <ContactPage />;
-    if (currentPage === 'login') return <LoginPage />;
-    if (currentPage === 'voting') return <VotingPage />;
+
+    // Common pages
     if (currentPage === 'activity') return <ActivityPage />;
     if (currentPage === 'profile') return <ProfilePage />;
     if (currentPage === 'menu') return <MenuPage />;
-    if (currentPage === 'dashboard') {
-      if (currentRole === 'student') return <StudentDashboard />;
-      if (currentRole === 'committee') return <MessCommitteeDashboard />;
-      if (currentRole === 'warden') return <WardenDashboard />;
-    }
-    if (currentPage === 'analytics') return <AnalyticsPage />;
-    if (currentPage === 'reports') return <ReportsPage />;
-    if (currentPage === 'muscle-pass') return <MusclePassPage />;
-    if (currentPage === 'rewards') return <HealthyRewardsPage />;
+    if (currentPage === 'voting') return <VotingPage />;
 
-    if (currentPage === 'features' || currentPage === 'how-it-works' || currentPage === 'home') {
-      if (currentRole === 'landing') return <LandingPage />;
+    // Student Only Pages
+    if (currentUser.role === 'student') {
+      if (currentPage === 'muscle-pass') return <MusclePassPage />;
+      if (currentPage === 'rewards') return <HealthyRewardsPage />;
+      return <StudentDashboard />;
     }
 
-    // Default role dashboards
-    if (currentRole === 'student') return <StudentDashboard />;
-    if (currentRole === 'committee') return <MessCommitteeDashboard />;
-    if (currentRole === 'warden') return <WardenDashboard />;
+    // Mess Committee Only Pages
+    if (currentUser.role === 'committee') {
+      if (currentPage === 'analytics') return <AnalyticsPage />;
+      if (currentPage === 'reports') return <ReportsPage />;
+      return <MessCommitteeDashboard />;
+    }
 
-    return <LandingPage />;
+    // Warden Only Pages
+    if (currentUser.role === 'warden') {
+      if (currentPage === 'analytics') return <AnalyticsPage />;
+      if (currentPage === 'reports') return <ReportsPage />;
+      return <WardenDashboard />;
+    }
+
+    return <StudentDashboard />;
   };
 
   return (

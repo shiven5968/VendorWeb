@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { X, Star, ArrowLeft, Flame, Award, Check } from 'lucide-react';
+import { X, Star, ArrowLeft, Check, Send } from 'lucide-react';
 
 export const MealDetailModal = () => {
-  const { selectedMealModal, setSelectedMealModal, rateMeal, userRatings } = useApp();
+  const { selectedMealModal, setSelectedMealModal, rateMeal, getUserRating, getMealStats } = useApp();
   const [showRatingBox, setShowRatingBox] = useState(false);
   const [selectedTag, setSelectedTag] = useState('');
   const [feedbackText, setFeedbackText] = useState('');
@@ -12,10 +12,12 @@ export const MealDetailModal = () => {
   if (!selectedMealModal) return null;
 
   const meal = selectedMealModal;
-  const currentRating = userRatings[meal.id] || 0;
+  const userExistingRating = getUserRating(meal.id);
+  const currentRatingVal = userExistingRating?.rating || 0;
+  const liveStats = getMealStats ? getMealStats(meal.id) : { rating: meal.rating || 4.5, ratingCount: meal.ratingCount || 0 };
 
   const handleRateSubmit = (stars) => {
-    rateMeal(meal.id, stars);
+    rateMeal(meal.id, stars, feedbackText, selectedTag ? [selectedTag] : []);
     setRatingSubmitted(true);
     setTimeout(() => {
       setRatingSubmitted(false);
@@ -61,7 +63,7 @@ export const MealDetailModal = () => {
 
             <div className="bg-emerald-600 text-white px-3 py-1 rounded-xl text-xs font-black flex items-center space-x-1 shadow-md">
               <Star className="w-3.5 h-3.5 fill-current" />
-              <span>{meal.rating}</span>
+              <span>{liveStats.rating} ({liveStats.ratingCount} reviews)</span>
             </div>
           </div>
         </div>
@@ -97,7 +99,7 @@ export const MealDetailModal = () => {
           <div>
             <h4 className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 mb-2">Ingredients</h4>
             <div className="flex flex-wrap gap-1.5">
-              {meal.ingredients.map((ing, i) => (
+              {meal.ingredients?.map((ing, i) => (
                 <span key={i} className="px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold border border-slate-200 dark:border-slate-700">
                   {ing}
                 </span>
@@ -105,11 +107,11 @@ export const MealDetailModal = () => {
             </div>
           </div>
 
-          {/* Inline Rating & Feedback Experience */}
-          {showRatingBox ? (
+          {/* Inline Rating & Feedback Box */}
+          {showRatingBox && (
             <div className="p-4 rounded-2xl bg-slate-900 text-white space-y-3 border border-emerald-500/30">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-emerald-400">How was your meal?</span>
+                <span className="text-xs font-bold text-emerald-400">Rate this meal</span>
                 <span className="text-[10px] text-slate-400">+20 Health Pts</span>
               </div>
 
@@ -123,7 +125,7 @@ export const MealDetailModal = () => {
                   >
                     <Star
                       className={`w-7 h-7 ${
-                        star <= currentRating
+                        star <= currentRatingVal
                           ? 'text-amber-400 fill-amber-400'
                           : 'text-slate-600 hover:text-amber-300'
                       }`}
@@ -150,14 +152,32 @@ export const MealDetailModal = () => {
                 ))}
               </div>
 
+              {/* Optional Text Feedback */}
+              <div className="flex space-x-1.5 pt-1">
+                <input
+                  type="text"
+                  placeholder="Optional feedback..."
+                  value={feedbackText}
+                  onChange={e => setFeedbackText(e.target.value)}
+                  className="flex-1 px-3 py-1.5 rounded-xl bg-slate-800 border border-slate-700 text-xs text-white outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => handleRateSubmit(5)}
+                  className="px-3 py-1.5 rounded-xl bg-emerald-600 text-white text-xs font-bold"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
               {ratingSubmitted && (
                 <div className="p-2 rounded-xl bg-emerald-500/20 text-emerald-300 text-xs font-bold text-center flex items-center justify-center space-x-1">
                   <Check className="w-4 h-4" />
-                  <span>Rating & Feedback Saved!</span>
+                  <span>Rating & feedback saved to database!</span>
                 </div>
               )}
             </div>
-          ) : null}
+          )}
 
           {/* Primary Action Buttons */}
           <div className="grid grid-cols-2 gap-3 pt-1">

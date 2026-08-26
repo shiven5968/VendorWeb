@@ -5,8 +5,9 @@ import { User, Star, MessageSquare, Gift, Dumbbell, Settings, LogOut, ChevronRig
 export const ProfilePage = () => {
   const { currentUser, updateUserProfile, setCurrentPage, logout, rewardPoints } = useApp();
   const [showSettings, setShowSettings] = useState(false);
-  const [name, setName] = useState(currentUser?.name || 'Parth Sharma');
+  const [name, setName] = useState(currentUser?.name || '');
   const [block, setBlock] = useState(currentUser?.hostelBlock || 'DNB Block');
+  const [diet, setDiet] = useState(currentUser?.dietPreference || 'High Protein / Eggetarian');
   const [saved, setSaved] = useState(false);
 
   const handleDeviceUpload = (e) => {
@@ -22,7 +23,7 @@ export const ProfilePage = () => {
 
   const handleSave = (e) => {
     e.preventDefault();
-    updateUserProfile({ name, hostelBlock: block });
+    updateUserProfile({ name, hostelBlock: block, dietPreference: diet });
     setSaved(true);
     setTimeout(() => {
       setSaved(false);
@@ -30,15 +31,17 @@ export const ProfilePage = () => {
     }, 1500);
   };
 
+  if (!currentUser) return null;
+
   return (
     <div className="max-w-xl mx-auto px-4 sm:px-6 py-6 space-y-6 pb-24 md:pb-12">
       
-      {/* Profile Header */}
+      {/* Profile Header (DYNAMIC USER DATA) */}
       <div className="p-6 rounded-3xl bg-slate-900 text-white flex items-center space-x-4 shadow-xl border border-slate-800">
         <div className="relative group">
           <img
-            src={currentUser?.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=300"}
-            alt="Profile"
+            src={currentUser.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=300"}
+            alt={currentUser.name}
             className="w-16 h-16 rounded-full object-cover ring-2 ring-emerald-500"
           />
           <label className="absolute inset-0 rounded-full bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer text-white transition-opacity">
@@ -48,21 +51,26 @@ export const ProfilePage = () => {
         </div>
 
         <div className="flex-1">
-          <h1 className="text-xl font-black">{currentUser?.name || 'Parth Sharma'}</h1>
-          <p className="text-xs text-emerald-400 font-bold">Student • {currentUser?.hostelBlock || 'DNB Block'}</p>
-          <span className="text-[11px] text-slate-400 font-semibold">{rewardPoints} Health Points</span>
+          <h1 className="text-xl font-black">{currentUser.name}</h1>
+          <p className="text-xs text-emerald-400 font-bold">
+            {currentUser.role?.toUpperCase()} • {currentUser.hostelBlock || 'Campus'}
+          </p>
+          <span className="text-[11px] text-slate-400 font-semibold block mt-0.5">
+            {currentUser.email} • {rewardPoints} Health Points
+          </span>
         </div>
       </div>
 
-      {/* Settings Panel */}
+      {/* Settings Form */}
       {showSettings && (
         <form onSubmit={handleSave} className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3 shadow-md">
-          <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">Settings</h3>
+          <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">Edit Profile</h3>
 
           <div>
-            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Name</label>
+            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Full Name</label>
             <input
               type="text"
+              required
               value={name}
               onChange={e => setName(e.target.value)}
               className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold outline-none"
@@ -76,16 +84,33 @@ export const ProfilePage = () => {
               onChange={e => setBlock(e.target.value)}
               className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold outline-none"
             >
-              <option value="DNB Block">DNB Block</option>
-              <option value="VKB Block">VKB Block</option>
-              <option value="RKB Block">RKB Block</option>
-              <option value="ABB Block">ABB Block</option>
-              <option value="CKB Block">CKB Block</option>
+              <option value="DNB Block">DNB Block (Boys)</option>
+              <option value="VKB Block">VKB Block (Boys)</option>
+              <option value="RKB Block">RKB Block (Boys)</option>
+              <option value="ABB Block">ABB Block (Boys)</option>
+              <option value="CKB Block">CKB Block (Boys)</option>
+              <option value="Kalpana Chawla (Girls)">Kalpana Chawla (Girls)</option>
+              <option value="Sarojini Block (Girls)">Sarojini Block (Girls)</option>
+              <option value="Kasturba Block (Girls)">Kasturba Block (Girls)</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Dietary Preference</label>
+            <select
+              value={diet}
+              onChange={e => setDiet(e.target.value)}
+              className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold outline-none"
+            >
+              <option value="High Protein / Eggetarian">High Protein / Eggetarian</option>
+              <option value="Pure Vegetarian">Pure Vegetarian</option>
+              <option value="Non-Vegetarian">Non-Vegetarian</option>
+              <option value="Vegan Clean">Vegan Clean</option>
             </select>
           </div>
 
           {saved && (
-            <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400 text-center">Saved!</p>
+            <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400 text-center">Profile saved to database!</p>
           )}
 
           <div className="flex justify-end space-x-2 pt-1">
@@ -107,7 +132,7 @@ export const ProfilePage = () => {
         </form>
       )}
 
-      {/* Simple Options List */}
+      {/* Options List */}
       <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 divide-y divide-slate-100 dark:divide-slate-800 overflow-hidden shadow-sm">
         
         <button
@@ -149,7 +174,7 @@ export const ProfilePage = () => {
         >
           <div className="flex items-center space-x-3">
             <Gift className="w-4 h-4 text-purple-500" />
-            <span className="text-xs font-bold text-slate-900 dark:text-white">Rewards</span>
+            <span className="text-xs font-bold text-slate-900 dark:text-white">My Rewards</span>
           </div>
           <ChevronRight className="w-4 h-4 text-slate-400" />
         </button>

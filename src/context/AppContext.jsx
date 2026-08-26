@@ -1,133 +1,70 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { DEMO_USERS, INITIAL_MEALS, WEEKLY_MESS_MENU, INITIAL_VOTING_POLL, RESTAURANT_VOUCHERS, INITIAL_NOTIFICATIONS, WARDEN_ANALYTICS, RECENT_COMPLAINTS, MESS_BLOCK_MAP } from '../data/mockData';
+import { db, MESS_BLOCK_MAP } from '../services/db';
 
 const AppContext = createContext();
 
-// Dynamic Real-time System Clock Day Detection
 const getTodayDayName = () => {
   const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const dayIdx = new Date().getDay();
-  return days[dayIdx] || 'Friday';
+  return days[dayIdx] || 'Wednesday';
 };
 
 export const AppProvider = ({ children }) => {
   const todayDay = getTodayDayName();
   const [selectedDay, setSelectedDay] = useState(todayDay);
 
-  // LocalStorage Persisted Weekly Menu with safe fallback
-  const [weeklyMessMenu, setWeeklyMessMenu] = useState(() => {
-    try {
-      const saved = localStorage.getItem('messmate_weekly_menu');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed && typeof parsed === 'object' && parsed.Friday) return parsed;
-      }
-      return WEEKLY_MESS_MENU;
-    } catch (e) {
-      return WEEKLY_MESS_MENU;
-    }
-  });
-
-  // LocalStorage Persisted User Profile
+  // Authentication State
   const [currentUser, setCurrentUser] = useState(() => {
     try {
-      const saved = localStorage.getItem('messmate_user');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed && parsed.name) return parsed;
+      const savedId = localStorage.getItem('messmate_session_uid');
+      if (savedId) {
+        const user = db.getUserById(savedId);
+        if (user) return user;
       }
-      return DEMO_USERS.student;
+      // Default to initial pilot student for immediate preview
+      const defaultStudent = db.getUserById('usr_rahul') || db.getUsers()[0];
+      return defaultStudent;
     } catch (e) {
-      return DEMO_USERS.student;
+      return db.getUsers()[0];
     }
   });
 
-  const [currentRole, setCurrentRole] = useState('landing');
-  const [currentPage, setCurrentPage] = useState('home');
+  const [currentRole, setCurrentRole] = useState(() => {
+    try {
+      const savedId = localStorage.getItem('messmate_session_uid');
+      if (savedId) {
+        const user = db.getUserById(savedId);
+        if (user) return user.role;
+      }
+      return 'student';
+    } catch (e) {
+      return 'student';
+    }
+  });
+
+  const [currentPage, setCurrentPage] = useState('dashboard');
   const [darkMode, setDarkMode] = useState(false);
 
-  // LocalStorage Persisted Ratings
-  const [userRatings, setUserRatings] = useState(() => {
-    try {
-      const saved = localStorage.getItem('messmate_ratings');
-      return saved ? JSON.parse(saved) : { fri_b: 5, wed_d: 5 };
-    } catch (e) {
-      return { fri_b: 5, wed_d: 5 };
-    }
-  });
-
-  const [proteinTarget, setProteinTarget] = useState(120);
-  const [consumedProtein, setConsumedProtein] = useState(88);
-  const [workoutDays, setWorkoutDays] = useState(5);
-  const [fitnessGoal, setFitnessGoal] = useState('Muscle Gain & Hypertrophy');
-
-  const [rewardPoints, setRewardPoints] = useState(() => {
-    try {
-      const saved = localStorage.getItem('messmate_points');
-      return saved ? Number(saved) : 450;
-    } catch (e) {
-      return 450;
-    }
-  });
-
-  const [claimedRewards, setClaimedRewards] = useState([]);
-  
-  // LocalStorage Persisted Voting Poll
-  const [poll, setPoll] = useState(() => {
-    try {
-      const saved = localStorage.getItem('messmate_poll');
-      return saved ? JSON.parse(saved) : INITIAL_VOTING_POLL;
-    } catch (e) {
-      return INITIAL_VOTING_POLL;
-    }
-  });
-
-  // Notifications & Search
-  const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
-  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  // Live Database Sync State
+  const [mealsVersion, setMealsVersion] = useState(0);
+  const [ratingsVersion, setRatingsVersion] = useState(0);
+  const [complaintsVersion, setComplaintsVersion] = useState(0);
+  const [pollsVersion, setPollsVersion] = useState(0);
 
   // Modals
   const [selectedMealModal, setSelectedMealModal] = useState(null);
   const [claimedRewardModal, setClaimedRewardModal] = useState(null);
   const [isAddMealModalOpen, setIsAddMealModalOpen] = useState(false);
   const [editingMeal, setEditingMeal] = useState(null);
-
-  // Warden Governance
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [notifications, setNotifications] = useState([
+    { id: 'n_1', title: 'Welcome to MessMate', message: 'Rate today meals to earn health points.', time: 'Today', type: 'info', read: false }
+  ]);
   const [menuApproved, setMenuApproved] = useState(false);
 
-  // Sync to LocalStorage safely
-  useEffect(() => {
-    try {
-      localStorage.setItem('messmate_weekly_menu', JSON.stringify(weeklyMessMenu));
-    } catch (e) {}
-  }, [weeklyMessMenu]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem('messmate_ratings', JSON.stringify(userRatings));
-    } catch (e) {}
-  }, [userRatings]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem('messmate_points', rewardPoints.toString());
-    } catch (e) {}
-  }, [rewardPoints]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem('messmate_poll', JSON.stringify(poll));
-    } catch (e) {}
-  }, [poll]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem('messmate_user', JSON.stringify(currentUser));
-    } catch (e) {}
-  }, [currentUser]);
-
+  // Theme Sync
   useEffect(() => {
     if (darkMode) {
       document.documentElement.classList.add('dark');
@@ -136,153 +73,235 @@ export const AppProvider = ({ children }) => {
     }
   }, [darkMode]);
 
-  const toggleDarkMode = () => {
-    setDarkMode(prev => !prev);
+  const toggleDarkMode = () => setDarkMode(prev => !prev);
+
+  // Refresh user data from db when updated
+  const refreshUserData = () => {
+    if (currentUser?.id) {
+      const freshUser = db.getUserById(currentUser.id);
+      if (freshUser) setCurrentUser(freshUser);
+    }
   };
 
-  // Profile Update Function
-  const updateUserProfile = (updatedFields) => {
-    setCurrentUser(prev => ({
-      ...prev,
-      ...updatedFields,
-    }));
-    addNotification('Profile Updated', 'Student profile details updated.', 'success');
+  // REAL AUTHENTICATION
+  const login = (email, password) => {
+    const user = db.getUserByEmail(email);
+    if (!user) {
+      throw new Error('No account found with this email.');
+    }
+    if (user.password && user.password !== password) {
+      throw new Error('Incorrect password.');
+    }
+    localStorage.setItem('messmate_session_uid', user.id);
+    setCurrentUser(user);
+    setCurrentRole(user.role);
+    setCurrentPage('dashboard');
+    addNotification('Login Successful', `Welcome back, ${user.name}!`, 'success');
+    return user;
   };
 
-  // Login Function
-  const loginAsRole = (roleKey) => {
-    if (roleKey === 'student') {
-      setCurrentUser(DEMO_USERS.student);
-      setCurrentRole('student');
+  const register = (userData) => {
+    const newUser = db.registerUser(userData);
+    localStorage.setItem('messmate_session_uid', newUser.id);
+    setCurrentUser(newUser);
+    setCurrentRole(newUser.role);
+    setCurrentPage('dashboard');
+    addNotification('Registration Complete', `Welcome to MessMate, ${newUser.name}!`, 'success');
+    return newUser;
+  };
+
+  const loginAsUser = (userId) => {
+    const user = db.getUserById(userId);
+    if (user) {
+      localStorage.setItem('messmate_session_uid', user.id);
+      setCurrentUser(user);
+      setCurrentRole(user.role);
       setCurrentPage('dashboard');
-    } else if (roleKey === 'committee') {
-      setCurrentUser(DEMO_USERS.committee);
-      setCurrentRole('committee');
-      setCurrentPage('dashboard');
-    } else if (roleKey === 'warden') {
-      setCurrentUser(DEMO_USERS.warden);
-      setCurrentRole('warden');
-      setCurrentPage('dashboard');
+      addNotification('Switched Account', `Logged in as ${user.name} (${user.role.toUpperCase()})`, 'info');
     }
   };
 
   const logout = () => {
+    localStorage.removeItem('messmate_session_uid');
     setCurrentUser(null);
     setCurrentRole('landing');
-    setCurrentPage('home');
+    setCurrentPage('login');
   };
 
-  // Meal Rating Function
-  const rateMeal = (mealId, stars) => {
-    setUserRatings(prev => ({ ...prev, [mealId]: stars }));
-    
-    setWeeklyMessMenu(prevMenu => {
-      const updated = { ...prevMenu };
-      Object.keys(updated).forEach(day => {
-        if (Array.isArray(updated[day])) {
-          updated[day] = updated[day].map(m => {
-            if (m.id === mealId) {
-              const newCount = (m.ratingCount || 100) + 1;
-              const newRating = Number((((m.rating || 4.5) * (m.ratingCount || 100) + stars) / newCount).toFixed(1));
-              return { ...m, rating: newRating, ratingCount: newCount };
-            }
-            return m;
-          });
-        }
-      });
-      return updated;
-    });
-
-    setRewardPoints(pts => pts + 20);
-    addNotification('Rating Saved 🌟', `You earned +20 health points for rating this meal.`, 'success');
+  const updateUserProfile = (updates) => {
+    if (!currentUser?.id) return;
+    const updated = db.updateUserProfile(currentUser.id, updates);
+    setCurrentUser(updated);
+    addNotification('Profile Updated', 'Your profile details have been saved.', 'success');
   };
 
-  // Voting Function
-  const voteDish = (optionId) => {
-    setPoll(prevPoll => {
-      if (prevPoll.userVoted) return prevPoll;
-      const updatedOptions = prevPoll.options.map(opt => {
-        if (opt.id === optionId) {
-          return { ...opt, votes: opt.votes + 1 };
-        }
-        return opt;
-      });
-      const newTotal = prevPoll.totalVotes + 1;
-      const recomputed = updatedOptions.map(opt => ({
-        ...opt,
-        percent: Math.round((opt.votes / newTotal) * 100)
-      }));
+  // REAL MEALS QUERY & ACTIONS
+  const allMeals = db.getAllMeals();
+  
+  // Calculate dynamic ratings from real database records
+  const getEnrichedMeals = (day) => {
+    const rawMeals = db.getDayMeals(day);
+    return rawMeals.map(m => {
+      const stats = db.getMealStats(m.id);
       return {
-        ...prevPoll,
-        totalVotes: newTotal,
-        userVoted: optionId,
-        options: recomputed
+        ...m,
+        rating: stats.rating,
+        ratingCount: stats.ratingCount
       };
     });
-
-    setRewardPoints(pts => pts + 30);
-    addNotification('Vote Recorded 🗳️', 'Thank you for voting. Earned +30 points.', 'success');
   };
 
-  // Redeem Restaurant Voucher Function
-  const redeemReward = (voucher) => {
-    if (rewardPoints < voucher.points) {
-      addNotification('Insufficient Points ⚠️', `You need ${voucher.points} points. Keep rating mess meals to earn points.`, 'warning');
+  const dayMeals = getEnrichedMeals(selectedDay);
+  const todayMeals = getEnrichedMeals(todayDay);
+
+  const saveMeal = (mealData) => {
+    db.saveMeal({ ...mealData, day: mealData.day || selectedDay });
+    setMealsVersion(v => v + 1);
+    addNotification('Meal Saved', `${mealData.name} updated in menu.`, 'success');
+  };
+
+  const deleteMeal = (mealId) => {
+    db.deleteMeal(mealId);
+    setMealsVersion(v => v + 1);
+    addNotification('Meal Deleted', 'Dish removed from menu schedule.', 'warning');
+  };
+
+  // REAL RATINGS & FEEDBACK
+  const rateMeal = (mealId, stars, feedback = '', tags = []) => {
+    if (!currentUser) return;
+    const meal = db.getMealById(mealId);
+    db.submitRating({
+      userId: currentUser.id,
+      userName: currentUser.name,
+      mealId,
+      mealName: meal?.name || 'Mess Meal',
+      rating: stars,
+      feedback,
+      tags
+    });
+    setRatingsVersion(v => v + 1);
+    refreshUserData();
+    addNotification('Rating Saved 🌟', `+20 Health Points awarded to ${currentUser.name}.`, 'success');
+  };
+
+  const getUserRating = (mealId) => {
+    if (!currentUser) return null;
+    return db.getUserRatingForMeal(currentUser.id, mealId);
+  };
+
+  // REAL COMPLAINTS
+  const allComplaints = db.getAllComplaints();
+  const userComplaints = currentUser ? db.getUserComplaints(currentUser.id) : [];
+
+  const createComplaint = (category, description) => {
+    if (!currentUser) return;
+    const newComp = db.createComplaint({
+      userId: currentUser.id,
+      userName: currentUser.name,
+      block: currentUser.hostelBlock || 'DNB Block',
+      category,
+      description
+    });
+    setComplaintsVersion(v => v + 1);
+    addNotification('Complaint Logged', 'Your issue was submitted with status PENDING.', 'info');
+    return newComp;
+  };
+
+  const updateComplaintStatus = (complaintId, newStatus) => {
+    db.updateComplaintStatus(complaintId, newStatus);
+    setComplaintsVersion(v => v + 1);
+    addNotification('Status Updated', `Complaint marked as ${newStatus}.`, 'success');
+  };
+
+  // REAL VOTING & POLLS
+  const currentPoll = db.getPoll();
+  const userVotedOptionId = currentUser ? db.hasUserVoted(currentPoll.id, currentUser.id) : null;
+
+  const voteDish = (optionId) => {
+    if (!currentUser) return;
+    try {
+      db.castVote({
+        pollId: currentPoll.id,
+        userId: currentUser.id,
+        userName: currentUser.name,
+        optionId
+      });
+      setPollsVersion(v => v + 1);
+      refreshUserData();
+      addNotification('Vote Recorded 🗳️', `+30 Health Points earned by ${currentUser.name}.`, 'success');
+    } catch (err) {
+      addNotification('Vote Failed', err.message, 'warning');
+    }
+  };
+
+  const createPoll = (pollData) => {
+    db.createPoll(pollData);
+    setPollsVersion(v => v + 1);
+    addNotification('Poll Created', 'New dish replacement poll is now live.', 'success');
+  };
+
+  // REAL PROTEIN & MUSCLE PASS
+  const consumedProtein = currentUser ? db.getTodayUserProtein(currentUser.id) : 0;
+  const proteinTarget = currentUser?.proteinTarget || 120;
+
+  const logProtein = (dishName, proteinGrams) => {
+    if (!currentUser) return;
+    db.logProtein({
+      userId: currentUser.id,
+      dishName,
+      protein: proteinGrams
+    });
+    refreshUserData();
+    setRatingsVersion(v => v + 1); // trigger state update
+    addNotification('Protein Logged 💪', `+${proteinGrams}g protein added to today's log.`, 'success');
+  };
+
+  const setProteinTarget = (newTarget) => {
+    if (!currentUser) return;
+    db.updateUserProfile(currentUser.id, { proteinTarget: Number(newTarget) });
+    refreshUserData();
+  };
+
+  // REWARDS
+  const rewardsCatalog = db.getRewardsCatalog();
+  const userRedemptions = currentUser ? db.getUserRedemptions(currentUser.id) : [];
+
+  const redeemReward = (rewardItem) => {
+    if (!currentUser) return false;
+    try {
+      const claimed = db.redeemReward(currentUser.id, currentUser.name, rewardItem);
+      refreshUserData();
+      setClaimedRewardModal(claimed);
+      addNotification('Reward Claimed 🎉', `Claim code: ${claimed.claimCode}`, 'success');
+      return true;
+    } catch (e) {
+      addNotification('Cannot Redeem ⚠️', e.message, 'warning');
       return false;
     }
-    setRewardPoints(pts => pts - voucher.points);
-    setClaimedRewards(prev => [voucher, ...prev]);
-    setClaimedRewardModal(voucher);
-    addNotification('Voucher Claimed 🎉', `Redeemed ${voucher.title} for ${voucher.restaurantName}.`, 'success');
-    return true;
   };
 
-  // Committee Actions: Add / Edit / Delete Menu Item
-  const saveMeal = (mealData, targetDay = selectedDay) => {
-    setWeeklyMessMenu(prevMenu => {
-      const dayKey = targetDay || todayDay;
-      const dayMeals = Array.isArray(prevMenu[dayKey]) ? prevMenu[dayKey] : [];
-      let updatedDayMeals;
+  // WARDEN METRICS (100% Calculated from Real Database Data)
+  const overallMess = db.getOverallMessRating();
+  const openComplaintsCount = allComplaints.filter(c => c.status !== 'RESOLVED').length;
+  const resolvedComplaintsCount = allComplaints.filter(c => c.status === 'RESOLVED').length;
+  const totalVotesCount = currentPoll.totalVotes;
+  const allRatings = db.getAllRatings();
 
-      if (mealData.id) {
-        updatedDayMeals = dayMeals.map(m => m.id === mealData.id ? mealData : m);
-      } else {
-        const newMeal = {
-          ...mealData,
-          id: 'm_' + Date.now(),
-          rating: 5.0,
-          ratingCount: 1,
-        };
-        updatedDayMeals = [newMeal, ...dayMeals];
-      }
-
-      return {
-        ...prevMenu,
-        [dayKey]: updatedDayMeals,
-      };
-    });
-
-    addNotification('Menu Saved 📝', `${mealData.name} updated for ${targetDay}.`, 'success');
+  const wardenMetrics = {
+    messQualityScore: overallMess.score,
+    totalRatings: overallMess.count,
+    openComplaints: openComplaintsCount,
+    resolvedComplaints: resolvedComplaintsCount,
+    studentSatisfaction: Math.round((allRatings.filter(r => r.rating >= 4).length / Math.max(1, allRatings.length)) * 100),
+    mealsReviewed: allRatings.length,
+    activeVotes: totalVotesCount
   };
 
-  const deleteMeal = (mealId, targetDay = selectedDay) => {
-    setWeeklyMessMenu(prevMenu => {
-      const dayKey = targetDay || todayDay;
-      return {
-        ...prevMenu,
-        [dayKey]: (prevMenu[dayKey] || []).filter(m => m.id !== mealId),
-      };
-    });
-    addNotification('Meal Removed 🗑️', `Item deleted from ${targetDay} menu.`, 'warning');
-  };
-
-  // Warden Approval
   const approveWeeklyMenu = () => {
     setMenuApproved(true);
-    addNotification('Menu Approved ✅', 'Chief Warden Pathak Sir approved the weekly menu.', 'success');
+    addNotification('Menu Approved ✅', 'Weekly mess menu authorized by Chief Warden.', 'success');
   };
 
-  // Notifications Management
   const addNotification = (title, message, type = 'info') => {
     const newNotif = {
       id: 'n_' + Date.now(),
@@ -290,65 +309,96 @@ export const AppProvider = ({ children }) => {
       message,
       time: 'Just now',
       type,
-      read: false,
+      read: false
     };
     setNotifications(prev => [newNotif, ...prev]);
   };
 
+  const unreadCount = notifications.filter(n => !n.read).length;
   const markAllNotificationsRead = () => {
     setNotifications(notifications.map(n => ({ ...n, read: true })));
   };
 
-  const unreadCount = notifications.filter(n => !n.read).length;
-
   const userBlock = currentUser?.hostelBlock || 'DNB Block';
-  const currentMessInfo = MESS_BLOCK_MAP[userBlock] || MESS_BLOCK_MAP['DNB Block'];
-
-  // Current active day's meals - Guaranteed non-empty array fallback
-  const rawMeals = weeklyMessMenu[selectedDay] || weeklyMessMenu[todayDay] || WEEKLY_MESS_MENU[todayDay] || WEEKLY_MESS_MENU.Friday;
-  const currentDayMeals = Array.isArray(rawMeals) && rawMeals.length > 0 ? rawMeals : WEEKLY_MESS_MENU.Friday;
+  const currentMessInfo = {
+    messName: 'Naina Caters - ABES Hostel Mess',
+    location: 'ABES EC & ABESBS Campus, Ghaziabad',
+    block: userBlock,
+    chef: 'Head Chef Naina Caters',
+    hygieneScore: '98.8% (Grade A+)',
+    timings: {
+      Breakfast: '07:30 AM - 09:30 AM',
+      Lunch: '12:30 PM - 02:30 PM',
+      Snacks: '05:00 PM - 06:00 PM',
+      Dinner: '07:30 PM - 09:30 PM',
+    }
+  };
 
   return (
     <AppContext.Provider
       value={{
+        // Auth & User
         currentUser,
-        updateUserProfile,
         currentRole,
         currentPage,
         setCurrentPage,
-        loginAsRole,
+        login,
+        register,
+        loginAsUser,
         logout,
+        updateUserProfile,
+        usersList: db.getUsers(),
+
+        // Theme
         darkMode,
         toggleDarkMode,
+
+        // Day & Meals
         todayDay,
         selectedDay,
         setSelectedDay,
-        weeklyMessMenu,
-        meals: currentDayMeals,
-        userRatings,
+        meals: dayMeals,
+        todayMeals,
+        allMeals,
+        saveMeal,
+        deleteMeal,
+        getMealStats: db.getMealStats,
+
+        // Ratings & Feedback
         rateMeal,
+        getUserRating,
+        allRatings,
+
+        // Gym Mode & Muscle Pass
         proteinTarget,
         setProteinTarget,
         consumedProtein,
-        setConsumedProtein,
-        workoutDays,
-        setWorkoutDays,
-        fitnessGoal,
-        setFitnessGoal,
-        rewardPoints,
-        claimedRewards,
+        logProtein,
+
+        // Rewards
+        rewardPoints: currentUser?.rewardPoints || 0,
+        rewardsCatalog,
+        userRedemptions,
         redeemReward,
-        poll,
+
+        // Voting & Polls
+        poll: currentPoll,
+        userVotedOptionId,
         voteDish,
-        notifications,
-        isNotificationOpen,
-        setIsNotificationOpen,
-        markAllNotificationsRead,
-        unreadCount,
-        isSearchOpen,
-        setIsSearchOpen,
-        searchQuery,
-        setSearchQuery,
+        createPoll,
+
+        // Complaints
+        allComplaints,
+        userComplaints,
+        createComplaint,
+        updateComplaintStatus,
+
+        // Warden Governance
+        wardenMetrics,
+        menuApproved,
+        approveWeeklyMenu,
+
+        // Modals & UI
         selectedMealModal,
         setSelectedMealModal,
         claimedRewardModal,
@@ -357,15 +407,16 @@ export const AppProvider = ({ children }) => {
         setIsAddMealModalOpen,
         editingMeal,
         setEditingMeal,
-        saveMeal,
-        deleteMeal,
-        menuApproved,
-        approveWeeklyMenu,
-        wardenAnalytics: WARDEN_ANALYTICS,
-        recentComplaints: RECENT_COMPLAINTS,
-        restaurantVouchers: RESTAURANT_VOUCHERS,
+        isNotificationOpen,
+        setIsNotificationOpen,
+        notifications,
+        unreadCount,
+        markAllNotificationsRead,
+        isSearchOpen,
+        setIsSearchOpen,
+        searchQuery,
+        setSearchQuery,
         currentMessInfo,
-        MESS_BLOCK_MAP,
       }}
     >
       {children}

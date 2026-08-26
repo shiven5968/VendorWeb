@@ -8,9 +8,8 @@ export const MusclePassPage = () => {
     proteinTarget, 
     setProteinTarget, 
     consumedProtein, 
-    setConsumedProtein,
-    meals,
-    setSelectedMealModal
+    logProtein,
+    todayMeals
   } = useApp();
 
   const [targetInput, setTargetInput] = useState(proteinTarget);
@@ -20,17 +19,10 @@ export const MusclePassPage = () => {
   const remainingProtein = Math.max(0, proteinTarget - consumedProtein);
   const proteinPercent = Math.min(100, Math.round((consumedProtein / proteinTarget) * 100));
 
-  // High protein items recommended today from mess menu
-  const recommendedToday = [
-    { name: 'Paneer Butter Masala', protein: 18, category: 'Dinner' },
-    { name: 'Arhar Dal', protein: 8, category: 'Lunch' },
-    { name: 'Fresh Milk / Curd', protein: 7, category: 'Breakfast' },
-    { name: 'Sprouts / Soya', protein: 15, category: 'Snacks' }
-  ];
-
-  const logProtein = (grams) => {
-    setConsumedProtein(prev => prev + grams);
-  };
+  // Dynamic Rule-based recommendations strictly from today's active mess meals
+  const recommendedToday = (todayMeals || [])
+    .filter(m => Number(m.protein) >= 7)
+    .sort((a, b) => Number(b.protein) - Number(a.protein));
 
   const handleSaveTarget = (e) => {
     e.preventDefault();
@@ -51,7 +43,7 @@ export const MusclePassPage = () => {
           </div>
           <div>
             <h1 className="text-2xl font-black text-slate-900 dark:text-white">Muscle Pass</h1>
-            <p className="text-xs text-slate-500 font-semibold">{currentUser?.name || 'Parth Sharma'}</p>
+            <p className="text-xs text-slate-500 font-semibold">{currentUser?.name || 'Student'}</p>
           </div>
         </div>
 
@@ -87,7 +79,7 @@ export const MusclePassPage = () => {
       {savedSuccess && (
         <div className="p-3 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-bold text-center flex items-center justify-center space-x-1">
           <Check className="w-4 h-4" />
-          <span>Protein goal updated!</span>
+          <span>Protein goal updated in database!</span>
         </div>
       )}
 
@@ -112,7 +104,7 @@ export const MusclePassPage = () => {
       {/* Progress Bar */}
       <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 space-y-2">
         <div className="flex justify-between text-xs font-bold">
-          <span className="text-slate-500">Progress</span>
+          <span className="text-slate-500">Daily Goal Progress</span>
           <span className="text-emerald-600 dark:text-emerald-400">{proteinPercent}%</span>
         </div>
         <div className="w-full h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
@@ -126,35 +118,41 @@ export const MusclePassPage = () => {
       {/* Recommended Today Section */}
       <div className="space-y-3">
         <h2 className="text-base font-black text-slate-900 dark:text-white uppercase tracking-tight">
-          Recommended Today
+          Recommended Today (From Mess Menu)
         </h2>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {recommendedToday.map((item, index) => (
-            <div
-              key={index}
-              className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between shadow-sm"
-            >
-              <div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase block">{item.category}</span>
-                <h3 className="text-sm font-black text-slate-900 dark:text-white">{item.name}</h3>
-              </div>
+        {recommendedToday.length === 0 ? (
+          <div className="p-6 text-center text-xs font-bold text-slate-400 bg-white dark:bg-slate-900 rounded-2xl border">
+            No high-protein recommendations found in today's menu.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {recommendedToday.map((item, index) => (
+              <div
+                key={index}
+                className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between shadow-sm"
+              >
+                <div>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block">{item.category}</span>
+                  <h3 className="text-sm font-black text-slate-900 dark:text-white">{item.name}</h3>
+                </div>
 
-              <div className="flex items-center space-x-2">
-                <span className="px-2.5 py-1 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 text-xs font-black">
-                  +{item.protein}g
-                </span>
-                <button
-                  onClick={() => logProtein(item.protein)}
-                  className="p-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white transition-colors"
-                  title="Log item"
-                >
-                  <Plus className="w-4 h-4" />
-                </button>
+                <div className="flex items-center space-x-2">
+                  <span className="px-2.5 py-1 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 text-xs font-black">
+                    +{item.protein}g
+                  </span>
+                  <button
+                    onClick={() => logProtein(item.name, item.protein)}
+                    className="p-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white transition-colors"
+                    title="Log to today's protein"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
     </div>
