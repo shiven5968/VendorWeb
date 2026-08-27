@@ -319,7 +319,12 @@ export const AppProvider = ({ children }) => {
 
   // 3. RATINGS & FEEDBACK
   const rateMeal = async (mealId, stars, feedback = '', tags = []) => {
-    if (!currentUser) return;
+    if (!currentUser) {
+      const err = new Error('You must be logged in to submit a rating.');
+      console.warn('[MessMates Auth Warning]:', err.message);
+      addNotification('Authentication Required', err.message, 'warning');
+      throw err;
+    }
     const meal = (allMeals || []).find(m => m.id === mealId);
     try {
       const ratingEntry = await db.submitRating({
@@ -344,7 +349,8 @@ export const AppProvider = ({ children }) => {
       addNotification('Rating Saved 🌟', `+20 Health Points awarded to ${currentUser.name}.`, 'success');
       return ratingEntry;
     } catch (e) {
-      addNotification('Rating Failed', e.message || 'Could not save rating.', 'warning');
+      console.error('[Firebase Error in rateMeal]:', e);
+      addNotification('Rating Failed', e.message || 'Could not save rating to cloud.', 'warning');
       throw e;
     }
   };
@@ -360,7 +366,12 @@ export const AppProvider = ({ children }) => {
     : [];
 
   const createComplaint = async (category, description) => {
-    if (!currentUser) return;
+    if (!currentUser) {
+      const err = new Error('You must be logged in to submit a complaint.');
+      console.warn('[MessMates Auth Warning]:', err.message);
+      addNotification('Authentication Required', err.message, 'warning');
+      throw err;
+    }
     try {
       const newComp = await db.createComplaint({
         userId: currentUser.uid || currentUser.id,
@@ -377,7 +388,8 @@ export const AppProvider = ({ children }) => {
       addNotification('Complaint Logged', 'Your issue was submitted with status PENDING.', 'info');
       return newComp;
     } catch (e) {
-      addNotification('Submission Failed', e.message || 'Could not log complaint.', 'warning');
+      console.error('[Firebase Error in createComplaint]:', e);
+      addNotification('Submission Failed', e.message || 'Could not log complaint to cloud.', 'warning');
       throw e;
     }
   };
