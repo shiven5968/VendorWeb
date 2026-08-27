@@ -25,15 +25,24 @@ export const ActivityPage = () => {
 
   const myRatings = allRatings.filter(r => r.userId === (currentUser?.uid || currentUser?.id));
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!issueText.trim()) return;
+  const [submitting, setSubmitting] = useState(false);
 
-    createComplaint(category, issueText);
-    setIssueText('');
-    setShowForm(false);
-    setSubmittedNotice(true);
-    setTimeout(() => setSubmittedNotice(false), 2500);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!issueText.trim() || submitting) return;
+
+    try {
+      setSubmitting(true);
+      await createComplaint(category, issueText);
+      setIssueText('');
+      setShowForm(false);
+      setSubmittedNotice(true);
+      setTimeout(() => setSubmittedNotice(false), 2500);
+    } catch (err) {
+      console.error('Error creating complaint:', err);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const getStatusBadge = (status) => {

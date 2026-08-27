@@ -10,7 +10,7 @@ import {
   seedFirestoreData
 } from '../services/db';
 import { db as firestoreDb, isFirebaseConfigured } from '../services/firebase';
-import { collection, onSnapshot } from 'firebase/firestore';
+import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { seedPilotAccounts } from '../services/seedUsers';
 import { useAuth } from './AuthContext';
 
@@ -107,7 +107,7 @@ export const AppProvider = ({ children }) => {
       };
       initializeFirebaseData();
 
-      // 2. Attach listeners with graceful error handling
+      // 2. Global listeners for public/campus collections
       const unsubMeals = onSnapshot(
         collection(firestoreDb, 'meals'),
         (snapshot) => {
@@ -126,16 +126,6 @@ export const AppProvider = ({ children }) => {
           setAllRatings(list);
         },
         (err) => console.warn('Firestore ratings listener:', err.message)
-      );
-
-      const unsubComplaints = onSnapshot(
-        collection(firestoreDb, 'complaints'),
-        (snapshot) => {
-          const list = [];
-          snapshot.forEach(doc => list.push(doc.data()));
-          setAllComplaints(list);
-        },
-        (err) => console.warn('Firestore complaints listener:', err.message)
       );
 
       const unsubPolls = onSnapshot(
@@ -159,48 +149,89 @@ export const AppProvider = ({ children }) => {
         (err) => console.warn('Firestore votes listener:', err.message)
       );
 
-      const unsubProtein = onSnapshot(
-        collection(firestoreDb, 'protein_logs'),
-        (snapshot) => {
-          const list = [];
-          snapshot.forEach(doc => list.push(doc.data()));
-          setProteinLogs(list);
-        },
-        (err) => console.warn('Firestore protein listener:', err.message)
-      );
+      return () => {
+        unsubMeals();
+        unsubRatings();
+        unsubPolls();
+        unsubVotes();
+      };
+    }
+  }, []);
 
-      const unsubRedemptions = onSnapshot(
-        collection(firestoreDb, 'redemptions'),
-        (snapshot) => {
-          const list = [];
-          snapshot.forEach(doc => list.push(doc.data()));
-          setRedemptions(list);
-        },
-        (err) => console.warn('Firestore redemptions listener:', err.message)
-      );
+  // 3. User-Scoped & Role-Aware Live Firestore Listeners (Complaints, Redemptions, Protein, Users)
+  useEffect(() => {
+    if (!isFirebaseConfigured || !authUser) {
+      return;
+    }
 
-      const unsubUsers = onSnapshot(
+    const currentUid = authUser.uid;
+    const isStaffUser = currentRole === 'warden' || currentRole === 'mess_committee' || currentRole === 'committee' || (authUser.email || '').includes('warden') || (authUser.email || '').includes('committee');
+
+    // A. COMPLAINTS: Staff listens to full collection, Student listens to query matching auth uid
+    const complaintsTarget = isStaffUser
+      ? collection(firestoreDb, 'complaints')
+      : query(collection(firestoreDb, 'complaints'), where('userId', '==', currentUid));
+
+    const unsubComplaints = onSnapshot(
+      complaintsTarget,
+      (snapshot) => {
+        const list = [];
+        snapshot.forEach(doc => list.push(doc.data()));
+        // Sort newest first
+        list.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
+        setAllComplaints(list);
+      },
+      (err) => console.warn('Firestore complaints listener:', err.message)
+    );
+
+    // B. PROTEIN LOGS: Scoped to current user
+    const proteinTarget = query(collection(firestoreDb, 'protein_logs'), where('userId', '==', currentUid));
+    const unsubProtein = onSnapshot(
+      proteinTarget,
+      (snapshot) => {
+        const list = [];
+        snapshot.forEach(doc => list.push(doc.data()));
+        setProteinLogs(list);
+      },
+      (err) => console.warn('Firestore protein listener:', err.message)
+    );
+
+    // C. REDEMPTIONS: Staff gets all, Student gets own
+    const redemptionsTarget = isStaffUser
+      ? collection(firestoreDb, 'redemptions')
+      : query(collection(firestoreDb, 'redemptions'), where('userId', '==', currentUid));
+
+    const unsubRedemptions = onSnapshot(
+      redemptionsTarget,
+      (snapshot) => {
+        const list = [];
+        snapshot.forEach(doc => list.push(doc.data()));
+        setRedemptions(list);
+      },
+      (err) => console.warn('Firestore redemptions listener:', err.message)
+    );
+
+    // D. USERS: Staff directory
+    let unsubUsers = () => {};
+    if (isStaffUser) {
+      unsubUsers = onSnapshot(
         collection(firestoreDb, 'users'),
         (snapshot) => {
           const list = [];
           snapshot.forEach(doc => list.push(doc.data()));
-          setUsersList(list);
+          if (list.length > 0) setUsersList(list);
         },
         (err) => console.warn('Firestore users listener:', err.message)
       );
-
-      return () => {
-        unsubMeals();
-        unsubRatings();
-        unsubComplaints();
-        unsubPolls();
-        unsubVotes();
-        unsubProtein();
-        unsubRedemptions();
-        unsubUsers();
-      };
     }
-  }, []);
+
+    return () => {
+      unsubComplaints();
+      unsubProtein();
+      unsubRedemptions();
+      unsubUsers();
+    };
+  }, [authUser?.uid, currentRole]);
 
   const toggleDarkMode = () => setDarkMode(prev => !prev);
 
@@ -320,28 +351,38 @@ export const AppProvider = ({ children }) => {
 
   const createComplaint = async (category, description) => {
     if (!currentUser) return;
-    const newComp = await db.createComplaint({
-      userId: currentUser.uid || currentUser.id,
-      userName: currentUser.name,
-      block: currentUser.hostelBlock || 'DNB Block',
-      category,
-      description
-    });
-    if (!isFirebaseConfigured) {
-      setAllComplaints(db.getAllComplaints());
+    try {
+      const newComp = await db.createComplaint({
+        userId: currentUser.uid || currentUser.id,
+        userName: currentUser.name,
+        block: currentUser.hostelBlock || 'DNB Block',
+        category,
+        description
+      });
+      setAllComplaints(prev => {
+        const exists = prev.some(c => c.id === newComp.id);
+        return exists ? prev : [newComp, ...prev];
+      });
+      setComplaintsVersion(v => v + 1);
+      addNotification('Complaint Logged', 'Your issue was submitted with status PENDING.', 'info');
+      return newComp;
+    } catch (e) {
+      addNotification('Submission Failed', e.message || 'Could not log complaint.', 'warning');
+      throw e;
     }
-    setComplaintsVersion(v => v + 1);
-    addNotification('Complaint Logged', 'Your issue was submitted with status PENDING.', 'info');
-    return newComp;
   };
 
   const updateComplaintStatus = async (complaintId, newStatus) => {
-    const updated = await db.updateComplaintStatus(complaintId, newStatus);
-    if (!isFirebaseConfigured) {
-      setAllComplaints(updated);
+    try {
+      const updated = await db.updateComplaintStatus(complaintId, newStatus);
+      setAllComplaints(prev => prev.map(c => c.id === complaintId ? { ...c, status: newStatus, ...(newStatus === 'RESOLVED' ? { resolvedAt: new Date().toISOString() } : {}) } : c));
+      setComplaintsVersion(v => v + 1);
+      addNotification('Status Updated', `Complaint marked as ${newStatus}.`, 'success');
+      return updated;
+    } catch (e) {
+      addNotification('Update Failed', e.message || 'Could not update status.', 'warning');
+      throw e;
     }
-    setComplaintsVersion(v => v + 1);
-    addNotification('Status Updated', `Complaint marked as ${newStatus}.`, 'success');
   };
 
   // 5. VOTING & POLLS

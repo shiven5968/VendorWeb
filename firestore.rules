@@ -65,11 +65,11 @@ service cloud.firestore {
       allow read: if isOwner(userId) || isStaff();
 
       // Initial registration: Users can create their own profile with role = 'student'
-      // Warden can seed or create accounts with any valid role
+      // Warden and verified committee can create/seed accounts with authorized roles
       allow create: if isAuthenticated() 
                     && request.auth.uid == userId 
                     && request.resource.data.uid == userId 
-                    && (request.resource.data.role == 'student' || isWarden());
+                    && (request.resource.data.role == 'student' || isWarden() || (isCommittee() && request.resource.data.role in ['mess_committee', 'committee']));
 
       // Profile updates:
       // - Students can update their own personal info, but are STRICTLY FORBIDDEN from modifying their 'role'
