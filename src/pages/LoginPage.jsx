@@ -16,9 +16,17 @@ import {
   ArrowLeft, 
   RotateCw,
   LogIn,
-  UserPlus
+  UserPlus,
+  Edit3
 } from 'lucide-react';
 import { isValidAbesEmail } from '../services/otp';
+
+// Explicit Step State Constants
+const REG_STEPS = {
+  FORM: 'REGISTRATION_FORM',
+  OTP: 'OTP_VERIFICATION',
+  CREATED: 'ACCOUNT_CREATED'
+};
 
 export const LoginPage = ({ initialRole = 'student', onBackToRoles }) => {
   const { 
@@ -43,7 +51,7 @@ export const LoginPage = ({ initialRole = 'student', onBackToRoles }) => {
     password: ''
   });
 
-  // Student Registration Form State
+  // Student In-Memory Registration Form State
   const [regData, setRegData] = useState({
     name: '',
     admissionNumber: '',
@@ -54,8 +62,8 @@ export const LoginPage = ({ initialRole = 'student', onBackToRoles }) => {
     confirmPassword: ''
   });
 
-  // Registration Multi-Step: 'form' | 'otp' | 'success'
-  const [regStep, setRegStep] = useState('form');
+  // Registration Multi-Step: REGISTRATION_FORM -> OTP_VERIFICATION -> ACCOUNT_CREATED
+  const [regStep, setRegStep] = useState(REG_STEPS.FORM);
   const [enteredOtp, setEnteredOtp] = useState('');
   const [sessionToken, setSessionToken] = useState('');
   const [resendCooldown, setResendCooldown] = useState(0);
@@ -73,7 +81,7 @@ export const LoginPage = ({ initialRole = 'student', onBackToRoles }) => {
     'Kasturba Block (Girls)'
   ];
 
-  // Cooldown countdown timer for OTP resend
+  // Cooldown countdown timer for OTP resend (30s)
   useEffect(() => {
     let timer;
     if (resendCooldown > 0) {
@@ -118,7 +126,7 @@ export const LoginPage = ({ initialRole = 'student', onBackToRoles }) => {
     }
   };
 
-  // 2. REGISTRATION STEP 1: SEND OTP
+  // 2. STEP 1: SUBMIT REGISTRATION FORM & SEND OTP (POST /api/send-otp)
   const handleSendOTP = async (e) => {
     e.preventDefault();
     setErrorMessage('');
@@ -155,23 +163,30 @@ export const LoginPage = ({ initialRole = 'student', onBackToRoles }) => {
 
     setIsSubmitting(true);
     try {
+      // Must call server API POST /api/send-otp
       const res = await sendOTP({
         email: cleanEmail,
         admissionNumber: cleanAdmission,
         name: cleanName
       });
-      setSessionToken(res.sessionToken);
-      setRegStep('otp');
+
+      if (res && res.sessionToken) {
+        setSessionToken(res.sessionToken);
+      }
+
+      // Move to STEP 2 ONLY AFTER API confirms OTP was dispatched
+      setRegStep(REG_STEPS.OTP);
       setResendCooldown(30);
       setSuccessMessage(`We sent a 6-digit verification code to ${cleanEmail}`);
     } catch (err) {
-      setErrorMessage(err.message || 'Failed to dispatch verification code.');
+      // If send OTP fails: Stay on registration form and display error
+      setErrorMessage(err.message || 'Unable to send verification code. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // 3. REGISTRATION STEP 2: RESEND OTP
+  // 3. STEP 2: RESEND CODE HANDLER
   const handleResendOTP = async () => {
     if (resendCooldown > 0 || isSubmitting) return;
     setErrorMessage('');
@@ -183,17 +198,19 @@ export const LoginPage = ({ initialRole = 'student', onBackToRoles }) => {
         admissionNumber: regData.admissionNumber.trim(),
         name: regData.name.trim()
       });
-      setSessionToken(res.sessionToken);
+      if (res && res.sessionToken) {
+        setSessionToken(res.sessionToken);
+      }
       setResendCooldown(30);
       setSuccessMessage('Fresh verification code sent to your college email.');
     } catch (err) {
-      setErrorMessage(err.message || 'Could not resend code.');
+      setErrorMessage(err.message || 'Unable to send verification code. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // 4. REGISTRATION STEP 3: VERIFY OTP & CREATE ACCOUNT
+  // 4. STEP 2 -> STEP 3: VERIFY OTP & CREATE ACCOUNT (POST /api/verify-otp)
   const handleVerifyAndRegister = async (e) => {
     e.preventDefault();
     setErrorMessage('');
@@ -207,14 +224,18 @@ export const LoginPage = ({ initialRole = 'student', onBackToRoles }) => {
 
     setIsSubmitting(true);
     try {
-      // Step A: Verify OTP
+      // Step A: Call POST /api/verify-otp
       await verifyOTP({
         email: regData.email.trim().toLowerCase(),
         otp: cleanOtp,
         sessionToken
       });
 
-      // Step B: Only after OTP verification, create & activate the account
+      // Step B: ONLY if server returns successful verification:
+      // -> create Firebase Auth account
+      // -> create Firestore /users/{uid}
+      // -> create /admission_map/{admissionNumber}
+      // -> set emailVerified = true
       await register({
         name: regData.name.trim(),
         admissionNumber: regData.admissionNumber.trim(),
@@ -225,10 +246,19 @@ export const LoginPage = ({ initialRole = 'student', onBackToRoles }) => {
         isOtpVerified: true
       });
 
-      setRegStep('success');
-      setSuccessMessage('Account activated successfully!');
+      // Move to STEP 3: ACCOUNT_CREATED
+      setRegStep(REG_STEPS.CREATED);
+      setSuccessMessage('Account created successfully!');
     } catch (err) {
-      setErrorMessage(err.message || 'Verification failed. Please try again.');
+      const msg = err.message || '';
+      if (msg.toLowerCase().includes('expired')) {
+        setErrorMessage('Code expired. Request a new code.');
+      } else if (msg.toLowerCase().includes('too many') || msg.toLowerCase().includes('exceeded')) {
+        setErrorMessage('Too many invalid attempts. Please request a new verification code.');
+        setEnteredOtp('');
+      } else {
+        setErrorMessage(msg || 'Invalid verification code. Please try again.');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -315,7 +345,7 @@ export const LoginPage = ({ initialRole = 'student', onBackToRoles }) => {
         </div>
 
         {/* Student Sign In / Register Tab Switcher */}
-        {activeRole === 'student' && regStep !== 'success' && (
+        {activeRole === 'student' && regStep !== REG_STEPS.CREATED && (
           <div className="flex items-center space-x-2 p-1 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
             <button
               type="button"
@@ -323,7 +353,7 @@ export const LoginPage = ({ initialRole = 'student', onBackToRoles }) => {
                 setActiveTab('login'); 
                 setErrorMessage(''); 
                 setSuccessMessage(''); 
-                setRegStep('form'); 
+                setRegStep(REG_STEPS.FORM); 
               }}
               className={`flex-1 py-2 rounded-xl text-xs font-black transition-all flex items-center justify-center space-x-1.5 ${
                 activeTab === 'login'
@@ -341,7 +371,7 @@ export const LoginPage = ({ initialRole = 'student', onBackToRoles }) => {
                 setActiveTab('register'); 
                 setErrorMessage(''); 
                 setSuccessMessage(''); 
-                setRegStep('form'); 
+                setRegStep(REG_STEPS.FORM); 
               }}
               className={`flex-1 py-2 rounded-xl text-xs font-black transition-all flex items-center justify-center space-x-1.5 ${
                 activeTab === 'register'
@@ -442,13 +472,15 @@ export const LoginPage = ({ initialRole = 'student', onBackToRoles }) => {
         )}
 
         {/* ========================================================================= */}
-        {/* TAB 2: STUDENT REGISTRATION FLOW WITH OTP VERIFICATION */}
+        {/* TAB 2: STUDENT REGISTRATION FLOW WITH EXPLICIT STEP GATES */}
         {/* ========================================================================= */}
         {activeTab === 'register' && activeRole === 'student' && (
           <div className="space-y-4">
             
-            {/* STEP 1: REGISTRATION FORM */}
-            {regStep === 'form' && (
+            {/* ------------------------------------------------------------------- */}
+            {/* STEP 1: REGISTRATION_FORM */}
+            {/* ------------------------------------------------------------------- */}
+            {regStep === REG_STEPS.FORM && (
               <form onSubmit={handleSendOTP} className="space-y-3">
                 <div>
                   <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Full Name *</label>
@@ -542,7 +574,7 @@ export const LoginPage = ({ initialRole = 'student', onBackToRoles }) => {
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Confirm *</label>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Confirm Password *</label>
                     <input
                       type="password"
                       required
@@ -558,35 +590,37 @@ export const LoginPage = ({ initialRole = 'student', onBackToRoles }) => {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs shadow-md transition-colors flex items-center justify-center space-x-1.5 mt-2 disabled:opacity-50"
+                  className="w-full py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs shadow-md transition-colors flex items-center justify-center space-x-1.5 mt-2 disabled:opacity-50 uppercase tracking-wider"
                 >
                   {isSubmitting ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Sending Verification Code...</span>
+                      <span>Sending OTP...</span>
                     </>
                   ) : (
                     <>
                       <KeyRound className="w-4 h-4" />
-                      <span>Send OTP to College Email</span>
+                      <span>SEND OTP</span>
                     </>
                   )}
                 </button>
               </form>
             )}
 
-            {/* STEP 2: 6-DIGIT OTP VERIFICATION */}
-            {regStep === 'otp' && (
+            {/* ------------------------------------------------------------------- */}
+            {/* STEP 2: OTP_VERIFICATION */}
+            {/* ------------------------------------------------------------------- */}
+            {regStep === REG_STEPS.OTP && (
               <form onSubmit={handleVerifyAndRegister} className="space-y-4">
                 <div className="text-center p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700 space-y-1">
-                  <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block">
-                    We sent a verification code to:
+                  <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block">
+                    We sent a 6-digit verification code to your college email.
                   </span>
-                  <span className="text-xs font-black text-slate-900 dark:text-white">
+                  <span className="text-xs font-black text-emerald-600 dark:text-emerald-400 block font-mono">
                     {regData.email}
                   </span>
                   <p className="text-[10px] text-slate-400 pt-1">
-                    Enter the 6-digit code to verify your college identity and activate your account.
+                    Valid for 10 minutes.
                   </p>
                 </div>
 
@@ -599,20 +633,21 @@ export const LoginPage = ({ initialRole = 'student', onBackToRoles }) => {
                     required
                     maxLength={6}
                     autoFocus
-                    placeholder="• • • • • •"
+                    placeholder="______"
                     value={enteredOtp}
                     onChange={(e) => setEnteredOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                    className="w-full py-3 px-4 text-center text-xl tracking-[0.5em] font-black rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500/20"
+                    className="w-full py-3 px-4 text-center text-2xl tracking-[0.4em] font-black rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500/20 font-mono"
                   />
                 </div>
 
                 <div className="flex items-center justify-between text-xs px-1">
                   <button
                     type="button"
-                    onClick={() => { setRegStep('form'); setErrorMessage(''); }}
-                    className="text-[11px] font-bold text-slate-500 hover:text-slate-900 dark:hover:text-white underline"
+                    onClick={() => { setRegStep(REG_STEPS.FORM); setErrorMessage(''); }}
+                    className="text-[11px] font-bold text-slate-500 hover:text-slate-900 dark:hover:text-white underline flex items-center space-x-1"
                   >
-                    Edit Registration Form
+                    <Edit3 className="w-3 h-3" />
+                    <span>EDIT DETAILS</span>
                   </button>
 
                   <button
@@ -622,32 +657,34 @@ export const LoginPage = ({ initialRole = 'student', onBackToRoles }) => {
                     className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline disabled:opacity-40 disabled:no-underline flex items-center space-x-1"
                   >
                     <RotateCw className="w-3 h-3" />
-                    <span>{resendCooldown > 0 ? `Resend code (${resendCooldown}s)` : 'Resend Code'}</span>
+                    <span>{resendCooldown > 0 ? `RESEND CODE (${resendCooldown}s)` : 'RESEND CODE'}</span>
                   </button>
                 </div>
 
                 <button
                   type="submit"
                   disabled={isSubmitting || enteredOtp.length !== 6}
-                  className="w-full py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs shadow-md transition-colors flex items-center justify-center space-x-1.5 disabled:opacity-50"
+                  className="w-full py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs shadow-md transition-colors flex items-center justify-center space-x-1.5 disabled:opacity-50 uppercase tracking-wider"
                 >
                   {isSubmitting ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Verifying & Activating Account...</span>
+                      <span>Verifying...</span>
                     </>
                   ) : (
                     <>
                       <CheckCircle2 className="w-4 h-4" />
-                      <span>Verify & Create Account</span>
+                      <span>VERIFY OTP</span>
                     </>
                   )}
                 </button>
               </form>
             )}
 
-            {/* STEP 3: SUCCESSFUL REGISTRATION SCREEN */}
-            {regStep === 'success' && (
+            {/* ------------------------------------------------------------------- */}
+            {/* STEP 3: ACCOUNT_CREATED */}
+            {/* ------------------------------------------------------------------- */}
+            {regStep === REG_STEPS.CREATED && (
               <div className="text-center py-4 space-y-4">
                 <div className="w-14 h-14 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 mx-auto flex items-center justify-center">
                   <CheckCircle2 className="w-8 h-8" />
@@ -657,7 +694,7 @@ export const LoginPage = ({ initialRole = 'student', onBackToRoles }) => {
                     Account Created Successfully! 🎉
                   </h3>
                   <p className="text-xs text-slate-500">
-                    Your account is verified and ready. From now on, your permanent login credentials are:
+                    Your account is verified and active. From now on, your permanent login credentials are:
                   </p>
                 </div>
 
