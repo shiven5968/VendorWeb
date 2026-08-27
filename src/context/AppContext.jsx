@@ -35,7 +35,7 @@ export const AppProvider = ({ children }) => {
     role: authRole || 'student',
     hostelBlock: 'DNB Block',
     proteinTarget: 120,
-    rewardPoints: 200
+    rewardPoints: 0
   } : null);
 
   const currentRole = authRole || currentUser?.role || 'student';
@@ -58,7 +58,7 @@ export const AppProvider = ({ children }) => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [notifications, setNotifications] = useState([
-    { id: 'n_1', title: 'Welcome to MessMate', message: 'Know your meal before you eat it.', time: 'Today', type: 'info', read: false }
+    { id: 'n_1', title: 'Welcome to MessMates', message: 'Know your meal before you eat it.', time: 'Today', type: 'info', read: false }
   ]);
   const [menuApproved, setMenuApproved] = useState(false);
 
@@ -84,7 +84,7 @@ export const AppProvider = ({ children }) => {
   const register = async (userData) => {
     const res = await authRegister(userData);
     setCurrentPage('dashboard');
-    addNotification('Registration Complete', `Welcome to MessMate, ${res.profile?.name || 'Student'}!`, 'success');
+    addNotification('Registration Complete', `Welcome to MessMates, ${res.profile?.name || 'Student'}!`, 'success');
     return res;
   };
 
@@ -94,7 +94,6 @@ export const AppProvider = ({ children }) => {
       try {
         await authLogin(target.email, target.password || 'password123');
       } catch (e) {
-        // Fallback for immediate test switching
         localStorage.setItem('messmate_session_uid', target.id);
         window.location.reload();
       }
@@ -103,7 +102,7 @@ export const AppProvider = ({ children }) => {
 
   const logout = async () => {
     await authLogout();
-    setCurrentPage('login');
+    setCurrentPage('dashboard');
   };
 
   const updateUserProfile = async (updates) => {
@@ -116,7 +115,7 @@ export const AppProvider = ({ children }) => {
   
   // Calculate dynamic ratings from real database records
   const getEnrichedMeals = (day) => {
-    const rawMeals = db.getDayMeals(day);
+    const rawMeals = db.getDayMeals(day) || [];
     return rawMeals.map(m => {
       const stats = db.getMealStats(m.id);
       return {
@@ -130,8 +129,8 @@ export const AppProvider = ({ children }) => {
   const dayMeals = getEnrichedMeals(selectedDay);
   const todayMeals = getEnrichedMeals(todayDay);
 
-  const saveMeal = (mealData) => {
-    db.saveMeal({ ...mealData, day: mealData.day || selectedDay });
+  const saveMeal = (mealData, targetDay) => {
+    db.saveMeal({ ...mealData, day: targetDay || mealData.day || selectedDay });
     setMealsVersion(v => v + 1);
     addNotification('Meal Saved', `${mealData.name} updated in menu.`, 'success');
   };
@@ -165,7 +164,7 @@ export const AppProvider = ({ children }) => {
   };
 
   // REAL COMPLAINTS
-  const allComplaints = db.getAllComplaints();
+  const allComplaints = db.getAllComplaints() || [];
   const userComplaints = currentUser ? db.getUserComplaints(currentUser.uid || currentUser.id) : [];
 
   const createComplaint = (category, description) => {
@@ -190,10 +189,10 @@ export const AppProvider = ({ children }) => {
 
   // REAL VOTING & POLLS
   const currentPoll = db.getPoll();
-  const userVotedOptionId = currentUser ? db.hasUserVoted(currentPoll.id, currentUser.uid || currentUser.id) : null;
+  const userVotedOptionId = (currentUser && currentPoll) ? db.hasUserVoted(currentPoll.id, currentUser.uid || currentUser.id) : null;
 
   const voteDish = (optionId) => {
-    if (!currentUser) return;
+    if (!currentUser || !currentPoll) return;
     try {
       db.castVote({
         pollId: currentPoll.id,
@@ -235,7 +234,7 @@ export const AppProvider = ({ children }) => {
   };
 
   // REWARDS
-  const rewardsCatalog = db.getRewardsCatalog();
+  const rewardsCatalog = db.getRewardsCatalog() || [];
   const userRedemptions = currentUser ? db.getUserRedemptions(currentUser.uid || currentUser.id) : [];
 
   const redeemReward = (rewardItem) => {
@@ -251,21 +250,37 @@ export const AppProvider = ({ children }) => {
     }
   };
 
-  // WARDEN METRICS (100% Calculated from Real Database Data)
-  const overallMess = db.getOverallMessRating();
+  // WARDEN METRICS & ANALYTICS (100% Calculated from Real Database Data)
+  const overallMess = db.getOverallMessRating() || { score: null, count: 0 };
   const openComplaintsCount = allComplaints.filter(c => c.status !== 'RESOLVED').length;
   const resolvedComplaintsCount = allComplaints.filter(c => c.status === 'RESOLVED').length;
-  const totalVotesCount = currentPoll.totalVotes;
-  const allRatings = db.getAllRatings();
+  const totalVotesCount = currentPoll ? (currentPoll.totalVotes || 0) : 0;
+  const allRatings = db.getAllRatings() || [];
 
   const wardenMetrics = {
     messQualityScore: overallMess.score,
-    totalRatings: overallMess.count,
+    totalRatings: overallMess.count || 0,
     openComplaints: openComplaintsCount,
     resolvedComplaints: resolvedComplaintsCount,
-    studentSatisfaction: Math.round((allRatings.filter(r => r.rating >= 4).length / Math.max(1, allRatings.length)) * 100),
+    studentSatisfaction: allRatings.length > 0 
+      ? Math.round((allRatings.filter(r => r.rating >= 4).length / allRatings.length) * 100)
+      : 0,
     mealsReviewed: allRatings.length,
     activeVotes: totalVotesCount
+  };
+
+  // Analytics for AnalyticsPage / ReportsPage
+  const wardenAnalytics = {
+    satisfactionRate: wardenMetrics.studentSatisfaction,
+    messQualityScore: wardenMetrics.messQualityScore || 0,
+    foodWasteIndex: 0,
+    ratingDistribution: [
+      { rating: '5 Star', percentage: allRatings.length > 0 ? Math.round((allRatings.filter(r => r.rating === 5).length / allRatings.length) * 100) : 0 },
+      { rating: '4 Star', percentage: allRatings.length > 0 ? Math.round((allRatings.filter(r => r.rating === 4).length / allRatings.length) * 100) : 0 },
+      { rating: '3 Star', percentage: allRatings.length > 0 ? Math.round((allRatings.filter(r => r.rating === 3).length / allRatings.length) * 100) : 0 },
+      { rating: '2 Star', percentage: allRatings.length > 0 ? Math.round((allRatings.filter(r => r.rating === 2).length / allRatings.length) * 100) : 0 },
+      { rating: '1 Star', percentage: allRatings.length > 0 ? Math.round((allRatings.filter(r => r.rating === 1).length / allRatings.length) * 100) : 0 },
+    ]
   };
 
   const approveWeeklyMenu = () => {
@@ -333,7 +348,7 @@ export const AppProvider = ({ children }) => {
         allMeals,
         saveMeal,
         deleteMeal,
-        getMealStats: db.getMealStats,
+        getMealStats: (mealId) => db.getMealStats(mealId),
 
         // Ratings & Feedback
         rateMeal,
@@ -366,6 +381,7 @@ export const AppProvider = ({ children }) => {
 
         // Warden Governance
         wardenMetrics,
+        wardenAnalytics,
         menuApproved,
         approveWeeklyMenu,
 

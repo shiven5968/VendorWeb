@@ -95,12 +95,13 @@ export const AuthProvider = ({ children }) => {
   };
 
   // REGISTER STUDENT METHOD
-  const register = async ({ name, email, password, gender, hostelBlock }) => {
+  const register = async ({ name, admissionNumber, email, password, gender, hostelBlock }) => {
     setLoading(true);
     setAuthError('');
     try {
       const { user: authUser, profile: userProfile } = await signUpStudent({
         name,
+        admissionNumber,
         email,
         password,
         gender,

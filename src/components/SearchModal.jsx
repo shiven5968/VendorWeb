@@ -8,10 +8,10 @@ export const SearchModal = () => {
   if (!isSearchOpen) return null;
 
   const filteredMeals = meals.filter(m => 
-    m.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    m.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    m.ingredients.some(ing => ing.toLowerCase().includes(searchQuery.toLowerCase())) ||
-    m.allergens.some(alg => alg.toLowerCase().includes(searchQuery.toLowerCase()))
+    (m.name && m.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    (m.category && m.category.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    (m.ingredients && m.ingredients.some(ing => ing.toLowerCase().includes(searchQuery.toLowerCase()))) ||
+    (m.allergens && m.allergens.some(alg => alg.toLowerCase().includes(searchQuery.toLowerCase())))
   );
 
   return (

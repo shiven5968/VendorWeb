@@ -39,11 +39,10 @@ export const RewardClaimModal = () => {
 
         <div>
           <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-300 mb-2">
-            Restaurant Voucher Claimed
+            Reward Claimed
           </span>
-          <h2 className="text-xl font-extrabold text-slate-900 dark:text-white">{voucher.restaurantName}</h2>
-          <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400 mt-1">{voucher.title}</p>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{voucher.desc}</p>
+          <h2 className="text-xl font-extrabold text-slate-900 dark:text-white">{voucher.rewardName || 'Mess Reward'}</h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Show this claim code at the mess counter for redemption.</p>
         </div>
 
         {/* Voucher Promo Pass */}
@@ -53,8 +52,8 @@ export const RewardClaimModal = () => {
           </div>
           
           <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-emerald-500/30 text-center">
-            <span className="text-[10px] text-slate-400 uppercase font-semibold block">Exclusive Promo Coupon Code</span>
-            <p className="text-lg font-mono font-black text-emerald-600 dark:text-emerald-400 tracking-wider select-all">{voucher.code}</p>
+            <span className="text-[10px] text-slate-400 uppercase font-semibold block">Claim Code</span>
+            <p className="text-lg font-mono font-black text-emerald-600 dark:text-emerald-400 tracking-wider select-all">{voucher.claimCode || voucher.code}</p>
           </div>
         </div>
 
