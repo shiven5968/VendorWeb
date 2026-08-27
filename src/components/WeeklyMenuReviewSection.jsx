@@ -5,46 +5,46 @@ import { useApp } from '../context/AppContext';
 // Naina Caters (I & II Year Menu : ABES Boys' Hostel)
 const MENU_DATA = {
   Monday: {
-    Breakfast: ["Veg Fried Idli", "Plain Idli", "Sambhar", "Coconut Chutney", "Tea", "Milk", "Fruit"],
+    Breakfast: ["Veg Fried Idli / Plain Idli / Sambhar Bada", "Sambhar", "Coconut Chutney", "Lal Chutney", "Tea", "Milk", "Banana"],
     Lunch: ["Mix Veg", "Rajma", "Roti", "Rice", "Mix Salad", "Boondi Raita", "Lemon 1/2"],
-    Snacks: ["Namkeen Bhujiya / Biscuit", "Tea"],
-    Dinner: ["Arhar Daal", "Aloo Gobhi", "Rice", "Roti", "Suji Halwa", "Moong Dal Halwa (Monthly Special)", "Achar", "Chhachh"]
+    Snacks: ["Burger", "Sauce (Chilly & Tomato)", "Roohafza"],
+    Dinner: ["Arhar Daal", "Aloo Shimla Mirch", "Rice", "Roti", "Suji Halwa", "Matar Mushroom + Moong Dal Halwa (Monthly Special)", "Chhachh"]
   },
   Tuesday: {
-    Breakfast: ["Matar Kulche", "Pickle", "Milk", "Tea", "Fruit"],
+    Breakfast: ["Matar Kulche", "Milk", "Tea", "Watermelon"],
     Lunch: ["Tahri", "Aaloo Tamatar Sabji", "Roti", "Salad", "Curd", "Lemon 1/2", "Hari Chutney"],
-    Snacks: ["Hakka Noodles", "Tomato & Chilly Sauce", "Coffee"],
-    Dinner: ["Kali Masoor Dal", "Aloo Beans", "Rice", "Roti", "Icecream (Mango/Butterscotch/Chocolate)", "Mix Salad", "Achar"]
+    Snacks: ["Macroni", "Tomato & Chilly Sauce", "Coffee"],
+    Dinner: ["Kali Masoor Dal", "Bhindi", "Rice", "Roti", "Icecream (Mango/Butterscotch/Chocolate)", "Mix Salad", "Achar"]
   },
   Wednesday: {
-    Breakfast: ["Poha", "Milk", "Tea", "Fruit"],
+    Breakfast: ["Aaloo Paratha", "Pickle", "Curd", "Tea", "Muskmelon"],
     Lunch: ["Kaabli Chhole (Small)", "Kashifal", "Roti", "Jeera Rice", "Mix Salad", "Curd", "Lemon 1/2"],
-    Snacks: ["Bhelpuri", "Tea"],
-    Dinner: ["Butter Paneer Masala / Kadhai Paneer", "Aaloo Jeera", "Roti / Puri", "Pulaw", "Mix Salad", "Achar"]
+    Snacks: ["Samosa", "Tomato & Chilly Sauce", "Tea"],
+    Dinner: ["Butter Paneer Masala / Kadhai Paneer", "Aaloo Jeera", "Puri", "Pulaw", "Mix Salad"]
   },
   Thursday: {
-    Breakfast: ["Pav Bhaji", "Tea", "Milk", "Butter", "Fruit"],
+    Breakfast: ["Pav Bhaji", "Tea", "Milk", "Butter", "Papaya"],
     Lunch: ["Aaloo Pyaj Sabji", "Kadhi", "Rice", "Roti", "Salad", "Papad Fried", "Lemon 1/2"],
-    Snacks: ["Fan", "Tea"],
+    Snacks: ["Mix Pakodi / Bread Pakoda", "Chilli & Tomato Sauce", "Tea"],
     Dinner: ["Daal Makhani", "Mix Veg", "Roti", "Rice", "Gulab Jamun", "Chhachh", "Achar"]
   },
   Friday: {
-    Breakfast: ["Jawe", "Tea", "Milk", "Fruit"],
-    Lunch: ["Aaloo Baigan", "Arhar Daal", "Roti", "Rice", "Mix Salad", "Boondi Raita", "Lemon 1/2"],
-    Snacks: ["Patties", "Tomato Sauce", "Tea"],
+    Breakfast: ["Aaloo Paratha", "Pickle", "Tea", "Curd", "Banana"],
+    Lunch: ["Aaloo Matar Jeera", "Arhar Daal", "Roti", "Rice", "Mix Salad", "Boondi Raita", "Lemon 1/2"],
+    Snacks: ["Chowmein", "Chilly & Tomato Sauce", "Shikanji"],
     Dinner: ["Chhole", "Dam Aaloo", "Rice", "Plain Paratha", "Custard", "Mix Salad", "Achar"]
   },
   Saturday: {
-    Breakfast: ["Upma / Bread Jam", "Tea", "Milk", "Fruit"],
-    Lunch: ["Chana Dal", "Shimla Soyabean", "Roti", "Rice", "Mix Salad", "Curd", "Lemon 1/2"],
-    Snacks: ["Kala Chana Masala", "Chat Masala", "Tea"],
-    Dinner: ["Mix Dal", "Aaloo Patta Gobhi", "Rice", "Roti", "Coconut Laddoo", "Mix Salad", "Achar"]
+    Breakfast: ["Aaloo Tamatar Sabji", "Puri", "Mirchi", "Tea", "Jalebi", "Curd", "Watermelon"],
+    Lunch: ["Mix Dal", "Taroi", "Roti", "Rice", "Mix Salad", "Curd", "Lemon 1/2"],
+    Snacks: ["Bread Roll", "Chilly & Tomato Sauce", "Tea"],
+    Dinner: ["Arhar Dal", "Lauki", "Rice", "Roti", "Mix Salad", "Chhachh"]
   },
   Sunday: {
-    Breakfast: ["Veg Sandwich", "Tomato Sauce", "Cornflakes", "Milk", "Tea", "Mix Fruit", "Chat Masala"],
+    Breakfast: ["Aaloo Sandwich", "Tomato Sauce", "Cornflakes", "Milk", "Tea", "Mix Fruit", "Chat Masala"],
     Lunch: ["Chhole Kabuli (Big)", "Bhature", "Fry Mirch", "Sirka Pyaz", "Jeera Rice", "Cold Drink", "Pickle", "Veg Raita"],
     Snacks: ["OFF"],
-    Dinner: ["Arhar Dal", "Lauki", "Rice Kheer / Sewai", "Roti", "Chhachh", "Achar"]
+    Dinner: ["Lauki Kofta", "Arabi", "Rice", "Roti", "Chhachh", "Kheer / Sewai"]
   }
 };
 
