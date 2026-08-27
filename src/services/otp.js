@@ -100,7 +100,8 @@ export const sendRegistrationOTP = async ({ email, admissionNumber, name }) => {
 
     return {
       success: true,
-      sessionToken: data.sessionToken,
+      sessionId: data.sessionId || data.sessionToken,
+      sessionToken: data.sessionToken || data.sessionId,
       email: cleanEmail,
       messageId: data.messageId,
       message: data.message || `We sent a 6-digit verification code to ${cleanEmail}`
@@ -114,9 +115,10 @@ export const sendRegistrationOTP = async ({ email, admissionNumber, name }) => {
 /**
  * Verify the 6-digit OTP entered by the student on the secure serverless backend
  */
-export const verifyRegistrationOTP = async ({ email, otp, sessionToken }) => {
+export const verifyRegistrationOTP = async ({ email, otp, sessionToken, sessionId }) => {
   const cleanEmail = (email || '').trim().toLowerCase();
   const cleanOtp = (otp || '').trim();
+  const targetId = (sessionId || sessionToken || '').trim();
 
   if (!cleanOtp || cleanOtp.length !== 6) {
     throw new Error('Please enter a valid 6-digit verification code.');
@@ -132,7 +134,8 @@ export const verifyRegistrationOTP = async ({ email, otp, sessionToken }) => {
       body: JSON.stringify({
         email: cleanEmail,
         otp: cleanOtp,
-        sessionToken
+        sessionId: targetId,
+        sessionToken: targetId
       })
     });
 

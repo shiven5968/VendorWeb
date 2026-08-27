@@ -19,8 +19,8 @@ export default async function handler(req, res) {
     if (typeof body === 'string') {
       try { body = JSON.parse(body); } catch (e) {}
     }
-    const { email, otp, sessionToken } = body || {};
-    const result = await verifyOtpCode({ email, otp, sessionToken });
+    const { email, otp, sessionId, sessionToken } = body || {};
+    const result = await verifyOtpCode({ email, otp, sessionId: sessionId || sessionToken, sessionToken });
     return res.status(200).json(result);
   } catch (err) {
     return res.status(400).json({ message: err.message || 'Verification failed.' });

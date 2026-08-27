@@ -27,7 +27,7 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase App singleton without duplicates
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+const app = getApps().find(a => a.name === '[DEFAULT]') || initializeApp(firebaseConfig);
 
 // Initialize Services
 export const auth = getAuth(app);
