@@ -12,9 +12,12 @@ import {
   Zap, 
   Lock,
   Clock,
-  AlertCircle
+  AlertCircle,
+  CheckCircle2,
+  Calendar
 } from 'lucide-react';
 import { initiateMusclePassPayment } from '../services/payment';
+import { MUSCLE_PASS_PLAN_LIST, getMusclePassPlan } from '../config/pricing';
 
 export const MusclePassPage = () => {
   const { 
@@ -28,11 +31,14 @@ export const MusclePassPage = () => {
     musclePassSubscription
   } = useApp();
 
+  const [selectedPlanId, setSelectedPlanId] = useState('MUSCLE_3_MONTHS');
   const [targetInput, setTargetInput] = useState(proteinTarget);
   const [showEditTarget, setShowEditTarget] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [paymentMessage, setPaymentMessage] = useState(null);
+
+  const selectedPlan = getMusclePassPlan(selectedPlanId);
 
   const remainingProtein = Math.max(0, proteinTarget - consumedProtein);
   const proteinPercent = Math.min(100, Math.round((consumedProtein / proteinTarget) * 100));
@@ -58,9 +64,10 @@ export const MusclePassPage = () => {
       userId: currentUser.uid || currentUser.id,
       userName: currentUser.name,
       userEmail: currentUser.email,
+      planId: selectedPlanId,
       onSuccess: (data) => {
         setIsProcessingPayment(false);
-        setPaymentMessage({ type: 'success', text: 'Payment verified! Muscle Pass activated for 30 days.' });
+        setPaymentMessage({ type: 'success', text: `Payment verified! ${data.subscription?.planName || 'Muscle Pass'} activated.` });
         window.location.reload();
       },
       onError: (errMsg) => {
@@ -111,32 +118,109 @@ export const MusclePassPage = () => {
         </div>
       )}
 
-      {/* PAYWALL / SUBSCRIPTION BANNER (WHEN NOT ACTIVE) */}
-      {!isMusclePassActive && (
-        <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950 text-white space-y-6 shadow-2xl border border-emerald-500/30">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="space-y-1">
-              <span className="px-2.5 py-0.5 rounded-full bg-emerald-500 text-white text-[10px] font-black uppercase tracking-wider">
-                Monthly Subscription
-              </span>
-              <h2 className="text-xl sm:text-2xl font-black text-white">
-                Unlock Personalized Gym Nutrition for ₹299 / Month
-              </h2>
-              <p className="text-xs text-slate-300">
-                Custom daily protein targets, mess dish macro analysis, and verified hostel nutrition plans.
-              </p>
-            </div>
-
-            <div className="text-left sm:text-right">
-              <span className="text-xs text-slate-400 block">Price</span>
-              <p className="text-2xl sm:text-3xl font-black text-emerald-400">₹299 <span className="text-xs text-slate-300 font-semibold">/ mo</span></p>
-            </div>
+      {/* ACTIVE SUBSCRIPTION DETAILS BANNER */}
+      {isMusclePassActive && musclePassSubscription && (
+        <div className="p-5 rounded-3xl bg-emerald-950/40 border border-emerald-500/30 text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-md">
+          <div className="space-y-0.5">
+            <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">Active Subscription</span>
+            <h3 className="text-base font-black text-white">{musclePassSubscription.planName || 'Muscle Pass'}</h3>
+            <p className="text-xs text-slate-300">
+              Valid until: <strong className="text-emerald-400">{new Date(musclePassSubscription.expiryDate || 0).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</strong>
+            </p>
           </div>
 
+          <div className="px-3 py-1.5 rounded-xl bg-emerald-500/20 text-emerald-300 text-xs font-bold border border-emerald-500/30 flex items-center space-x-1">
+            <CheckCircle2 className="w-4 h-4" />
+            <span>Verified Member</span>
+          </div>
+        </div>
+      )}
+
+      {/* PAYWALL / SUBSCRIPTION PLANS SELECTION (WHEN NOT ACTIVE) */}
+      {!isMusclePassActive && (
+        <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950 text-white space-y-6 shadow-2xl border border-emerald-500/30">
+          
+          <div className="space-y-1">
+            <span className="px-2.5 py-0.5 rounded-full bg-emerald-500 text-white text-[10px] font-black uppercase tracking-wider">
+              Choose Your Fitness Plan
+            </span>
+            <h2 className="text-xl sm:text-2xl font-black text-white">
+              Unlock High-Protein Mess Diet Planning
+            </h2>
+            <p className="text-xs text-slate-300">
+              Track daily hostel nutrition, calculate exact protein intake, and optimize mess meals for muscle growth.
+            </p>
+          </div>
+
+          {/* 4 OFFICIAL PRICING CARDS */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+            {MUSCLE_PASS_PLAN_LIST.map((plan) => {
+              const isSelected = selectedPlanId === plan.id;
+
+              return (
+                <div
+                  key={plan.id}
+                  onClick={() => setSelectedPlanId(plan.id)}
+                  className={`relative p-4 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between ${
+                    isSelected
+                      ? 'bg-emerald-950/80 border-emerald-400 ring-2 ring-emerald-400 shadow-xl scale-[1.02]'
+                      : 'bg-slate-800/80 border-slate-700 hover:border-slate-600'
+                  }`}
+                >
+                  {/* Badge */}
+                  {plan.badge && (
+                    <span className={`absolute -top-2.5 right-3 px-2 py-0.5 rounded-full text-[9px] font-black uppercase shadow-md ${
+                      plan.popular
+                        ? 'bg-emerald-500 text-white'
+                        : 'bg-slate-700 text-slate-200'
+                    }`}>
+                      {plan.badge}
+                    </span>
+                  )}
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-xs font-black uppercase tracking-wide text-slate-300">{plan.durationLabel}</h3>
+                      {isSelected ? (
+                        <div className="w-4 h-4 rounded-full bg-emerald-500 text-white flex items-center justify-center">
+                          <Check className="w-2.5 h-2.5 stroke-[3]" />
+                        </div>
+                      ) : (
+                        <div className="w-4 h-4 rounded-full border border-slate-600" />
+                      )}
+                    </div>
+
+                    <div>
+                      <div className="flex items-baseline space-x-1">
+                        <span className="text-2xl sm:text-3xl font-black text-white">₹{plan.price}</span>
+                        <span className="text-[10px] text-slate-400 font-semibold">/ {plan.durationLabel}</span>
+                      </div>
+                      {plan.savingsLabel && (
+                        <span className="inline-block px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[10px] font-black mt-0.5">
+                          {plan.savingsLabel} (~₹{plan.pricePerMonth}/mo)
+                        </span>
+                      )}
+                    </div>
+
+                    <p className="text-[11px] text-slate-300 font-medium leading-snug">
+                      {plan.tagline}
+                    </p>
+                  </div>
+
+                  <div className="pt-3 mt-2 border-t border-slate-700/60 flex items-center justify-between text-[10px] text-slate-400">
+                    <span>Duration: {plan.durationDays} days</span>
+                    <span className="text-emerald-400 font-bold">Select →</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Benefits Checklist */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 border-t border-slate-800 pt-4">
             <div className="flex items-start space-x-2">
               <Check className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-              <span className="text-xs text-slate-300">Personalized daily protein goal slider</span>
+              <span className="text-xs text-slate-300">Custom daily protein goal slider</span>
             </div>
             <div className="flex items-start space-x-2">
               <Check className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
@@ -148,23 +232,28 @@ export const MusclePassPage = () => {
             </div>
           </div>
 
+          {/* CTA Button with exact selected amount */}
           <div className="pt-2">
             <button
               onClick={handleSubscribe}
               disabled={isProcessingPayment}
-              className="w-full sm:w-auto px-8 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs shadow-lg transition-all flex items-center justify-center space-x-2 cursor-pointer"
+              className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs shadow-lg transition-all flex items-center justify-center space-x-2 cursor-pointer"
             >
               <CreditCard className="w-4 h-4" />
-              <span>{isProcessingPayment ? 'CONNECTING RAZORPAY...' : 'SUBSCRIBE VIA RAZORPAY (₹299/MO)'}</span>
+              <span>
+                {isProcessingPayment 
+                  ? 'CONNECTING RAZORPAY...' 
+                  : `SUBSCRIBE VIA RAZORPAY (₹${selectedPlan.price} FOR ${selectedPlan.durationLabel.toUpperCase()})`}
+              </span>
             </button>
             <p className="text-[10px] text-slate-400 mt-2">
-              Secure UPI, Cards, NetBanking via Razorpay. Subscriptions are activated only after verified payment.
+              Secure UPI, Cards, NetBanking via Razorpay. Subscription activates immediately after verified server payment.
             </p>
           </div>
         </div>
       )}
 
-      {/* ACTIVE MUSCLE PASS TRACKER (PROTEIN METRICS & GOALS) */}
+      {/* MUSCLE PASS TRACKER (PROTEIN METRICS & GOALS) */}
       <div className="space-y-6">
         
         <div className="flex items-center justify-between">

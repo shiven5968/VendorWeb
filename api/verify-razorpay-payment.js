@@ -4,6 +4,13 @@ import { getFirestore as getAdminFirestore } from 'firebase-admin/firestore';
 
 const PROJECT_ID = process.env.VITE_FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT_ID || 'messmates-f69a3';
 
+const SERVER_PLANS = {
+  MUSCLE_MONTHLY: { id: 'MUSCLE_MONTHLY', durationDays: 30, price: 69, name: 'Muscle Pass 1 Month' },
+  MUSCLE_3_MONTHS: { id: 'MUSCLE_3_MONTHS', durationDays: 90, price: 149, name: 'Muscle Pass 3 Months' },
+  MUSCLE_6_MONTHS: { id: 'MUSCLE_6_MONTHS', durationDays: 180, price: 249, name: 'Muscle Pass 6 Months' },
+  MUSCLE_YEARLY: { id: 'MUSCLE_YEARLY', durationDays: 365, price: 449, name: 'Muscle Pass 1 Year' },
+};
+
 let adminDb = null;
 
 function getFirebaseAdminDb() {
@@ -78,7 +85,7 @@ export default async function handler(req, res) {
       razorpay_payment_id,
       razorpay_signature,
       userId,
-      planId = 'muscle_pass_monthly'
+      planId = 'MUSCLE_MONTHLY'
     } = body || {};
 
     if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature || !userId) {
@@ -103,20 +110,25 @@ export default async function handler(req, res) {
       });
     }
 
-    // Payment Verified! Calculate 30-day subscription expiration
+    // Resolve Plan & Duration
+    const planConfig = SERVER_PLANS[planId] || SERVER_PLANS.MUSCLE_MONTHLY;
+    const durationDays = planConfig.durationDays;
+
     const now = new Date();
-    const expiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+    const startDate = now.toISOString();
+    const expiryDate = new Date(now.getTime() + durationDays * 24 * 60 * 60 * 1000).toISOString();
 
     const subscriptionData = {
       userId,
-      planId,
-      status: 'ACTIVE',
+      planId: planConfig.id,
+      planName: planConfig.name,
+      amount: planConfig.price,
+      currency: 'INR',
+      startDate,
+      expiryDate,
       paymentId: razorpay_payment_id,
       orderId: razorpay_order_id,
-      activatedAt: now.toISOString(),
-      expiresAt: expiresAt.toISOString(),
-      amountPaid: 299,
-      currency: 'INR'
+      status: 'ACTIVE'
     };
 
     // Persist Subscription to Firestore via Admin SDK
@@ -126,7 +138,8 @@ export default async function handler(req, res) {
         await adminFirestore.collection('subscriptions').doc(userId).set(subscriptionData);
         await adminFirestore.collection('users').doc(userId).update({
           musclePassActive: true,
-          musclePassExpiry: expiresAt.toISOString()
+          musclePassPlanId: planConfig.id,
+          musclePassExpiry: expiryDate
         });
       } catch (dbErr) {
         console.warn('[Firestore Subscription Save Notice]:', dbErr.message);
@@ -135,7 +148,7 @@ export default async function handler(req, res) {
 
     return res.status(200).json({
       verified: true,
-      message: 'Muscle Pass subscription activated successfully!',
+      message: `${planConfig.name} subscription activated successfully!`,
       subscription: subscriptionData
     });
   } catch (err) {
