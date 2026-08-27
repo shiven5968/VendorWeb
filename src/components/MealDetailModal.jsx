@@ -18,13 +18,23 @@ export const MealDetailModal = () => {
 
   const hasNutrition = meal.calories > 0 || meal.protein > 0;
 
-  const handleRateSubmit = (stars) => {
-    rateMeal(meal.id, stars, feedbackText, selectedTag ? [selectedTag] : []);
-    setRatingSubmitted(true);
-    setTimeout(() => {
-      setRatingSubmitted(false);
-      setShowRatingBox(false);
-    }, 1500);
+  const [submittingRating, setSubmittingRating] = useState(false);
+
+  const handleRateSubmit = async (stars) => {
+    if (submittingRating) return;
+    try {
+      setSubmittingRating(true);
+      await rateMeal(meal.id, stars, feedbackText, selectedTag ? [selectedTag] : []);
+      setRatingSubmitted(true);
+      setTimeout(() => {
+        setRatingSubmitted(false);
+        setShowRatingBox(false);
+      }, 1200);
+    } catch (e) {
+      console.error('Rating submission failed:', e);
+    } finally {
+      setSubmittingRating(false);
+    }
   };
 
   return (

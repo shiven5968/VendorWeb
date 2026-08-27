@@ -93,10 +93,9 @@ export const AppProvider = ({ children }) => {
     }
   }, [darkMode]);
 
-  // Firestore Real-Time Database Synchronization
+  // Firestore Background Seeding (Runs once on mount)
   useEffect(() => {
     if (isFirebaseConfigured) {
-      // 1. Run Seeding in background
       const initializeFirebaseData = async () => {
         try {
           await seedFirestoreData();
@@ -106,59 +105,10 @@ export const AppProvider = ({ children }) => {
         }
       };
       initializeFirebaseData();
-
-      // 2. Global listeners for public/campus collections
-      const unsubMeals = onSnapshot(
-        collection(firestoreDb, 'meals'),
-        (snapshot) => {
-          const list = [];
-          snapshot.forEach(doc => list.push(doc.data()));
-          if (list.length > 0) setAllMeals(list);
-        },
-        (err) => console.warn('Firestore meals listener:', err.message)
-      );
-
-      const unsubRatings = onSnapshot(
-        collection(firestoreDb, 'ratings'),
-        (snapshot) => {
-          const list = [];
-          snapshot.forEach(doc => list.push(doc.data()));
-          setAllRatings(list);
-        },
-        (err) => console.warn('Firestore ratings listener:', err.message)
-      );
-
-      const unsubPolls = onSnapshot(
-        collection(firestoreDb, 'polls'),
-        (snapshot) => {
-          const list = [];
-          snapshot.forEach(doc => list.push(doc.data()));
-          const activePoll = list.find(p => p.status === 'ACTIVE') || list[0] || null;
-          if (activePoll) setPoll(activePoll);
-        },
-        (err) => console.warn('Firestore polls listener:', err.message)
-      );
-
-      const unsubVotes = onSnapshot(
-        collection(firestoreDb, 'votes'),
-        (snapshot) => {
-          const list = [];
-          snapshot.forEach(doc => list.push(doc.data()));
-          setVotesList(list);
-        },
-        (err) => console.warn('Firestore votes listener:', err.message)
-      );
-
-      return () => {
-        unsubMeals();
-        unsubRatings();
-        unsubPolls();
-        unsubVotes();
-      };
     }
   }, []);
 
-  // 3. User-Scoped & Role-Aware Live Firestore Listeners (Complaints, Redemptions, Protein, Users)
+  // Live Firestore Real-Time Subscriptions (Synchronized upon login & role change)
   useEffect(() => {
     if (!isFirebaseConfigured || !authUser) {
       return;
@@ -167,7 +117,53 @@ export const AppProvider = ({ children }) => {
     const currentUid = authUser.uid;
     const isStaffUser = currentRole === 'warden' || currentRole === 'mess_committee' || currentRole === 'committee' || (authUser.email || '').includes('warden') || (authUser.email || '').includes('committee');
 
-    // A. COMPLAINTS: Staff listens to full collection, Student listens to query matching auth uid
+    // 1. MEALS: Community schedule
+    const unsubMeals = onSnapshot(
+      collection(firestoreDb, 'meals'),
+      (snapshot) => {
+        const list = [];
+        snapshot.forEach(doc => list.push(doc.data()));
+        if (list.length > 0) setAllMeals(list);
+      },
+      (err) => console.warn('Firestore meals listener:', err.message)
+    );
+
+    // 2. RATINGS & FEEDBACK: All community ratings
+    const unsubRatings = onSnapshot(
+      collection(firestoreDb, 'ratings'),
+      (snapshot) => {
+        const list = [];
+        snapshot.forEach(doc => list.push(doc.data()));
+        list.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
+        setAllRatings(list);
+      },
+      (err) => console.warn('Firestore ratings listener:', err.message)
+    );
+
+    // 3. POLLS: Active replacement poll
+    const unsubPolls = onSnapshot(
+      collection(firestoreDb, 'polls'),
+      (snapshot) => {
+        const list = [];
+        snapshot.forEach(doc => list.push(doc.data()));
+        const activePoll = list.find(p => p.status === 'ACTIVE') || list[0] || null;
+        if (activePoll) setPoll(activePoll);
+      },
+      (err) => console.warn('Firestore polls listener:', err.message)
+    );
+
+    // 4. VOTES: Poll voting numbers
+    const unsubVotes = onSnapshot(
+      collection(firestoreDb, 'votes'),
+      (snapshot) => {
+        const list = [];
+        snapshot.forEach(doc => list.push(doc.data()));
+        setVotesList(list);
+      },
+      (err) => console.warn('Firestore votes listener:', err.message)
+    );
+
+    // 5. COMPLAINTS: Staff receives all, Student receives own
     const complaintsTarget = isStaffUser
       ? collection(firestoreDb, 'complaints')
       : query(collection(firestoreDb, 'complaints'), where('userId', '==', currentUid));
@@ -177,14 +173,13 @@ export const AppProvider = ({ children }) => {
       (snapshot) => {
         const list = [];
         snapshot.forEach(doc => list.push(doc.data()));
-        // Sort newest first
         list.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
         setAllComplaints(list);
       },
       (err) => console.warn('Firestore complaints listener:', err.message)
     );
 
-    // B. PROTEIN LOGS: Scoped to current user
+    // 6. PROTEIN LOGS: Current student logs
     const proteinTarget = query(collection(firestoreDb, 'protein_logs'), where('userId', '==', currentUid));
     const unsubProtein = onSnapshot(
       proteinTarget,
@@ -196,7 +191,7 @@ export const AppProvider = ({ children }) => {
       (err) => console.warn('Firestore protein listener:', err.message)
     );
 
-    // C. REDEMPTIONS: Staff gets all, Student gets own
+    // 7. REDEMPTIONS: Staff receives all, Student receives own
     const redemptionsTarget = isStaffUser
       ? collection(firestoreDb, 'redemptions')
       : query(collection(firestoreDb, 'redemptions'), where('userId', '==', currentUid));
@@ -211,7 +206,7 @@ export const AppProvider = ({ children }) => {
       (err) => console.warn('Firestore redemptions listener:', err.message)
     );
 
-    // D. USERS: Staff directory
+    // 8. USERS: Staff directory
     let unsubUsers = () => {};
     if (isStaffUser) {
       unsubUsers = onSnapshot(
@@ -226,6 +221,10 @@ export const AppProvider = ({ children }) => {
     }
 
     return () => {
+      unsubMeals();
+      unsubRatings();
+      unsubPolls();
+      unsubVotes();
       unsubComplaints();
       unsubProtein();
       unsubRedemptions();
@@ -322,21 +321,32 @@ export const AppProvider = ({ children }) => {
   const rateMeal = async (mealId, stars, feedback = '', tags = []) => {
     if (!currentUser) return;
     const meal = (allMeals || []).find(m => m.id === mealId);
-    await db.submitRating({
-      userId: currentUser.uid || currentUser.id,
-      userName: currentUser.name,
-      mealId,
-      mealName: meal?.name || 'Mess Meal',
-      rating: stars,
-      feedback,
-      tags
-    });
-    if (!isFirebaseConfigured) {
-      setAllRatings(db.getAllRatings());
-      setUsersList(db.getUsers());
+    try {
+      const ratingEntry = await db.submitRating({
+        userId: currentUser.uid || currentUser.id,
+        userName: currentUser.name,
+        mealId,
+        mealName: meal?.name || 'Mess Meal',
+        rating: stars,
+        feedback,
+        tags
+      });
+      setAllRatings(prev => {
+        const existingIdx = prev.findIndex(r => r.id === ratingEntry.id || (r.userId === ratingEntry.userId && r.mealId === ratingEntry.mealId));
+        if (existingIdx !== -1) {
+          const updated = [...prev];
+          updated[existingIdx] = ratingEntry;
+          return updated;
+        }
+        return [ratingEntry, ...prev];
+      });
+      setRatingsVersion(v => v + 1);
+      addNotification('Rating Saved 🌟', `+20 Health Points awarded to ${currentUser.name}.`, 'success');
+      return ratingEntry;
+    } catch (e) {
+      addNotification('Rating Failed', e.message || 'Could not save rating.', 'warning');
+      throw e;
     }
-    setRatingsVersion(v => v + 1);
-    addNotification('Rating Saved 🌟', `+20 Health Points awarded to ${currentUser.name}.`, 'success');
   };
 
   const getUserRating = (mealId) => {

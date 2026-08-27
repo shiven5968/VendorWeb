@@ -825,7 +825,7 @@ class LaunchDatabase {
     return { score: avg, scoreDisplay: `${avg} / 5.0`, count: ratings.length };
   }
 
-  submitRating({ userId, userName, mealId, mealName, rating, feedback = '', tags = [] }) {
+  async submitRating({ userId, userName, mealId, mealName, rating, feedback = '', tags = [] }) {
     const ratings = this.getAllRatings();
     const existingIdx = ratings.findIndex(r => r.userId === userId && r.mealId === mealId);
 
@@ -844,9 +844,10 @@ class LaunchDatabase {
 
     if (isFirebaseConfigured) {
       try {
-        setDoc(doc(firestoreDb, 'ratings', ratingId), ratingEntry);
+        await setDoc(doc(firestoreDb, 'ratings', ratingId), ratingEntry);
       } catch (e) {
         console.error('Error saving rating to Firestore:', e);
+        throw e;
       }
     }
 
@@ -855,7 +856,7 @@ class LaunchDatabase {
     } else {
       ratings.unshift(ratingEntry);
       // Award 20 health points
-      this.addRewardPoints(userId, 20);
+      await this.addRewardPoints(userId, 20);
     }
 
     this.setItem('ratings', ratings);
@@ -1067,10 +1068,10 @@ class LaunchDatabase {
     return redemptions.filter(r => r.userId === userId);
   }
 
-  addRewardPoints(userId, points) {
+  async addRewardPoints(userId, points) {
     if (isFirebaseConfigured) {
       try {
-        updateDoc(doc(firestoreDb, 'users', userId), {
+        await updateDoc(doc(firestoreDb, 'users', userId), {
           rewardPoints: increment(points)
         });
       } catch (e) {

@@ -214,8 +214,10 @@ export const getUserProfile = async (uid) => {
       if (userDocSnap.exists()) {
         return userDocSnap.data();
       }
+      return null;
     } catch (e) {
       console.warn('Could not fetch Firestore profile:', e);
+      return null;
     }
   }
   return localDb.getUserById(uid);
