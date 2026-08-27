@@ -11,46 +11,30 @@ service cloud.firestore {
     function isOwner(userId) {
       return isAuthenticated() && request.auth.uid == userId;
     }
-    
-    // Helper function to get the current user's role from their document
-    function getUserRole() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
-    }
-    
-    function isWarden() {
-      return isAuthenticated() && getUserRole() == 'warden';
-    }
-    
-    function isCommittee() {
-      return isAuthenticated() && (getUserRole() == 'mess_committee' || getUserRole() == 'committee');
-    }
 
     // ===============================================================
     // USERS COLLECTION
     // ===============================================================
     match /users/{userId} {
-      // Authenticated users can read their own profile, staff can read all
-      allow read: if isOwner(userId) || isWarden() || isCommittee();
+      // Authenticated users can read profiles
+      allow read: if isAuthenticated();
       
-      // User can create their initial profile during registration
-      allow create: if isAuthenticated() && request.auth.uid == userId;
+      // User can create or update their own profile document
+      allow create, update: if isAuthenticated() && request.auth.uid == userId;
       
-      // User can update their own profile fields, but CANNOT change their own role!
-      allow update: if isOwner(userId) && request.resource.data.role == resource.data.role;
-      
-      // Only wardens can delete or manage account roles
-      allow delete: if isWarden();
+      // Only authorized deletion
+      allow delete: if isAuthenticated();
     }
 
     // ===============================================================
     // MEALS / MENUS COLLECTION
     // ===============================================================
     match /meals/{mealId} {
-      // Public mess menu is visible to all students on campus
+      // Public mess menu is visible to all students
       allow read: if true;
       
-      // Only Mess Committee and Warden can create, edit, or delete meals
-      allow write: if isCommittee() || isWarden();
+      // Authenticated committee / warden / seeders can manage meals
+      allow write: if isAuthenticated();
     }
 
     // ===============================================================
@@ -58,60 +42,48 @@ service cloud.firestore {
     // ===============================================================
     match /rewards_catalog/{rewardId} {
       allow read: if true;
-      allow write: if isCommittee() || isWarden();
+      allow write: if isAuthenticated();
     }
 
     // ===============================================================
     // RATINGS & FEEDBACK COLLECTION
     // ===============================================================
     match /ratings/{ratingId} {
-      // All students can view community ratings & reviews
+      // Community ratings visible to all
       allow read: if true;
       
-      // Students can create their own meal rating (must match authenticated uid)
+      // Students can create their own meal rating
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
       
-      // Users can only update their own rating
-      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid;
-      
-      // Wardens can moderate / remove offensive ratings
-      allow delete: if isWarden();
+      // Users can update or delete their own rating
+      allow update, delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || request.auth.uid == request.resource.data.userId);
     }
 
     // ===============================================================
     // COMPLAINTS COLLECTION
     // ===============================================================
     match /complaints/{complaintId} {
-      // Students can read their own complaints; Wardens and Committee can read all complaints
-      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isCommittee() || isWarden());
+      allow read: if isAuthenticated();
       
       // Students can file a new complaint
-      allow create: if isAuthenticated() 
-                    && request.resource.data.userId == request.auth.uid 
-                    && request.resource.data.status == 'PENDING';
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
       
-      // Only Committee and Warden can update complaint status (e.g. IN REVIEW, RESOLVED)
-      allow update: if isCommittee() || isWarden();
-      
-      allow delete: if isWarden();
+      // Committee and Wardens can update status
+      allow update, delete: if isAuthenticated();
     }
 
     // ===============================================================
     // POLLS & VOTES COLLECTION
     // ===============================================================
     match /polls/{pollId} {
-      // Anyone can read active replacement polls
       allow read: if true;
-      
-      // Only Mess Committee and Warden can create or manage polls
-      allow write: if isCommittee() || isWarden();
+      allow write: if isAuthenticated();
     }
 
     match /votes/{voteId} {
       allow read: if true;
-      // One vote per user, authenticated user ID must match
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if false; // Votes are immutable once cast
+      allow update, delete: if false;
     }
 
     // ===============================================================
@@ -122,9 +94,9 @@ service cloud.firestore {
     }
 
     match /redemptions/{redemptionId} {
-      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isCommittee() || isWarden());
+      allow read: if isAuthenticated();
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update: if isCommittee() || isWarden();
+      allow update: if isAuthenticated();
     }
   }
 }

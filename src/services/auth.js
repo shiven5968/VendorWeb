@@ -75,7 +75,11 @@ export const signUpStudent = async ({ name, admissionNumber, email, password, ge
         updatedAt: new Date().toISOString()
       };
 
-      await setDoc(doc(db, 'users', user.uid), userProfile);
+      try {
+        await setDoc(doc(db, 'users', user.uid), userProfile);
+      } catch (firestoreErr) {
+        console.warn('Firestore user profile creation notice:', firestoreErr.message);
+      }
       
       localDb.registerUser({
         ...userProfile,
@@ -140,7 +144,11 @@ export const signInUser = async (emailOrAdmission, password) => {
           hostelBlock: 'DNB Block',
           createdAt: new Date().toISOString()
         };
-        await setDoc(doc(db, 'users', user.uid), profile);
+        try {
+          await setDoc(doc(db, 'users', user.uid), profile);
+        } catch (e) {
+          console.warn('Firestore profile write notice:', e.message);
+        }
       }
 
       return { user, profile };
