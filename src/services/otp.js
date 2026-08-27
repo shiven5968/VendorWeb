@@ -87,9 +87,15 @@ export const sendRegistrationOTP = async ({ email, admissionNumber, name }) => {
       })
     });
 
-    const data = await res.json();
+    let data = {};
+    try {
+      data = await res.json();
+    } catch (e) {
+      data = {};
+    }
+
     if (!res.ok) {
-      throw new Error(data.message || 'Failed to dispatch email verification code.');
+      throw new Error(data.message || 'Unable to send verification code. Please try again.');
     }
 
     return {
@@ -97,11 +103,11 @@ export const sendRegistrationOTP = async ({ email, admissionNumber, name }) => {
       sessionToken: data.sessionToken,
       email: cleanEmail,
       messageId: data.messageId,
-      message: data.message || `Verification code sent to ${cleanEmail}`
+      message: data.message || `We sent a 6-digit verification code to ${cleanEmail}`
     };
   } catch (err) {
     console.error('[MessMates OTP Request Error]:', err.message);
-    throw new Error(err.message || 'Failed to send verification code. Please check your network connection.');
+    throw new Error(err.message || 'Unable to send verification code. Please try again.');
   }
 };
 
@@ -130,7 +136,13 @@ export const verifyRegistrationOTP = async ({ email, otp, sessionToken }) => {
       })
     });
 
-    const data = await res.json();
+    let data = {};
+    try {
+      data = await res.json();
+    } catch (e) {
+      data = {};
+    }
+
     if (!res.ok) {
       throw new Error(data.message || 'Verification failed. Please check the code.');
     }
@@ -142,6 +154,6 @@ export const verifyRegistrationOTP = async ({ email, otp, sessionToken }) => {
       verificationProofToken: data.verificationProofToken
     };
   } catch (err) {
-    throw new Error(err.message || 'Verification failed.');
+    throw new Error(err.message || 'Verification failed. Please try again.');
   }
 };

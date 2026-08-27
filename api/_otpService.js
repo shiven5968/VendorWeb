@@ -208,7 +208,7 @@ export async function verifyOtpCode({ email, otp, sessionToken }) {
 
   if (Date.now() > session.expiresAt) {
     serverOtpSessions.delete(cleanEmail);
-    throw new Error('Verification code has expired (10 minutes limit). Please request a new code.');
+    throw new Error('Code expired. Request a new code.');
   }
 
   if (session.sessionToken !== sessionToken) {
@@ -218,7 +218,7 @@ export async function verifyOtpCode({ email, otp, sessionToken }) {
   session.attempts += 1;
   if (session.attempts > MAX_ATTEMPTS) {
     serverOtpSessions.delete(cleanEmail);
-    throw new Error('Too many invalid attempts. Please request a fresh verification code.');
+    throw new Error('Too many invalid attempts. Please request a new verification code.');
   }
 
   if (session.code !== cleanOtp) {
