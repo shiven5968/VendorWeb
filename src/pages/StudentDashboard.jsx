@@ -14,6 +14,7 @@ import {
   Send,
   Check
 } from 'lucide-react';
+import { WeeklyMenuReviewSection } from '../components/WeeklyMenuReviewSection';
 
 export const StudentDashboard = () => {
   const { 
@@ -331,6 +332,11 @@ export const StudentDashboard = () => {
           )}
         </div>
 
+      </div>
+
+      {/* WEEKLY MENU EXPLORER & FOOD RATINGS */}
+      <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm">
+        <WeeklyMenuReviewSection />
       </div>
 
     </div>
