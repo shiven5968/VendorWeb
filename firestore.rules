@@ -238,15 +238,13 @@ service cloud.firestore {
 
 
     // ===============================================================
-    // 11. DURABLE OTP VERIFICATION SESSIONS (/otp_sessions/{sessionKey})
-    // Serverless durable session store (10 min TTL)
-    // Document contains ONLY cryptographic HMAC hash, NEVER plaintext OTP
+    // 11. OTP VERIFICATION SESSIONS (/otp_sessions/{sessionKey})
+    // STRICT ZERO-TRUST SECURITY: Direct client access is 100% DENIED.
+    // The browser client has ZERO read, write, or delete permissions.
+    // Privileged serverless functions access this collection via Firebase Admin SDK.
     // ===============================================================
     match /otp_sessions/{sessionKey} {
-      // Direct document access allowed for serverless OTP lifecycle
-      allow get: if true;
-      allow list: if false; // Deny collection browsing/listing to protect privacy
-      allow create, update, delete: if true;
+      allow read, write: if false;
     }
   }
 }
