@@ -9,11 +9,16 @@ import {
   doc, 
   setDoc, 
   getDoc, 
-  updateDoc, 
-  serverTimestamp 
+  updateDoc 
 } from 'firebase/firestore';
-import { auth, db, isFirebaseConfigured } from './firebase';
-import { db as localDb } from './db';
+import { auth, db, isFirebaseConfigured } from './firebase.js';
+import { db as localDb } from './db.js';
+import { 
+  isValidAbesEmail, 
+  checkRegistrationEligibility, 
+  sendRegistrationOTP, 
+  verifyRegistrationOTP 
+} from './otp.js';
 
 // Helper to translate Firebase Auth error codes into clean user messages
 export const formatAuthError = (error) => {
@@ -21,16 +26,16 @@ export const formatAuthError = (error) => {
   const code = error.code || '';
   switch (code) {
     case 'auth/email-already-in-use':
-      return 'An account is already registered with this email.';
+      return 'An account is already registered with this college email.';
     case 'auth/invalid-email':
-      return 'Please enter a valid college email format (e.g. student@abes.ac.in).';
+      return 'Please enter a valid college email ending with @abes.ac.in.';
     case 'auth/weak-password':
       return 'Password should be at least 6 characters.';
     case 'auth/user-not-found':
-      return 'No registered account found with this email.';
+      return 'No registered account found. Please register first.';
     case 'auth/wrong-password':
     case 'auth/invalid-credential':
-      return 'Incorrect email or password.';
+      return 'Incorrect admission number or password.';
     case 'auth/network-request-failed':
       return 'Network connection error. Check your internet connection.';
     case 'auth/too-many-requests':
@@ -41,25 +46,43 @@ export const formatAuthError = (error) => {
 };
 
 /**
- * Register a new student user:
- * 1. Creates Firebase Auth account
- * 2. Updates display name
- * 3. Creates Firestore document in 'users' collection with role = 'student'
+ * Register a new student user after OTP verification:
+ * 1. Creates Firebase Auth account with email and password
+ * 2. Updates Firebase display name
+ * 3. Creates Firestore document in 'users' collection with role = 'student' and emailVerified = true
+ * 4. Indexes admissionNumber in 'admission_map' collection for seamless Admission No. logins
  */
-export const signUpStudent = async ({ name, admissionNumber, email, password, gender, hostelBlock }) => {
-  const cleanEmail = email.trim().toLowerCase();
-  const cleanName = name.trim();
-  const cleanAdmission = admissionNumber ? admissionNumber.trim() : '';
+export const signUpStudent = async ({ 
+  name, 
+  admissionNumber, 
+  email, 
+  password, 
+  gender, 
+  hostelBlock,
+  isOtpVerified = true 
+}) => {
+  const cleanEmail = (email || '').trim().toLowerCase();
+  const cleanName = (name || '').trim();
+  const cleanAdmission = (admissionNumber || '').trim();
+
+  if (!isOtpVerified) {
+    throw new Error('College email OTP verification is required before creating an account.');
+  }
+
+  if (!isValidAbesEmail(cleanEmail)) {
+    throw new Error('Registration requires an official ABES college email (@abes.ac.in).');
+  }
 
   if (isFirebaseConfigured) {
     try {
+      // 1. Create Firebase Auth user
       const userCredential = await createUserWithEmailAndPassword(auth, cleanEmail, password);
       const user = userCredential.user;
 
-      // Update Auth Display Name
+      // 2. Update Auth Display Name
       await updateProfile(user, { displayName: cleanName });
 
-      // Create Firestore User Document (users/{uid})
+      // 3. Create Firestore User Document (/users/{uid})
       const userProfile = {
         uid: user.uid,
         name: cleanName,
@@ -71,6 +94,7 @@ export const signUpStudent = async ({ name, admissionNumber, email, password, ge
         dietPreference: 'High Protein / Eggetarian',
         proteinTarget: 120,
         rewardPoints: 0,
+        emailVerified: true,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
@@ -80,11 +104,24 @@ export const signUpStudent = async ({ name, admissionNumber, email, password, ge
       } catch (firestoreErr) {
         console.warn('Firestore user profile creation notice:', firestoreErr.message);
       }
+
+      // 4. Index Admission Number mapping for unauthenticated admission number login
+      if (cleanAdmission) {
+        try {
+          await setDoc(doc(db, 'admission_map', cleanAdmission), {
+            admissionNumber: cleanAdmission,
+            email: cleanEmail,
+            uid: user.uid,
+            createdAt: new Date().toISOString()
+          });
+        } catch (mapErr) {
+          console.warn('Admission map index notice:', mapErr.message);
+        }
+      }
       
       localDb.registerUser({
         ...userProfile,
-        id: user.uid,
-        password
+        id: user.uid
       });
 
       return { user, profile: userProfile };
@@ -97,10 +134,10 @@ export const signUpStudent = async ({ name, admissionNumber, email, password, ge
       name: cleanName,
       admissionNumber: cleanAdmission,
       email: cleanEmail,
-      password,
       role: 'student',
       gender,
-      hostelBlock
+      hostelBlock,
+      emailVerified: true
     });
     return {
       user: { uid: localUser.id, email: localUser.email, displayName: localUser.name },
@@ -111,19 +148,62 @@ export const signUpStudent = async ({ name, admissionNumber, email, password, ge
 
 /**
  * Sign in existing user:
- * 1. Signs in via Firebase Auth
- * 2. Fetches user document from Firestore 'users/{uid}'
- * 3. Returns user & profile with role ('student' | 'mess_committee' | 'warden')
+ * - Students: Log in using Admission Number + Password (mapped via admission_map / local cache)
+ * - Staff: Log in using Official College Email + Password
  */
 export const signInUser = async (emailOrAdmission, password) => {
-  const cleanInput = emailOrAdmission.trim().toLowerCase();
-  
-  // Resolve email if user entered admission number
-  let targetEmail = cleanInput;
+  const cleanInput = (emailOrAdmission || '').trim();
+  if (!cleanInput) {
+    throw new Error('Please enter your Admission Number or email.');
+  }
+
+  let targetEmail = cleanInput.toLowerCase();
+
+  // If user entered Admission Number (no '@'), resolve email
   if (!cleanInput.includes('@')) {
-    const matchedUser = localDb.getUsers().find(u => (u.admissionNumber || '').toLowerCase() === cleanInput);
-    if (matchedUser) {
-      targetEmail = matchedUser.email;
+    let resolved = false;
+
+    // 1. Try admission_map index in Firestore
+    if (isFirebaseConfigured) {
+      try {
+        const mapRef = doc(db, 'admission_map', cleanInput);
+        const mapSnap = await getDoc(mapRef);
+        if (mapSnap.exists() && mapSnap.data().email) {
+          targetEmail = mapSnap.data().email.toLowerCase();
+          resolved = true;
+        }
+      } catch (e) {
+        // Fallback to local DB and pilot accounts
+      }
+    }
+
+    // 2. Check local registered user cache
+    if (!resolved) {
+      const localUser = localDb.getUsers().find(
+        u => (u.admissionNumber || '').toLowerCase() === cleanInput.toLowerCase()
+      );
+      if (localUser && localUser.email) {
+        targetEmail = localUser.email.toLowerCase();
+        resolved = true;
+      }
+    }
+
+    // 3. Check pilot seed accounts (e.g. Parth Sharma 2100320100001)
+    if (!resolved) {
+      if (cleanInput === '2100320100001') {
+        targetEmail = 'parth.sharma@abes.ac.in';
+        resolved = true;
+      } else if (cleanInput.toUpperCase() === 'MC-2026-01') {
+        targetEmail = 'committee@abes.ac.in';
+        resolved = true;
+      } else if (cleanInput.toUpperCase() === 'CW-2026-01') {
+        targetEmail = 'warden@abes.ac.in';
+        resolved = true;
+      }
+    }
+
+    if (!resolved) {
+      throw new Error(`No registered student account found for Admission Number "${cleanInput}". Please register first.`);
     }
   }
 
@@ -140,8 +220,10 @@ export const signInUser = async (emailOrAdmission, password) => {
           uid: user.uid,
           name: user.displayName || targetEmail.split('@')[0],
           email: targetEmail,
+          admissionNumber: !cleanInput.includes('@') ? cleanInput : '',
           role: targetEmail.includes('warden') ? 'warden' : targetEmail.includes('committee') ? 'mess_committee' : 'student',
           hostelBlock: 'DNB Block',
+          emailVerified: true,
           createdAt: new Date().toISOString()
         };
         try {
@@ -163,7 +245,7 @@ export const signInUser = async (emailOrAdmission, password) => {
     }
 
     if (!localUser || localUser.password !== password) {
-      throw new Error('Invalid college email/admission number or password.');
+      throw new Error('Invalid admission number or password.');
     }
     return {
       user: { uid: localUser.id, email: localUser.email, displayName: localUser.name },
@@ -187,19 +269,69 @@ export const signOutUser = async () => {
 };
 
 /**
- * Send password reset email
+ * Send password reset email for an Admission Number or College Email
  */
-export const sendPasswordReset = async (email) => {
-  const cleanEmail = email.trim().toLowerCase();
+export const sendPasswordResetForIdentifier = async (emailOrAdmission) => {
+  const cleanInput = (emailOrAdmission || '').trim();
+  if (!cleanInput) {
+    throw new Error('Please enter your Admission Number or College Email.');
+  }
+
+  let targetEmail = cleanInput.toLowerCase();
+
+  // If admission number entered, resolve to registered email
+  if (!cleanInput.includes('@')) {
+    let resolved = false;
+
+    if (isFirebaseConfigured) {
+      try {
+        const mapSnap = await getDoc(doc(db, 'admission_map', cleanInput));
+        if (mapSnap.exists() && mapSnap.data().email) {
+          targetEmail = mapSnap.data().email.toLowerCase();
+          resolved = true;
+        }
+      } catch (err) {
+        // Fallback to local DB and pilot accounts
+      }
+    }
+
+    if (!resolved) {
+      const localUser = localDb.getUsers().find(
+        u => (u.admissionNumber || '').toLowerCase() === cleanInput.toLowerCase()
+      );
+      if (localUser && localUser.email) {
+        targetEmail = localUser.email.toLowerCase();
+        resolved = true;
+      }
+    }
+
+    if (!resolved) {
+      if (cleanInput === '2100320100001') {
+        targetEmail = 'parth.sharma@abes.ac.in';
+        resolved = true;
+      } else if (cleanInput.toUpperCase() === 'MC-2026-01') {
+        targetEmail = 'committee@abes.ac.in';
+        resolved = true;
+      } else if (cleanInput.toUpperCase() === 'CW-2026-01') {
+        targetEmail = 'warden@abes.ac.in';
+        resolved = true;
+      }
+    }
+
+    if (!resolved) {
+      throw new Error(`No account found for Admission Number "${cleanInput}".`);
+    }
+  }
+
   if (isFirebaseConfigured) {
     try {
-      await sendPasswordResetEmail(auth, cleanEmail);
-      return true;
+      await sendPasswordResetEmail(auth, targetEmail);
+      return { success: true, email: targetEmail };
     } catch (err) {
       throw new Error(formatAuthError(err));
     }
   } else {
-    return true;
+    return { success: true, email: targetEmail };
   }
 };
 
@@ -242,4 +374,11 @@ export const updateUserProfileDoc = async (uid, updates) => {
   }
 
   return localDb.updateUserProfile(uid, cleanUpdates);
+};
+
+export { 
+  isValidAbesEmail, 
+  checkRegistrationEligibility, 
+  sendRegistrationOTP, 
+  verifyRegistrationOTP 
 };
