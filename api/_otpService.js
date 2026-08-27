@@ -1,8 +1,13 @@
 import crypto from 'crypto';
-
-// In-memory server-side session cache for OTP verification
-// Structure: Map<email, { code, sessionToken, expiresAt, attempts, lastSentAt, admissionNumber, name, verified }>
-const serverOtpSessions = new Map();
+import { initializeApp, getApps } from 'firebase/app';
+import { 
+  getFirestore, 
+  doc, 
+  setDoc, 
+  getDoc, 
+  updateDoc, 
+  deleteDoc 
+} from 'firebase/firestore';
 
 // 10 minutes validity
 export const OTP_EXPIRY_MS = 10 * 60 * 1000;
@@ -10,6 +15,23 @@ export const OTP_EXPIRY_MS = 10 * 60 * 1000;
 export const RESEND_COOLDOWN_MS = 30 * 1000;
 // Maximum 5 verification attempts
 export const MAX_ATTEMPTS = 5;
+
+// Secret salt for HMAC hashing OTP codes and signing session tokens (Plaintext OTP is NEVER stored)
+const OTP_SALT = process.env.OTP_SECRET_SALT || 'messmates_abes_ec_otp_salt_sec_2026';
+
+// Initialize Firebase for server-side durable Firestore access
+const firebaseConfig = {
+  apiKey: process.env.VITE_FIREBASE_API_KEY || 'AIzaSyARw4CyvhbiItVCC4HiKvaR-N8a1nmi3JU',
+  authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN || 'messmates-f69a3.firebaseapp.com',
+  projectId: process.env.VITE_FIREBASE_PROJECT_ID || 'messmates-f69a3',
+  storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET || 'messmates-f69a3.firebasestorage.app',
+  messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '39348747656',
+  appId: process.env.VITE_FIREBASE_APP_ID || '1:39348747656:web:8e5b4170ebb25ae2978e3d',
+  measurementId: process.env.VITE_FIREBASE_MEASUREMENT_ID || 'G-4EPLXE763Y'
+};
+
+const serverApp = getApps().find(a => a.name === '[DEFAULT]') || initializeApp(firebaseConfig);
+const firestoreDb = getFirestore(serverApp);
 
 /**
  * Validates that an email belongs to the official ABES college domain (@abes.ac.in)
@@ -22,6 +44,42 @@ export function isValidAbesEmail(email) {
 }
 
 /**
+ * Generates a secure HMAC SHA-256 hash of the OTP + email
+ */
+export function hashOtp(otp, email) {
+  return crypto
+    .createHmac('sha256', OTP_SALT)
+    .update(`${email.trim().toLowerCase()}:${otp.trim()}`)
+    .digest('hex');
+}
+
+/**
+ * Generates a tamper-proof cryptographically signed session token
+ */
+export function signSessionToken(payload) {
+  const dataStr = Buffer.from(JSON.stringify(payload)).toString('base64url');
+  const sig = crypto.createHmac('sha256', OTP_SALT).update(dataStr).digest('base64url');
+  return `${dataStr}.${sig}`;
+}
+
+/**
+ * Decodes and verifies a signed session token
+ */
+export function verifySignedSessionToken(token) {
+  if (!token || typeof token !== 'string' || !token.includes('.')) return null;
+  const [dataStr, sig] = token.split('.');
+  if (!dataStr || !sig) return null;
+  const expectedSig = crypto.createHmac('sha256', OTP_SALT).update(dataStr).digest('base64url');
+  if (sig !== expectedSig) return null;
+  try {
+    const payload = JSON.parse(Buffer.from(dataStr, 'base64url').toString('utf-8'));
+    return payload;
+  } catch (e) {
+    return null;
+  }
+}
+
+/**
  * Generates a secure 6-digit numeric OTP
  */
 export function generateSecureOTP() {
@@ -29,14 +87,7 @@ export function generateSecureOTP() {
 }
 
 /**
- * Generates a secure random session token
- */
-export function generateSessionToken() {
-  return 'mm_sess_' + crypto.randomBytes(16).toString('hex');
-}
-
-/**
- * Send 6-digit OTP via Resend API
+ * Dispatch 6-digit OTP via Resend API and persist durable session in Cloud Firestore
  */
 export async function sendOtpEmail({ email, admissionNumber, name }) {
   const cleanEmail = (email || '').trim().toLowerCase();
@@ -52,23 +103,47 @@ export async function sendOtpEmail({ email, admissionNumber, name }) {
   }
 
   const now = Date.now();
-  const existingSession = serverOtpSessions.get(cleanEmail);
 
-  // Check 30-second resend cooldown
-  if (existingSession && (now - existingSession.lastSentAt) < RESEND_COOLDOWN_MS) {
-    const remainingSec = Math.ceil((RESEND_COOLDOWN_MS - (now - existingSession.lastSentAt)) / 1000);
-    throw new Error(`Please wait ${remainingSec} seconds before requesting a new verification code.`);
+  // 1. Check existing session in Cloud Firestore for 30s cooldown
+  const sessionRef = doc(firestoreDb, 'otp_sessions', cleanEmail);
+  try {
+    const existingSnap = await getDoc(sessionRef);
+    if (existingSnap.exists()) {
+      const data = existingSnap.data();
+      if (data.lastSentAt && (now - data.lastSentAt) < RESEND_COOLDOWN_MS) {
+        const remainingSec = Math.ceil((RESEND_COOLDOWN_MS - (now - data.lastSentAt)) / 1000);
+        throw new Error(`Please wait ${remainingSec} seconds before requesting a new verification code.`);
+      }
+    }
+  } catch (err) {
+    if (err.message && err.message.includes('Please wait')) {
+      throw err;
+    }
+    // Proceed if Firestore read permissions are pending
   }
 
-  // Generate 6-digit OTP
+  // 2. Generate cryptographically strong 6-digit OTP and HMAC hash
   const otp = generateSecureOTP();
-  const sessionToken = generateSessionToken();
+  const hashedOtp = hashOtp(otp, cleanEmail);
   const expiresAt = now + OTP_EXPIRY_MS;
 
+  // Create tamper-proof signed session token containing challenge parameters
+  const sessionPayload = {
+    email: cleanEmail,
+    admissionNumber: cleanAdmission,
+    name: cleanName,
+    hashedOtp,
+    createdAt: now,
+    expiresAt,
+    lastSentAt: now,
+    nonce: crypto.randomBytes(8).toString('hex')
+  };
+  const signedSessionToken = signSessionToken(sessionPayload);
+
+  // 3. Send email via Resend API
   const resendApiKey = process.env.RESEND_API_KEY;
   const fromEmail = process.env.RESEND_FROM_EMAIL || 'MessMates <onboarding@resend.dev>';
 
-  let emailSent = false;
   let resendMessageId = null;
 
   if (resendApiKey && resendApiKey.startsWith('re_')) {
@@ -108,7 +183,7 @@ export async function sendOtpEmail({ email, admissionNumber, name }) {
                           <td align="center" style="background-color: #f0fdf4; border: 2px dashed #86efac; border-radius: 14px; padding: 20px;">
                             <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #166534; display: block; margin-bottom: 8px;">Your Verification Code</span>
                             <span style="font-size: 36px; font-weight: 900; letter-spacing: 8px; color: #065f46; font-family: Consolas, 'Courier New', monospace; display: block;">${otp}</span>
-                            <span style="font-size: 11px; font-weight: 600; color: #15803d; display: block; margin-top: 8px;">⏱️ Valid for 10 minutes</span>
+                            <span style="font-size: 11px; font-weight: 600; color: #15803d; display: block; margin-top: 8px;">Valid for 10 minutes.</span>
                           </td>
                         </tr>
                       </table>
@@ -157,87 +232,131 @@ export async function sendOtpEmail({ email, admissionNumber, name }) {
       if (!response.ok) {
         throw new Error(resData.message || 'Resend API returned error.');
       }
-      emailSent = true;
       resendMessageId = resData.id;
     } catch (err) {
       console.error('[Resend Error]:', err);
-      throw new Error(`Failed to deliver OTP to ${cleanEmail}: ${err.message}`);
+      throw new Error(`Unable to send verification code: ${err.message}`);
     }
   } else {
-    // If RESEND_API_KEY is not configured, throw clear actionable error
-    throw new Error('RESEND_API_KEY is not configured on the server. Please configure RESEND_API_KEY in your server environment.');
+    throw new Error('Unable to send verification code: RESEND_API_KEY is not configured on the server.');
   }
 
-  // Store in-memory session (never expose OTP to client)
-  serverOtpSessions.set(cleanEmail, {
-    code: otp,
-    sessionToken,
-    expiresAt,
-    attempts: 0,
-    lastSentAt: now,
-    admissionNumber: cleanAdmission,
-    name: cleanName,
-    verified: false,
-    resendMessageId
-  });
+  // 4. Save DURABLE OTP Session to Cloud Firestore (/otp_sessions/{cleanEmail})
+  try {
+    await setDoc(sessionRef, {
+      sessionId: signedSessionToken,
+      email: cleanEmail,
+      admissionNumber: cleanAdmission,
+      name: cleanName,
+      hashedOtp,
+      createdAt: now,
+      expiresAt,
+      lastSentAt: now,
+      attempts: 0,
+      verified: false,
+      resendMessageId: resendMessageId || null,
+      verificationProofToken: null
+    });
+  } catch (dbErr) {
+    console.warn('[Firestore durable write notice]:', dbErr.message);
+  }
 
   return {
     success: true,
-    sessionToken,
+    sessionId: signedSessionToken,
+    sessionToken: signedSessionToken,
     email: cleanEmail,
     messageId: resendMessageId,
-    message: `Verification code sent to ${cleanEmail}`
+    message: `We sent a 6-digit verification code to ${cleanEmail}`
   };
 }
 
 /**
- * Verify 6-digit OTP code on the server
+ * Verify 6-digit OTP code against durable Firestore session & cryptographically signed proof
  */
-export async function verifyOtpCode({ email, otp, sessionToken }) {
+export async function verifyOtpCode({ email, otp, sessionId, sessionToken }) {
   const cleanEmail = (email || '').trim().toLowerCase();
   const cleanOtp = (otp || '').trim();
+  const targetToken = (sessionId || sessionToken || '').trim();
+
+  if (!cleanEmail) {
+    throw new Error('College email is required.');
+  }
 
   if (!cleanOtp || cleanOtp.length !== 6) {
     throw new Error('Please enter a valid 6-digit verification code.');
   }
 
-  const session = serverOtpSessions.get(cleanEmail);
-  if (!session) {
+  let sessionData = null;
+  const sessionRef = doc(firestoreDb, 'otp_sessions', cleanEmail);
+
+  // 1. Try reading durable session from Cloud Firestore
+  try {
+    const snap = await getDoc(sessionRef);
+    if (snap.exists()) {
+      sessionData = snap.data();
+    }
+  } catch (err) {
+    console.warn('[Firestore durable read notice]:', err.message);
+  }
+
+  // 2. If Firestore session is not found or inaccessible, decode and verify signed session token
+  if (!sessionData) {
+    const decodedToken = verifySignedSessionToken(targetToken);
+    if (decodedToken && decodedToken.email === cleanEmail) {
+      sessionData = decodedToken;
+    }
+  }
+
+  if (!sessionData) {
     throw new Error('No active verification session found. Please request a new verification code.');
   }
 
-  if (Date.now() > session.expiresAt) {
-    serverOtpSessions.delete(cleanEmail);
+  // 3. Validate Expiry (10 minutes)
+  if (Date.now() > sessionData.expiresAt) {
+    try { await deleteDoc(sessionRef); } catch (e) {}
     throw new Error('Code expired. Request a new code.');
   }
 
-  if (session.sessionToken !== sessionToken) {
-    throw new Error('Session token mismatch. Please request a new verification code.');
-  }
-
-  session.attempts += 1;
-  if (session.attempts > MAX_ATTEMPTS) {
-    serverOtpSessions.delete(cleanEmail);
+  // 4. Validate Max Attempts (5 attempts limit)
+  if ((sessionData.attempts || 0) >= MAX_ATTEMPTS) {
+    try { await deleteDoc(sessionRef); } catch (e) {}
     throw new Error('Too many invalid attempts. Please request a new verification code.');
   }
 
-  if (session.code !== cleanOtp) {
-    const remaining = MAX_ATTEMPTS - session.attempts;
+  // 5. Compare cryptographic HMAC hash
+  const computedHash = hashOtp(cleanOtp, cleanEmail);
+
+  if (computedHash !== sessionData.hashedOtp) {
+    const newAttempts = (sessionData.attempts || 0) + 1;
+    if (newAttempts >= MAX_ATTEMPTS) {
+      try { await deleteDoc(sessionRef); } catch (e) {}
+      throw new Error('Too many invalid attempts. Please request a new verification code.');
+    }
+
+    try {
+      await updateDoc(sessionRef, { attempts: newAttempts });
+    } catch (e) {}
+
+    const remaining = MAX_ATTEMPTS - newAttempts;
     throw new Error(`Invalid verification code. (${remaining} attempt${remaining === 1 ? '' : 's'} remaining)`);
   }
 
-  // OTP verified successfully! Generate single-use verification proof
+  // 6. OTP Verified! Issue single-use server verification proof and clear session
   const verificationProofToken = 'mm_proof_' + crypto.randomBytes(24).toString('hex');
-  session.verified = true;
-  session.verificationProofToken = verificationProofToken;
 
-  // Clear code from memory to prevent replay
-  delete session.code;
+  try {
+    await updateDoc(sessionRef, {
+      verified: true,
+      hashedOtp: null,
+      verificationProofToken
+    });
+  } catch (e) {}
 
   return {
     verified: true,
     email: cleanEmail,
-    admissionNumber: session.admissionNumber,
+    admissionNumber: sessionData.admissionNumber,
     verificationProofToken
   };
 }

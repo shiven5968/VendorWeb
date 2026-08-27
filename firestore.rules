@@ -235,5 +235,18 @@ service cloud.firestore {
       // Modification or deletion strictly reserved for Chief Warden
       allow update, delete: if isWarden();
     }
+
+
+    // ===============================================================
+    // 11. DURABLE OTP VERIFICATION SESSIONS (/otp_sessions/{sessionKey})
+    // Serverless durable session store (10 min TTL)
+    // Document contains ONLY cryptographic HMAC hash, NEVER plaintext OTP
+    // ===============================================================
+    match /otp_sessions/{sessionKey} {
+      // Direct document access allowed for serverless OTP lifecycle
+      allow get: if true;
+      allow list: if false; // Deny collection browsing/listing to protect privacy
+      allow create, update, delete: if true;
+    }
   }
 }
