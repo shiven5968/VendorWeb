@@ -20,7 +20,7 @@ export const initiateMusclePassPayment = async ({
   userId,
   userName,
   userEmail,
-  planId = 'muscle_pass_monthly',
+  planId = 'MUSCLE_MONTHLY',
   onSuccess,
   onError
 }) => {
@@ -30,7 +30,7 @@ export const initiateMusclePassPayment = async ({
       throw new Error('Unable to connect to Razorpay Payment Gateway. Please check your network.');
     }
 
-    // 1. Create Order Server-Side
+    // 1. Create Order Server-Side (Server determines exact price from planId)
     const metaEnv = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env : {};
     const orderApiUrl = metaEnv.VITE_RAZORPAY_ORDER_URL || '/api/create-razorpay-order';
 
@@ -39,9 +39,7 @@ export const initiateMusclePassPayment = async ({
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         userId,
-        planId,
-        amount: 29900, // ₹299.00
-        currency: 'INR'
+        planId
       })
     });
 
@@ -54,9 +52,9 @@ export const initiateMusclePassPayment = async ({
     const options = {
       key: orderData.keyId,
       amount: orderData.amount,
-      currency: orderData.currency,
+      currency: orderData.currency || 'INR',
       name: 'MessMates',
-      description: 'Muscle Pass - 1 Month High-Protein Access',
+      description: `${orderData.planName || 'Muscle Pass'} - High-Protein Nutrition Access`,
       image: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&q=80&w=200',
       order_id: orderData.orderId,
       prefill: {
@@ -78,7 +76,7 @@ export const initiateMusclePassPayment = async ({
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature: response.razorpay_signature,
               userId,
-              planId
+              planId: orderData.planId || planId
             })
           });
 
