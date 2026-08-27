@@ -3,7 +3,7 @@ import { useApp } from '../context/AppContext';
 import { X, Star, ArrowLeft, Check, Send } from 'lucide-react';
 
 export const MealDetailModal = () => {
-  const { selectedMealModal, setSelectedMealModal, rateMeal, getUserRating, getMealStats } = useApp();
+  const { selectedMealModal, setSelectedMealModal, rateMeal, getUserRating, getMealStats, allRatings } = useApp();
   const [showRatingBox, setShowRatingBox] = useState(false);
   const [selectedTag, setSelectedTag] = useState('');
   const [feedbackText, setFeedbackText] = useState('');
@@ -204,6 +204,35 @@ export const MealDetailModal = () => {
               )}
             </div>
           )}
+          {/* Reviews List */}
+          <div className="space-y-2 border-t border-slate-100 dark:border-slate-800 pt-4">
+            <h4 className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">Student Reviews</h4>
+            {((allRatings || []).filter(r => r.mealId === meal.id && r.feedback && r.feedback.trim() !== '')).length === 0 ? (
+              <p className="text-xs text-slate-500 italic">No reviews submitted yet for this meal.</p>
+            ) : (
+              <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
+                {(allRatings || [])
+                  .filter(r => r.mealId === meal.id && r.feedback && r.feedback.trim() !== '')
+                  .map((rev) => (
+                    <div key={rev.id} className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800/80 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-black text-slate-700 dark:text-slate-300">{rev.userName}</span>
+                        <div className="flex items-center space-x-1">
+                          <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
+                          <span className="text-xs font-black text-slate-900 dark:text-white">{rev.rating}</span>
+                        </div>
+                      </div>
+                      <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">{rev.feedback}</p>
+                      {rev.tags && rev.tags.length > 0 && (
+                        <span className="inline-block px-2 py-0.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold">
+                          {rev.tags[0]}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+              </div>
+            )}
+          </div>
 
           {/* Primary Action Buttons */}
           <div className="grid grid-cols-2 gap-3 pt-1">
