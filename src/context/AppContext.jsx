@@ -10,7 +10,7 @@ import {
   seedFirestoreData
 } from '../services/db';
 import { db as firestoreDb, isFirebaseConfigured } from '../services/firebase';
-import { collection, onSnapshot } from 'firebase/firestore';
+import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { seedPilotAccounts } from '../services/seedUsers';
 import { useAuth } from './AuthContext';
 
@@ -93,10 +93,9 @@ export const AppProvider = ({ children }) => {
     }
   }, [darkMode]);
 
-  // Firestore Real-Time Database Synchronization
+  // Firestore Background Seeding (Runs once on mount)
   useEffect(() => {
     if (isFirebaseConfigured) {
-      // 1. Run Seeding in background
       const initializeFirebaseData = async () => {
         try {
           await seedFirestoreData();
@@ -106,101 +105,132 @@ export const AppProvider = ({ children }) => {
         }
       };
       initializeFirebaseData();
+    }
+  }, []);
 
-      // 2. Attach listeners with graceful error handling
-      const unsubMeals = onSnapshot(
-        collection(firestoreDb, 'meals'),
-        (snapshot) => {
-          const list = [];
-          snapshot.forEach(doc => list.push(doc.data()));
-          if (list.length > 0) setAllMeals(list);
-        },
-        (err) => console.warn('Firestore meals listener:', err.message)
-      );
+  // Live Firestore Real-Time Subscriptions (Synchronized upon login & role change)
+  useEffect(() => {
+    if (!isFirebaseConfigured || !authUser) {
+      return;
+    }
 
-      const unsubRatings = onSnapshot(
-        collection(firestoreDb, 'ratings'),
-        (snapshot) => {
-          const list = [];
-          snapshot.forEach(doc => list.push(doc.data()));
-          setAllRatings(list);
-        },
-        (err) => console.warn('Firestore ratings listener:', err.message)
-      );
+    const currentUid = authUser.uid;
+    const isStaffUser = currentRole === 'warden' || currentRole === 'mess_committee' || currentRole === 'committee' || (authUser.email || '').includes('warden') || (authUser.email || '').includes('committee');
 
-      const unsubComplaints = onSnapshot(
-        collection(firestoreDb, 'complaints'),
-        (snapshot) => {
-          const list = [];
-          snapshot.forEach(doc => list.push(doc.data()));
-          setAllComplaints(list);
-        },
-        (err) => console.warn('Firestore complaints listener:', err.message)
-      );
+    // 1. MEALS: Community schedule
+    const unsubMeals = onSnapshot(
+      collection(firestoreDb, 'meals'),
+      (snapshot) => {
+        const list = [];
+        snapshot.forEach(doc => list.push(doc.data()));
+        if (list.length > 0) setAllMeals(list);
+      },
+      (err) => console.warn('Firestore meals listener:', err.message)
+    );
 
-      const unsubPolls = onSnapshot(
-        collection(firestoreDb, 'polls'),
-        (snapshot) => {
-          const list = [];
-          snapshot.forEach(doc => list.push(doc.data()));
-          const activePoll = list.find(p => p.status === 'ACTIVE') || list[0] || null;
-          if (activePoll) setPoll(activePoll);
-        },
-        (err) => console.warn('Firestore polls listener:', err.message)
-      );
+    // 2. RATINGS & FEEDBACK: All community ratings
+    const unsubRatings = onSnapshot(
+      collection(firestoreDb, 'ratings'),
+      (snapshot) => {
+        const list = [];
+        snapshot.forEach(doc => list.push(doc.data()));
+        list.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
+        setAllRatings(list);
+      },
+      (err) => console.warn('Firestore ratings listener:', err.message)
+    );
 
-      const unsubVotes = onSnapshot(
-        collection(firestoreDb, 'votes'),
-        (snapshot) => {
-          const list = [];
-          snapshot.forEach(doc => list.push(doc.data()));
-          setVotesList(list);
-        },
-        (err) => console.warn('Firestore votes listener:', err.message)
-      );
+    // 3. POLLS: Active replacement poll
+    const unsubPolls = onSnapshot(
+      collection(firestoreDb, 'polls'),
+      (snapshot) => {
+        const list = [];
+        snapshot.forEach(doc => list.push(doc.data()));
+        const activePoll = list.find(p => p.status === 'ACTIVE') || list[0] || null;
+        if (activePoll) setPoll(activePoll);
+      },
+      (err) => console.warn('Firestore polls listener:', err.message)
+    );
 
-      const unsubProtein = onSnapshot(
-        collection(firestoreDb, 'protein_logs'),
-        (snapshot) => {
-          const list = [];
-          snapshot.forEach(doc => list.push(doc.data()));
-          setProteinLogs(list);
-        },
-        (err) => console.warn('Firestore protein listener:', err.message)
-      );
+    // 4. VOTES: Poll voting numbers
+    const unsubVotes = onSnapshot(
+      collection(firestoreDb, 'votes'),
+      (snapshot) => {
+        const list = [];
+        snapshot.forEach(doc => list.push(doc.data()));
+        setVotesList(list);
+      },
+      (err) => console.warn('Firestore votes listener:', err.message)
+    );
 
-      const unsubRedemptions = onSnapshot(
-        collection(firestoreDb, 'redemptions'),
-        (snapshot) => {
-          const list = [];
-          snapshot.forEach(doc => list.push(doc.data()));
-          setRedemptions(list);
-        },
-        (err) => console.warn('Firestore redemptions listener:', err.message)
-      );
+    // 5. COMPLAINTS: Staff receives all, Student receives own
+    const complaintsTarget = isStaffUser
+      ? collection(firestoreDb, 'complaints')
+      : query(collection(firestoreDb, 'complaints'), where('userId', '==', currentUid));
 
-      const unsubUsers = onSnapshot(
+    const unsubComplaints = onSnapshot(
+      complaintsTarget,
+      (snapshot) => {
+        const list = [];
+        snapshot.forEach(doc => list.push(doc.data()));
+        list.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
+        setAllComplaints(list);
+      },
+      (err) => console.warn('Firestore complaints listener:', err.message)
+    );
+
+    // 6. PROTEIN LOGS: Current student logs
+    const proteinTarget = query(collection(firestoreDb, 'protein_logs'), where('userId', '==', currentUid));
+    const unsubProtein = onSnapshot(
+      proteinTarget,
+      (snapshot) => {
+        const list = [];
+        snapshot.forEach(doc => list.push(doc.data()));
+        setProteinLogs(list);
+      },
+      (err) => console.warn('Firestore protein listener:', err.message)
+    );
+
+    // 7. REDEMPTIONS: Staff receives all, Student receives own
+    const redemptionsTarget = isStaffUser
+      ? collection(firestoreDb, 'redemptions')
+      : query(collection(firestoreDb, 'redemptions'), where('userId', '==', currentUid));
+
+    const unsubRedemptions = onSnapshot(
+      redemptionsTarget,
+      (snapshot) => {
+        const list = [];
+        snapshot.forEach(doc => list.push(doc.data()));
+        setRedemptions(list);
+      },
+      (err) => console.warn('Firestore redemptions listener:', err.message)
+    );
+
+    // 8. USERS: Staff directory
+    let unsubUsers = () => {};
+    if (isStaffUser) {
+      unsubUsers = onSnapshot(
         collection(firestoreDb, 'users'),
         (snapshot) => {
           const list = [];
           snapshot.forEach(doc => list.push(doc.data()));
-          setUsersList(list);
+          if (list.length > 0) setUsersList(list);
         },
         (err) => console.warn('Firestore users listener:', err.message)
       );
-
-      return () => {
-        unsubMeals();
-        unsubRatings();
-        unsubComplaints();
-        unsubPolls();
-        unsubVotes();
-        unsubProtein();
-        unsubRedemptions();
-        unsubUsers();
-      };
     }
-  }, []);
+
+    return () => {
+      unsubMeals();
+      unsubRatings();
+      unsubPolls();
+      unsubVotes();
+      unsubComplaints();
+      unsubProtein();
+      unsubRedemptions();
+      unsubUsers();
+    };
+  }, [authUser?.uid, currentRole]);
 
   const toggleDarkMode = () => setDarkMode(prev => !prev);
 
@@ -289,23 +319,40 @@ export const AppProvider = ({ children }) => {
 
   // 3. RATINGS & FEEDBACK
   const rateMeal = async (mealId, stars, feedback = '', tags = []) => {
-    if (!currentUser) return;
-    const meal = (allMeals || []).find(m => m.id === mealId);
-    await db.submitRating({
-      userId: currentUser.uid || currentUser.id,
-      userName: currentUser.name,
-      mealId,
-      mealName: meal?.name || 'Mess Meal',
-      rating: stars,
-      feedback,
-      tags
-    });
-    if (!isFirebaseConfigured) {
-      setAllRatings(db.getAllRatings());
-      setUsersList(db.getUsers());
+    if (!currentUser) {
+      const err = new Error('You must be logged in to submit a rating.');
+      console.warn('[MessMates Auth Warning]:', err.message);
+      addNotification('Authentication Required', err.message, 'warning');
+      throw err;
     }
-    setRatingsVersion(v => v + 1);
-    addNotification('Rating Saved 🌟', `+20 Health Points awarded to ${currentUser.name}.`, 'success');
+    const meal = (allMeals || []).find(m => m.id === mealId);
+    try {
+      const ratingEntry = await db.submitRating({
+        userId: currentUser.uid || currentUser.id,
+        userName: currentUser.name,
+        mealId,
+        mealName: meal?.name || 'Mess Meal',
+        rating: stars,
+        feedback,
+        tags
+      });
+      setAllRatings(prev => {
+        const existingIdx = prev.findIndex(r => r.id === ratingEntry.id || (r.userId === ratingEntry.userId && r.mealId === ratingEntry.mealId));
+        if (existingIdx !== -1) {
+          const updated = [...prev];
+          updated[existingIdx] = ratingEntry;
+          return updated;
+        }
+        return [ratingEntry, ...prev];
+      });
+      setRatingsVersion(v => v + 1);
+      addNotification('Rating Saved 🌟', `+20 Health Points awarded to ${currentUser.name}.`, 'success');
+      return ratingEntry;
+    } catch (e) {
+      console.error('[Firebase Error in rateMeal]:', e);
+      addNotification('Rating Failed', e.message || 'Could not save rating to cloud.', 'warning');
+      throw e;
+    }
   };
 
   const getUserRating = (mealId) => {
@@ -319,29 +366,45 @@ export const AppProvider = ({ children }) => {
     : [];
 
   const createComplaint = async (category, description) => {
-    if (!currentUser) return;
-    const newComp = await db.createComplaint({
-      userId: currentUser.uid || currentUser.id,
-      userName: currentUser.name,
-      block: currentUser.hostelBlock || 'DNB Block',
-      category,
-      description
-    });
-    if (!isFirebaseConfigured) {
-      setAllComplaints(db.getAllComplaints());
+    if (!currentUser) {
+      const err = new Error('You must be logged in to submit a complaint.');
+      console.warn('[MessMates Auth Warning]:', err.message);
+      addNotification('Authentication Required', err.message, 'warning');
+      throw err;
     }
-    setComplaintsVersion(v => v + 1);
-    addNotification('Complaint Logged', 'Your issue was submitted with status PENDING.', 'info');
-    return newComp;
+    try {
+      const newComp = await db.createComplaint({
+        userId: currentUser.uid || currentUser.id,
+        userName: currentUser.name,
+        block: currentUser.hostelBlock || 'DNB Block',
+        category,
+        description
+      });
+      setAllComplaints(prev => {
+        const exists = prev.some(c => c.id === newComp.id);
+        return exists ? prev : [newComp, ...prev];
+      });
+      setComplaintsVersion(v => v + 1);
+      addNotification('Complaint Logged', 'Your issue was submitted with status PENDING.', 'info');
+      return newComp;
+    } catch (e) {
+      console.error('[Firebase Error in createComplaint]:', e);
+      addNotification('Submission Failed', e.message || 'Could not log complaint to cloud.', 'warning');
+      throw e;
+    }
   };
 
   const updateComplaintStatus = async (complaintId, newStatus) => {
-    const updated = await db.updateComplaintStatus(complaintId, newStatus);
-    if (!isFirebaseConfigured) {
-      setAllComplaints(updated);
+    try {
+      const updated = await db.updateComplaintStatus(complaintId, newStatus);
+      setAllComplaints(prev => prev.map(c => c.id === complaintId ? { ...c, status: newStatus, ...(newStatus === 'RESOLVED' ? { resolvedAt: new Date().toISOString() } : {}) } : c));
+      setComplaintsVersion(v => v + 1);
+      addNotification('Status Updated', `Complaint marked as ${newStatus}.`, 'success');
+      return updated;
+    } catch (e) {
+      addNotification('Update Failed', e.message || 'Could not update status.', 'warning');
+      throw e;
     }
-    setComplaintsVersion(v => v + 1);
-    addNotification('Status Updated', `Complaint marked as ${newStatus}.`, 'success');
   };
 
   // 5. VOTING & POLLS

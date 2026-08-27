@@ -2,8 +2,8 @@ import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth, setPersistence, browserLocalPersistence } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
-const apiKey = import.meta.env.VITE_FIREBASE_API_KEY;
-const projectId = import.meta.env.VITE_FIREBASE_PROJECT_ID;
+const apiKey = import.meta.env.VITE_FIREBASE_API_KEY || 'AIzaSyARw4CyvhbiItVCC4HiKvaR-N8a1nmi3JU';
+const projectId = import.meta.env.VITE_FIREBASE_PROJECT_ID || 'messmates-f69a3';
 
 // Check if environment variables are populated with real keys
 export const isFirebaseConfigured = Boolean(
@@ -11,18 +11,18 @@ export const isFirebaseConfigured = Boolean(
   projectId &&
   !apiKey.includes('Placeholder') &&
   !apiKey.includes('your-api-key') &&
-  !apiKey.includes('your-') &&
   apiKey.trim().length > 15
 );
 
-// Firebase configuration from environment variables with intelligent fallbacks
+// Firebase configuration with live production fallback for cloud deployments (e.g. Vercel)
 const firebaseConfig = {
-  apiKey: apiKey || 'AIzaSyDemoPlaceholderApiKeyForBuildValidationOnly',
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || (projectId ? `${projectId}.firebaseapp.com` : 'messmates-abes.firebaseapp.com'),
-  projectId: projectId || 'messmates-abes',
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || (projectId ? `${projectId}.firebasestorage.app` : 'messmates-abes.firebasestorage.app'),
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '1234567890',
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || '1:1234567890:web:abcdef123456'
+  apiKey: apiKey,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'messmates-f69a3.firebaseapp.com',
+  projectId: projectId,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'messmates-f69a3.firebasestorage.app',
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '39348747656',
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || '1:39348747656:web:8e5b4170ebb25ae2978e3d',
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || 'G-4EPLXE763Y'
 };
 
 // Initialize Firebase App singleton without duplicates

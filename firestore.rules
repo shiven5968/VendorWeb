@@ -1,130 +1,222 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // Helper function to check if user is authenticated
+
+    // ===============================================================
+    // CORE HELPER FUNCTIONS & STRICT ROLE VERIFICATION
+    // ===============================================================
+
+    // Check if the request is authenticated
     function isAuthenticated() {
       return request.auth != null;
     }
-    
-    // Helper function to check if user owns the document
+
+    // Check if the caller matches the document owner UID
     function isOwner(userId) {
       return isAuthenticated() && request.auth.uid == userId;
     }
-    
-    // Helper function to get the current user's role from their document
+
+    // Safely retrieve caller's role from their /users/{uid} document
     function getUserRole() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
-    }
-    
-    function isWarden() {
-      return isAuthenticated() && getUserRole() == 'warden';
-    }
-    
-    function isCommittee() {
-      return isAuthenticated() && (getUserRole() == 'mess_committee' || getUserRole() == 'committee');
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
+        : 'none';
     }
 
+    // Role check: Student (STRICT: true ONLY when role == 'student')
+    function isStudent() {
+      return isAuthenticated() && getUserRole() == 'student';
+    }
+
+    // Role check: Chief Warden
+    function isWarden() {
+      return isAuthenticated() && (
+        getUserRole() == 'warden' ||
+        (request.auth.token.email != null && (
+          request.auth.token.email == 'warden@abes.ac.in' ||
+          request.auth.token.email.matches('^warden.*@abes\\.ac\\.in$')
+        ))
+      );
+    }
+
+    // Role check: Mess Committee
+    function isCommittee() {
+      return isAuthenticated() && (
+        getUserRole() == 'mess_committee' ||
+        getUserRole() == 'committee' ||
+        (request.auth.token.email != null && (
+          request.auth.token.email == 'committee@abes.ac.in' ||
+          request.auth.token.email.matches('^committee.*@abes\\.ac\\.in$')
+        ))
+      );
+    }
+
+    // Authorized staff (Mess Committee or Warden)
+    function isStaff() {
+      return isCommittee() || isWarden();
+    }
+
+
     // ===============================================================
-    // USERS COLLECTION
+    // 1. USERS COLLECTION (/users/{userId})
     // ===============================================================
     match /users/{userId} {
-      // Authenticated users can read their own profile, staff can read all
-      allow read: if isOwner(userId) || isWarden() || isCommittee();
-      
-      // User can create their initial profile during registration
-      allow create: if isAuthenticated() && request.auth.uid == userId;
-      
-      // User can update their own profile fields, but CANNOT change their own role!
-      allow update: if isOwner(userId) && request.resource.data.role == resource.data.role;
-      
-      // Only wardens can delete or manage account roles
+      // Students can read ONLY their own profile; Warden and Committee can read profiles
+      allow read: if isOwner(userId) || isStaff();
+
+      // Initial registration: Users can create their own profile with role = 'student'
+      // Warden and verified committee can create/seed accounts with authorized roles
+      allow create: if isAuthenticated() 
+                    && request.auth.uid == userId 
+                    && request.resource.data.uid == userId 
+                    && (request.resource.data.role == 'student' || isWarden() || (isCommittee() && request.resource.data.role in ['mess_committee', 'committee']));
+
+      // Profile updates:
+      // - Students can update their own personal info, but are STRICTLY FORBIDDEN from modifying their 'role'
+      // - Warden can update any user profile including role management
+      allow update: if (isOwner(userId) && request.resource.data.role == resource.data.role && request.resource.data.uid == resource.data.uid)
+                    || isWarden();
+
+      // Account deletion is strictly restricted to Chief Warden
       allow delete: if isWarden();
     }
 
+
     // ===============================================================
-    // MEALS / MENUS COLLECTION
+    // 2. MEALS & MENU COLLECTION (/meals/{mealId})
     // ===============================================================
     match /meals/{mealId} {
-      // Public mess menu is visible to all students on campus
-      allow read: if true;
-      
-      // Only Mess Committee and Warden can create, edit, or delete meals
-      allow write: if isCommittee() || isWarden();
+      // Everyone authenticated can read the dining menu
+      allow read: if isAuthenticated();
+
+      // ONLY Mess Committee and Chief Warden can create, edit, or delete meals
+      allow create, update, delete: if isStaff();
     }
 
-    // ===============================================================
-    // REWARDS CATALOG
-    // ===============================================================
-    match /rewards_catalog/{rewardId} {
-      allow read: if true;
-      allow write: if isCommittee() || isWarden();
-    }
 
     // ===============================================================
-    // RATINGS & FEEDBACK COLLECTION
+    // 3. RATINGS & FEEDBACK COLLECTION (/ratings/{ratingId})
     // ===============================================================
     match /ratings/{ratingId} {
-      // All students can view community ratings & reviews
-      allow read: if true;
-      
-      // Students can create their own meal rating (must match authenticated uid)
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      
-      // Users can only update their own rating
-      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid;
-      
-      // Wardens can moderate / remove offensive ratings
-      allow delete: if isWarden();
+      // Authenticated users can view community meal ratings & reviews
+      allow read: if isAuthenticated();
+
+      // ONLY verified students can create ratings (Committee & Warden cannot create student ratings)
+      allow create: if isStudent() 
+                    && request.resource.data.userId == request.auth.uid;
+
+      // Students can ONLY update their own ratings; cannot transfer ownership or spoof userId
+      allow update: if isStudent() 
+                    && resource.data.userId == request.auth.uid 
+                    && request.resource.data.userId == request.auth.uid;
+
+      // Students can delete their own ratings; Wardens can moderate / remove offensive reviews
+      allow delete: if (isStudent() && resource.data.userId == request.auth.uid) 
+                    || isWarden();
     }
 
+
     // ===============================================================
-    // COMPLAINTS COLLECTION
+    // 4. COMPLAINTS COLLECTION (/complaints/{complaintId})
     // ===============================================================
     match /complaints/{complaintId} {
-      // Students can read their own complaints; Wardens and Committee can read all complaints
-      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isCommittee() || isWarden());
-      
-      // Students can file a new complaint
-      allow create: if isAuthenticated() 
+      // Students can read ONLY their own complaints; Staff (Committee & Warden) can read all complaints
+      allow read: if (isStudent() && resource.data.userId == request.auth.uid) || isStaff();
+
+      // ONLY verified students can file a complaint (must match auth UID, initial status must be 'PENDING')
+      allow create: if isStudent() 
                     && request.resource.data.userId == request.auth.uid 
                     && request.resource.data.status == 'PENDING';
-      
-      // Only Committee and Warden can update complaint status (e.g. IN REVIEW, RESOLVED)
-      allow update: if isCommittee() || isWarden();
-      
+
+      // Status updates & management:
+      // - Mess Committee & Warden can update complaint status (e.g., 'IN REVIEW', 'RESOLVED', 'REJECTED')
+      // - Students can ONLY update their description while pending, and CANNOT alter status
+      allow update: if isStaff() 
+                    || (isStudent() 
+                        && resource.data.userId == request.auth.uid 
+                        && request.resource.data.status == resource.data.status 
+                        && request.resource.data.userId == resource.data.userId);
+
+      // Only Chief Warden can delete complaint records
       allow delete: if isWarden();
     }
 
+
     // ===============================================================
-    // POLLS & VOTES COLLECTION
+    // 5. POLLS COLLECTION (/polls/{pollId})
     // ===============================================================
     match /polls/{pollId} {
-      // Anyone can read active replacement polls
-      allow read: if true;
-      
-      // Only Mess Committee and Warden can create or manage polls
-      allow write: if isCommittee() || isWarden();
+      // Authenticated users can read active menu replacement polls
+      allow read: if isAuthenticated();
+
+      // ONLY Mess Committee and Warden can create, edit, or delete polls
+      allow create, update, delete: if isStaff();
     }
 
-    match /votes/{voteId} {
-      allow read: if true;
-      // One vote per user, authenticated user ID must match
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if false; // Votes are immutable once cast
-    }
 
     // ===============================================================
-    // PROTEIN LOGS & REWARDS
+    // 6. VOTES COLLECTION (/votes/{voteId})
+    // ===============================================================
+    match /votes/{voteId} {
+      // Authenticated users can view poll vote counts
+      allow read: if isAuthenticated();
+
+      // ONLY verified students can cast a vote (Committee & Warden cannot cast student votes)
+      allow create: if isStudent() 
+                    && request.resource.data.userId == request.auth.uid;
+
+      // Votes are strictly immutable once cast: NO user can modify or delete a vote
+      allow update, delete: if false;
+    }
+
+
+    // ===============================================================
+    // 7. REWARDS CATALOG COLLECTION (/rewards_catalog/{rewardId})
+    // ===============================================================
+    match /rewards_catalog/{rewardId} {
+      // Authenticated users can browse the healthy rewards catalog
+      allow read: if isAuthenticated();
+
+      // ONLY Mess Committee and Warden can manage catalog items
+      allow create, update, delete: if isStaff();
+    }
+
+
+    // ===============================================================
+    // 8. REDEMPTIONS COLLECTION (/redemptions/{redemptionId})
+    // ===============================================================
+    match /redemptions/{redemptionId} {
+      // Students can read ONLY their own redemptions; Staff can view all redemptions
+      allow read: if (isStudent() && resource.data.userId == request.auth.uid) || isStaff();
+
+      // ONLY verified students can create a reward redemption
+      allow create: if isStudent() 
+                    && request.resource.data.userId == request.auth.uid;
+
+      // ONLY Mess Committee and Warden can update redemption status (marking collected / fulfilled)
+      // Students CANNOT modify redemption status or alter points
+      allow update: if isStaff();
+
+      // Only Chief Warden can delete redemption audit logs
+      allow delete: if isWarden();
+    }
+
+
+    // ===============================================================
+    // 9. PROTEIN LOGS (GYM MODE) (/protein_logs/{logId})
     // ===============================================================
     match /protein_logs/{logId} {
-      allow read, write: if isAuthenticated() && (request.resource.data.userId == request.auth.uid || resource.data.userId == request.auth.uid);
-    }
+      // Students can read ONLY their own fitness protein logs; Warden can view for audit
+      allow read: if (isStudent() && resource.data.userId == request.auth.uid) || isWarden();
 
-    match /redemptions/{redemptionId} {
-      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isCommittee() || isWarden());
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update: if isCommittee() || isWarden();
+      // ONLY verified students can create their own protein logs
+      allow create: if isStudent() 
+                    && request.resource.data.userId == request.auth.uid;
+
+      // Students can update/delete ONLY their own protein logs
+      allow update, delete: if isStudent() 
+                            && resource.data.userId == request.auth.uid 
+                            && (request.method == 'delete' || request.resource.data.userId == request.auth.uid);
     }
   }
 }

@@ -52,14 +52,23 @@ export const StudentDashboard = () => {
   const remainingProtein = Math.max(0, proteinTarget - consumedProtein);
   const proteinPercent = Math.min(100, Math.round((consumedProtein / proteinTarget) * 100));
 
-  const handleQuickSubmit = (star) => {
+  const [submittingQuick, setSubmittingQuick] = useState(false);
+
+  const handleQuickSubmit = async (star) => {
     const targetMealId = quickRatingMealId || todayMeals[0]?.id;
-    if (!targetMealId) return;
-    rateMeal(targetMealId, star, feedbackText, selectedTag ? [selectedTag] : []);
-    setRatedNotice(true);
-    setFeedbackText('');
-    setSelectedTag('');
-    setTimeout(() => setRatedNotice(false), 2500);
+    if (!targetMealId || submittingQuick) return;
+    try {
+      setSubmittingQuick(true);
+      await rateMeal(targetMealId, star, feedbackText, selectedTag ? [selectedTag] : []);
+      setRatedNotice(true);
+      setFeedbackText('');
+      setSelectedTag('');
+      setTimeout(() => setRatedNotice(false), 2500);
+    } catch (e) {
+      console.error('Quick rating submission failed:', e);
+    } finally {
+      setSubmittingQuick(false);
+    }
   };
 
   const mealsList = todayMeals && todayMeals.length > 0 ? todayMeals : [];

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
-import { auth, isFirebaseConfigured } from '../services/firebase';
+import { auth, db as firestoreDb, isFirebaseConfigured } from '../services/firebase';
+import { doc, setDoc } from 'firebase/firestore';
 import { 
   signUpStudent, 
   signInUser, 
@@ -36,14 +37,30 @@ export const AuthProvider = ({ children }) => {
         if (firebaseUser) {
           setUser(firebaseUser);
           try {
-            const userProfile = await getUserProfile(firebaseUser.uid);
-            setProfile(userProfile || {
-              uid: firebaseUser.uid,
-              name: firebaseUser.displayName || 'Student',
-              email: firebaseUser.email,
-              role: 'student',
-              hostelBlock: 'DNB Block'
-            });
+            let userProfile = await getUserProfile(firebaseUser.uid);
+            if (!userProfile) {
+              const email = firebaseUser.email || '';
+              const role = email.includes('warden') ? 'warden' : email.includes('committee') ? 'mess_committee' : 'student';
+              userProfile = {
+                uid: firebaseUser.uid,
+                name: firebaseUser.displayName || email.split('@')[0] || 'Student',
+                email: email,
+                role: role,
+                gender: 'Male',
+                hostelBlock: 'DNB Block',
+                dietPreference: 'High Protein / Eggetarian',
+                proteinTarget: 120,
+                rewardPoints: 0,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+              };
+              try {
+                await setDoc(doc(firestoreDb, 'users', firebaseUser.uid), userProfile);
+              } catch (writeErr) {
+                console.error('Error auto-creating Firestore profile:', writeErr);
+              }
+            }
+            setProfile(userProfile);
             localStorage.setItem('messmate_session_uid', firebaseUser.uid);
           } catch (e) {
             console.error('Error fetching user profile:', e);

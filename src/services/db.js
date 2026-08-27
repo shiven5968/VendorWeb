@@ -825,7 +825,7 @@ class LaunchDatabase {
     return { score: avg, scoreDisplay: `${avg} / 5.0`, count: ratings.length };
   }
 
-  submitRating({ userId, userName, mealId, mealName, rating, feedback = '', tags = [] }) {
+  async submitRating({ userId, userName, mealId, mealName, rating, feedback = '', tags = [] }) {
     const ratings = this.getAllRatings();
     const existingIdx = ratings.findIndex(r => r.userId === userId && r.mealId === mealId);
 
@@ -844,9 +844,10 @@ class LaunchDatabase {
 
     if (isFirebaseConfigured) {
       try {
-        setDoc(doc(firestoreDb, 'ratings', ratingId), ratingEntry);
+        await setDoc(doc(firestoreDb, 'ratings', ratingId), ratingEntry);
       } catch (e) {
         console.error('Error saving rating to Firestore:', e);
+        throw e;
       }
     }
 
@@ -855,7 +856,7 @@ class LaunchDatabase {
     } else {
       ratings.unshift(ratingEntry);
       // Award 20 health points
-      this.addRewardPoints(userId, 20);
+      await this.addRewardPoints(userId, 20);
     }
 
     this.setItem('ratings', ratings);
@@ -877,7 +878,7 @@ class LaunchDatabase {
     return complaints.filter(c => c.userId === userId);
   }
 
-  createComplaint({ userId, userName, block, category, description }) {
+  async createComplaint({ userId, userName, block, category, description }) {
     const complaints = this.getAllComplaints();
     const id = 'cmp_' + Date.now();
     const newComplaint = {
@@ -893,9 +894,10 @@ class LaunchDatabase {
 
     if (isFirebaseConfigured) {
       try {
-        setDoc(doc(firestoreDb, 'complaints', id), newComplaint);
+        await setDoc(doc(firestoreDb, 'complaints', id), newComplaint);
       } catch (e) {
         console.error('Error saving complaint to Firestore:', e);
+        throw e;
       }
     }
 
@@ -904,27 +906,28 @@ class LaunchDatabase {
     return newComplaint;
   }
 
-  updateComplaintStatus(complaintId, newStatus) {
+  async updateComplaintStatus(complaintId, newStatus) {
     const complaints = this.getAllComplaints();
     const idx = complaints.findIndex(c => c.id === complaintId);
+    let resolvedAt = null;
+    if (newStatus === 'RESOLVED') {
+      resolvedAt = new Date().toISOString();
+    }
+
+    if (isFirebaseConfigured) {
+      try {
+        const updateData = { status: newStatus };
+        if (resolvedAt) updateData.resolvedAt = resolvedAt;
+        await updateDoc(doc(firestoreDb, 'complaints', complaintId), updateData);
+      } catch (e) {
+        console.error('Error updating complaint status in Firestore:', e);
+        throw e;
+      }
+    }
+
     if (idx !== -1) {
       complaints[idx].status = newStatus;
-      let resolvedAt = null;
-      if (newStatus === 'RESOLVED') {
-        resolvedAt = new Date().toISOString();
-        complaints[idx].resolvedAt = resolvedAt;
-      }
-
-      if (isFirebaseConfigured) {
-        try {
-          const updateData = { status: newStatus };
-          if (resolvedAt) updateData.resolvedAt = resolvedAt;
-          updateDoc(doc(firestoreDb, 'complaints', complaintId), updateData);
-        } catch (e) {
-          console.error('Error updating complaint status in Firestore:', e);
-        }
-      }
-
+      if (resolvedAt) complaints[idx].resolvedAt = resolvedAt;
       this.setItem('complaints', complaints);
       return complaints[idx];
     }
@@ -1065,10 +1068,10 @@ class LaunchDatabase {
     return redemptions.filter(r => r.userId === userId);
   }
 
-  addRewardPoints(userId, points) {
+  async addRewardPoints(userId, points) {
     if (isFirebaseConfigured) {
       try {
-        updateDoc(doc(firestoreDb, 'users', userId), {
+        await updateDoc(doc(firestoreDb, 'users', userId), {
           rewardPoints: increment(points)
         });
       } catch (e) {
