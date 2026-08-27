@@ -3,7 +3,7 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // ===============================================================
-    // CORE HELPER FUNCTIONS & ROLE VERIFICATION
+    // CORE HELPER FUNCTIONS & STRICT ROLE VERIFICATION
     // ===============================================================
 
     // Check if the request is authenticated
@@ -21,6 +21,11 @@ service cloud.firestore {
       return exists(/databases/$(database)/documents/users/$(request.auth.uid))
         ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
         : 'none';
+    }
+
+    // Role check: Student (STRICT: true ONLY when role == 'student')
+    function isStudent() {
+      return isAuthenticated() && getUserRole() == 'student';
     }
 
     // Role check: Chief Warden
@@ -46,14 +51,6 @@ service cloud.firestore {
       );
     }
 
-    // Role check: Student
-    function isStudent() {
-      return isAuthenticated() && (
-        getUserRole() == 'student' ||
-        (!isWarden() && !isCommittee())
-      );
-    }
-
     // Authorized staff (Mess Committee or Warden)
     function isStaff() {
       return isCommittee() || isWarden();
@@ -67,7 +64,7 @@ service cloud.firestore {
       // Students can read ONLY their own profile; Warden and Committee can read profiles
       allow read: if isOwner(userId) || isStaff();
 
-      // Initial registration: Student can create their own profile with role = 'student'
+      // Initial registration: Users can create their own profile with role = 'student'
       // Warden can seed or create accounts with any valid role
       allow create: if isAuthenticated() 
                     && request.auth.uid == userId 
@@ -75,9 +72,8 @@ service cloud.firestore {
                     && (request.resource.data.role == 'student' || isWarden());
 
       // Profile updates:
-      // - Students can update their own personal info (hostelBlock, dietPreference, etc.),
-      //   but are STRICTLY FORBIDDEN from elevating or modifying their 'role' field!
-      // - Warden can update any user profile including role management.
+      // - Students can update their own personal info, but are STRICTLY FORBIDDEN from modifying their 'role'
+      // - Warden can update any user profile including role management
       allow update: if (isOwner(userId) && request.resource.data.role == resource.data.role && request.resource.data.uid == resource.data.uid)
                     || isWarden();
 
@@ -105,18 +101,18 @@ service cloud.firestore {
       // Authenticated users can view community meal ratings & reviews
       allow read: if isAuthenticated();
 
-      // Authenticated students can create their own rating (prevents userId spoofing)
-      allow create: if isAuthenticated() 
+      // ONLY verified students can create ratings (Committee & Warden cannot create student ratings)
+      allow create: if isStudent() 
                     && request.resource.data.userId == request.auth.uid;
 
-      // Users can ONLY update their own rating, and cannot transfer ownership or spoof userId
-      allow update: if isAuthenticated() 
+      // Students can ONLY update their own ratings; cannot transfer ownership or spoof userId
+      allow update: if isStudent() 
                     && resource.data.userId == request.auth.uid 
                     && request.resource.data.userId == request.auth.uid;
 
-      // Users can delete their own rating; Wardens can moderate / remove offensive reviews
-      allow delete: if isAuthenticated() 
-                    && (resource.data.userId == request.auth.uid || isWarden());
+      // Students can delete their own ratings; Wardens can moderate / remove offensive reviews
+      allow delete: if (isStudent() && resource.data.userId == request.auth.uid) 
+                    || isWarden();
     }
 
 
@@ -125,18 +121,19 @@ service cloud.firestore {
     // ===============================================================
     match /complaints/{complaintId} {
       // Students can read ONLY their own complaints; Staff (Committee & Warden) can read all complaints
-      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isStaff());
+      allow read: if (isStudent() && resource.data.userId == request.auth.uid) || isStaff();
 
-      // Students can file a new complaint (must match auth UID, initial status must be 'PENDING')
-      allow create: if isAuthenticated() 
+      // ONLY verified students can file a complaint (must match auth UID, initial status must be 'PENDING')
+      allow create: if isStudent() 
                     && request.resource.data.userId == request.auth.uid 
                     && request.resource.data.status == 'PENDING';
 
       // Status updates & management:
       // - Mess Committee & Warden can update complaint status (e.g., 'IN REVIEW', 'RESOLVED', 'REJECTED')
-      // - Students can ONLY update their complaint description if still pending, and CANNOT alter status
+      // - Students can ONLY update their description while pending, and CANNOT alter status
       allow update: if isStaff() 
-                    || (isOwner(resource.data.userId) 
+                    || (isStudent() 
+                        && resource.data.userId == request.auth.uid 
                         && request.resource.data.status == resource.data.status 
                         && request.resource.data.userId == resource.data.userId);
 
@@ -149,7 +146,7 @@ service cloud.firestore {
     // 5. POLLS COLLECTION (/polls/{pollId})
     // ===============================================================
     match /polls/{pollId} {
-      // Authenticated students can read active menu replacement polls
+      // Authenticated users can read active menu replacement polls
       allow read: if isAuthenticated();
 
       // ONLY Mess Committee and Warden can create, edit, or delete polls
@@ -164,8 +161,8 @@ service cloud.firestore {
       // Authenticated users can view poll vote counts
       allow read: if isAuthenticated();
 
-      // Authenticated students can cast their own vote (must match auth UID)
-      allow create: if isAuthenticated() 
+      // ONLY verified students can cast a vote (Committee & Warden cannot cast student votes)
+      allow create: if isStudent() 
                     && request.resource.data.userId == request.auth.uid;
 
       // Votes are strictly immutable once cast: NO user can modify or delete a vote
@@ -177,7 +174,7 @@ service cloud.firestore {
     // 7. REWARDS CATALOG COLLECTION (/rewards_catalog/{rewardId})
     // ===============================================================
     match /rewards_catalog/{rewardId} {
-      // Authenticated students can browse the healthy rewards catalog
+      // Authenticated users can browse the healthy rewards catalog
       allow read: if isAuthenticated();
 
       // ONLY Mess Committee and Warden can manage catalog items
@@ -190,10 +187,10 @@ service cloud.firestore {
     // ===============================================================
     match /redemptions/{redemptionId} {
       // Students can read ONLY their own redemptions; Staff can view all redemptions
-      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isStaff());
+      allow read: if (isStudent() && resource.data.userId == request.auth.uid) || isStaff();
 
-      // Student can create their own reward redemption (must match auth UID)
-      allow create: if isAuthenticated() 
+      // ONLY verified students can create a reward redemption
+      allow create: if isStudent() 
                     && request.resource.data.userId == request.auth.uid;
 
       // ONLY Mess Committee and Warden can update redemption status (marking collected / fulfilled)
@@ -209,13 +206,15 @@ service cloud.firestore {
     // 9. PROTEIN LOGS (GYM MODE) (/protein_logs/{logId})
     // ===============================================================
     match /protein_logs/{logId} {
-      // Students can read, create, update, and delete ONLY their own fitness protein logs
-      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isWarden());
+      // Students can read ONLY their own fitness protein logs; Warden can view for audit
+      allow read: if (isStudent() && resource.data.userId == request.auth.uid) || isWarden();
 
-      allow create: if isAuthenticated() 
+      // ONLY verified students can create their own protein logs
+      allow create: if isStudent() 
                     && request.resource.data.userId == request.auth.uid;
 
-      allow update, delete: if isAuthenticated() 
+      // Students can update/delete ONLY their own protein logs
+      allow update, delete: if isStudent() 
                             && resource.data.userId == request.auth.uid 
                             && (request.method == 'delete' || request.resource.data.userId == request.auth.uid);
     }
