@@ -19,11 +19,11 @@ export const ActivityPage = () => {
   const [issueText, setIssueText] = useState('');
   const [submittedNotice, setSubmittedNotice] = useState(false);
 
-  const displayedComplaints = (currentRole === 'committee' || currentRole === 'warden') 
+  const displayedComplaints = (currentRole === 'mess_committee' || currentRole === 'committee' || currentRole === 'warden') 
     ? allComplaints 
     : userComplaints;
 
-  const myRatings = allRatings.filter(r => r.userId === currentUser?.id);
+  const myRatings = allRatings.filter(r => r.userId === (currentUser?.uid || currentUser?.id));
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -63,9 +63,9 @@ export const ActivityPage = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-black text-slate-900 dark:text-white">Activity & Complaints</h1>
+          <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">Activity & Complaints</h1>
           <p className="text-xs text-slate-500 font-semibold">
-            {currentRole === 'student' ? `My Complaints & Feedback (${currentUser?.name})` : 'Hostel Issues & Ratings Log'}
+            {currentRole === 'student' ? 'My reported mess issues & meal feedback' : 'Hostel Issues & Ratings Log'}
           </p>
         </div>
 
@@ -82,7 +82,7 @@ export const ActivityPage = () => {
 
       {submittedNotice && (
         <div className="p-3 rounded-2xl bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-xs font-bold text-center border border-emerald-500/30">
-          Complaint saved to database. Status: PENDING.
+          Complaint submitted. Status: PENDING.
         </div>
       )}
 
@@ -109,13 +109,13 @@ export const ActivityPage = () => {
             </div>
 
             <div className="sm:col-span-2">
-              <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Description</label>
+              <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Short Description</label>
               <input
                 type="text"
                 required
                 value={issueText}
                 onChange={e => setIssueText(e.target.value)}
-                placeholder="e.g. Dal was too watery today during lunch..."
+                placeholder="Briefly describe the issue..."
                 className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs outline-none"
               />
             </div>
@@ -134,7 +134,7 @@ export const ActivityPage = () => {
               className="px-5 py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold shadow-md flex items-center space-x-1"
             >
               <Send className="w-3.5 h-3.5" />
-              <span>Submit to Committee</span>
+              <span>Submit Complaint</span>
             </button>
           </div>
         </form>
@@ -185,15 +185,14 @@ export const ActivityPage = () => {
                     <span className="text-xs font-black text-slate-900 dark:text-white">{c.description}</span>
                   </div>
                   <span className="text-[10px] text-slate-400 block">
-                    Student: {c.userName || 'Student'} • {c.block} • {new Date(c.timestamp).toLocaleDateString()}
+                    {c.userName || 'Student'} • {c.block} • {new Date(c.timestamp).toLocaleDateString()}
                   </span>
                 </div>
 
                 <div className="flex items-center space-x-2">
                   <div>{getStatusBadge(c.status)}</div>
 
-                  {/* Status management for Committee & Warden */}
-                  {(currentRole === 'committee' || currentRole === 'warden') && (
+                  {(currentRole === 'mess_committee' || currentRole === 'committee' || currentRole === 'warden') && (
                     <div className="flex space-x-1 pl-2 border-l border-slate-200 dark:border-slate-700">
                       {['PENDING', 'IN REVIEW', 'RESOLVED'].map(st => (
                         <button
@@ -240,7 +239,7 @@ export const ActivityPage = () => {
                 </div>
                 <div className="px-3 py-1 rounded-xl bg-amber-500/10 text-amber-500 text-xs font-black flex items-center space-x-1">
                   <Star className="w-3.5 h-3.5 fill-current" />
-                  <span>{r.rating} Stars</span>
+                  <span>{r.rating} ★</span>
                 </div>
               </div>
             ))

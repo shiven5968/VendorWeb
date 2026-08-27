@@ -1,12 +1,15 @@
-// MessMate Unified Local-First Database & Auth Service
-// Pilot-Ready Data Engine for ABES College Mess
+// MessMate Launch Data & Storage Engine
+// Clean Zero-Fluff Launch State for ABES College Mess
 
-const DB_PREFIX = 'messmates_db_';
+import { doc, collection, setDoc, addDoc, updateDoc, deleteDoc, getDocs, increment } from 'firebase/firestore';
+import { db as firestoreDb, isFirebaseConfigured } from './firebase';
+
+const DB_PREFIX = 'messmates_launch_';
 
 export const MESS_BLOCK_MAP = {
   'DNB Block': {
-    messName: 'Naina Caters - ABES Boys Hostel Mess',
-    location: 'ABES EC & ABESBS Campus, Ghaziabad',
+    messName: 'ABES Boys Hostel Mess',
+    location: 'Campus Dining Hall 1',
     timings: {
       Breakfast: '07:30 AM - 09:30 AM',
       Lunch: '12:30 PM - 02:30 PM',
@@ -15,8 +18,28 @@ export const MESS_BLOCK_MAP = {
     }
   },
   'VKB Block': {
-    messName: 'Naina Caters - ABES Boys Hostel Mess',
-    location: 'ABES EC & ABESBS Campus, Ghaziabad',
+    messName: 'ABES Boys Hostel Mess',
+    location: 'Campus Dining Hall 1',
+    timings: {
+      Breakfast: '07:30 AM - 09:30 AM',
+      Lunch: '12:30 PM - 02:30 PM',
+      Snacks: '05:00 PM - 06:00 PM',
+      Dinner: '07:30 PM - 09:30 PM',
+    }
+  },
+  'RKB Block': {
+    messName: 'ABES Boys Hostel Mess',
+    location: 'Campus Dining Hall 1',
+    timings: {
+      Breakfast: '07:30 AM - 09:30 AM',
+      Lunch: '12:30 PM - 02:30 PM',
+      Snacks: '05:00 PM - 06:00 PM',
+      Dinner: '07:30 PM - 09:30 PM',
+    }
+  },
+  'ABB Block': {
+    messName: 'ABES Boys Hostel Mess',
+    location: 'Campus Dining Hall 1',
     timings: {
       Breakfast: '07:30 AM - 09:30 AM',
       Lunch: '12:30 PM - 02:30 PM',
@@ -25,8 +48,8 @@ export const MESS_BLOCK_MAP = {
     }
   },
   'Kalpana Chawla (Girls)': {
-    messName: 'Naina Caters - ABES Girls Dining Hall 1',
-    location: 'ABES EC Girls Campus, Ghaziabad',
+    messName: 'ABES Girls Dining Hall 1',
+    location: 'Girls Hostel Complex',
     timings: {
       Breakfast: '07:30 AM - 09:30 AM',
       Lunch: '12:30 PM - 02:30 PM',
@@ -35,8 +58,18 @@ export const MESS_BLOCK_MAP = {
     }
   },
   'Sarojini Block (Girls)': {
-    messName: 'Naina Caters - ABES Girls Dining Hall 2',
-    location: 'ABES EC Girls Campus, Ghaziabad',
+    messName: 'ABES Girls Dining Hall 2',
+    location: 'Girls Hostel Complex',
+    timings: {
+      Breakfast: '07:30 AM - 09:30 AM',
+      Lunch: '12:30 PM - 02:30 PM',
+      Snacks: '05:00 PM - 06:00 PM',
+      Dinner: '07:30 PM - 09:30 PM',
+    }
+  },
+  'Kasturba Block (Girls)': {
+    messName: 'ABES Girls Dining Hall 2',
+    location: 'Girls Hostel Complex',
     timings: {
       Breakfast: '07:30 AM - 09:30 AM',
       Lunch: '12:30 PM - 02:30 PM',
@@ -46,915 +79,600 @@ export const MESS_BLOCK_MAP = {
   }
 };
 
-// Initial Seed Users (Boys, Girls, Committee, Warden)
+// Initial Pilot Accounts (1 legitimate student, 1 committee, 1 warden)
 export const INITIAL_USERS = [
   {
-    id: 'usr_rahul',
-    name: 'Rahul Verma',
-    email: 'rahul.verma@hostel.edu',
-    password: 'password123',
-    role: 'student',
-    hostelBlock: 'DNB Block',
-    roomNumber: '304',
-    gender: 'Male',
-    year: '2nd Year CSE',
-    branch: 'Computer Science',
-    dietPreference: 'High Protein / Eggetarian',
-    proteinTarget: 120,
-    rewardPoints: 420,
-    avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&q=80&w=300',
-    createdAt: '2026-08-01'
-  },
-  {
-    id: 'usr_ananya',
-    name: 'Ananya Singh',
-    email: 'ananya.singh@hostel.edu',
-    password: 'password123',
-    role: 'student',
-    hostelBlock: 'Kalpana Chawla (Girls)',
-    roomNumber: '212',
-    gender: 'Female',
-    year: '3rd Year IT',
-    branch: 'Information Technology',
-    dietPreference: 'Pure Vegetarian',
-    proteinTarget: 100,
-    rewardPoints: 510,
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=300',
-    createdAt: '2026-08-05'
-  },
-  {
     id: 'usr_parth',
+    uid: 'usr_parth',
     name: 'Parth Sharma',
-    email: 'parth.sharma@hostel.edu',
+    admissionNumber: '2100320100001',
+    email: 'parth.sharma@abes.ac.in',
     password: 'password123',
     role: 'student',
-    hostelBlock: 'DNB Block',
-    roomNumber: '215',
     gender: 'Male',
-    year: '2nd Year AIML',
-    branch: 'Artificial Intelligence & Machine Learning',
+    hostelBlock: 'DNB Block',
     dietPreference: 'High Protein / Eggetarian',
     proteinTarget: 120,
-    rewardPoints: 450,
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=300',
-    createdAt: '2026-08-10'
-  },
-  {
-    id: 'usr_priya',
-    name: 'Priya Sharma',
-    email: 'priya.sharma@hostel.edu',
-    password: 'password123',
-    role: 'student',
-    hostelBlock: 'Sarojini Block (Girls)',
-    roomNumber: '108',
-    gender: 'Female',
-    year: '2nd Year ECE',
-    branch: 'Electronics & Comm.',
-    dietPreference: 'Vegan Clean',
-    proteinTarget: 90,
-    rewardPoints: 380,
-    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=300',
-    createdAt: '2026-08-12'
+    rewardPoints: 0,
+    avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=300',
+    createdAt: '2026-08-26T00:00:00.000Z'
   },
   {
     id: 'usr_committee',
+    uid: 'usr_committee',
     name: 'Mess Committee',
-    email: 'committee@hostel.edu',
+    admissionNumber: 'MC-2026-01',
+    email: 'committee@abes.ac.in',
     password: 'password123',
-    role: 'committee',
+    role: 'mess_committee',
+    gender: 'Other',
     hostelBlock: 'Admin Block',
     avatar: 'https://images.unsplash.com/photo-1577219491135-ce391730fb2c?auto=format&fit=crop&q=80&w=300',
-    department: 'Student Mess Executive Committee',
-    createdAt: '2026-08-01'
+    createdAt: '2026-08-26T00:00:00.000Z'
   },
   {
     id: 'usr_warden',
-    name: 'Pathak Sir',
-    email: 'warden@hostel.edu',
+    uid: 'usr_warden',
+    name: 'Chief Warden',
+    admissionNumber: 'CW-2026-01',
+    email: 'warden@abes.ac.in',
     password: 'password123',
     role: 'warden',
+    gender: 'Male',
     hostelBlock: 'Hostel Office',
     avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=300',
-    designation: 'Chief Warden',
-    createdAt: '2026-08-01'
+    createdAt: '2026-08-26T00:00:00.000Z'
   }
 ];
 
-// Initial Weekly Meals
+// Launch Menu Schedule
 export const INITIAL_MEALS_DB = [
-  // Monday
-  {
-    id: 'mon_b',
-    name: 'Aloo Pyaaz Paratha & Curd',
-    day: 'Monday',
-    category: 'Breakfast',
-    time: '07:30 AM - 09:30 AM',
-    items: 'Stuffed Paratha, Fresh Curd, Pickle, Green Tea / Hot Chai',
-    image: 'https://images.unsplash.com/photo-1626777552726-4a6b54c97e46?auto=format&fit=crop&q=80&w=600',
-    calories: 420,
-    protein: 11,
-    carbs: 62,
-    fats: 14,
-    ingredients: ['Whole Wheat', 'Potato', 'Onion', 'Curd', 'Green Chilli', 'Spices'],
-    allergens: ['Dairy', 'Gluten']
-  },
-  {
-    id: 'mon_l',
-    name: 'Rajma Masala & Steamed Basmati',
-    day: 'Monday',
-    category: 'Lunch',
-    time: '12:30 PM - 02:30 PM',
-    items: 'Slow-cooked Punjabi Rajma, Basmati Rice, Phulka, Cucumber Salad',
-    image: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&q=80&w=600',
-    calories: 580,
-    protein: 20,
-    carbs: 88,
-    fats: 12,
-    ingredients: ['Red Kidney Beans', 'Basmati Rice', 'Whole Wheat', 'Tomato Gravy', 'Ginger-Garlic'],
-    allergens: ['Gluten']
-  },
-  {
-    id: 'mon_s',
-    name: 'High-Protein Roasted Sprouts Chaat',
-    day: 'Monday',
-    category: 'Snacks',
-    time: '05:00 PM - 06:00 PM',
-    items: 'Moong Sprouts, Chopped Tomato, Lemon Dressing, Special Chai',
-    image: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&q=80&w=600',
-    calories: 220,
-    protein: 14,
-    carbs: 34,
-    fats: 3,
-    ingredients: ['Sprouted Moong', 'Onion', 'Tomato', 'Lemon', 'Chaat Masala'],
-    allergens: []
-  },
-  {
-    id: 'mon_d',
-    name: 'Paneer Makhani & Butter Roti',
-    day: 'Monday',
-    category: 'Dinner',
-    time: '07:30 PM - 09:30 PM',
-    items: 'Cottage Cheese Butter Gravy, Hot Tawa Rotis, Jeera Pulao, Dal Fry',
-    image: 'https://images.unsplash.com/photo-1631452180519-c014fe946bc7?auto=format&fit=crop&q=80&w=600',
-    calories: 640,
-    protein: 22,
-    carbs: 70,
-    fats: 24,
-    ingredients: ['Fresh Paneer', 'Cashew Cream', 'Tomato Puree', 'Wheat Roti', 'Butter'],
-    allergens: ['Dairy', 'Nuts', 'Gluten']
-  },
-
-  // Tuesday
-  {
-    id: 'tue_b',
-    name: 'South Indian Idli Sambar & Coconut Chutney',
-    day: 'Tuesday',
-    category: 'Breakfast',
-    time: '07:30 AM - 09:30 AM',
-    items: 'Steamed Rice Cakes, Vegetable Dal Sambar, Fresh Coconut Chutney, Coffee',
-    image: 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&q=80&w=600',
-    calories: 340,
-    protein: 10,
-    carbs: 58,
-    fats: 6,
-    ingredients: ['Fermented Rice & Urad Dal', 'Drumsticks', 'Toor Dal', 'Coconut'],
-    allergens: []
-  },
-  {
-    id: 'tue_l',
-    name: 'Kadhi Pakora & Jeera Rice',
-    day: 'Tuesday',
-    category: 'Lunch',
-    time: '12:30 PM - 02:30 PM',
-    items: 'Traditional Dahi Kadhi with Crispy Pakoras, Cumin Rice, Roti, Salad',
-    image: 'https://images.unsplash.com/photo-1626777552726-4a6b54c97e46?auto=format&fit=crop&q=80&w=600',
-    calories: 520,
-    protein: 15,
-    carbs: 82,
-    fats: 16,
-    ingredients: ['Curd', 'Besan Gram Flour', 'Basmati Rice', 'Fenugreek Spices'],
-    allergens: ['Dairy', 'Gluten']
-  },
-  {
-    id: 'tue_s',
-    name: 'Corn & Paneer Sautéed Cups',
-    day: 'Tuesday',
-    category: 'Snacks',
-    time: '05:00 PM - 06:00 PM',
-    items: 'Sweet Corn Kernels, Crumbled Paneer, Black Pepper, Hot Masala Tea',
-    image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&q=80&w=600',
-    calories: 210,
-    protein: 12,
-    carbs: 28,
-    fats: 5,
-    ingredients: ['Sweet Corn', 'Paneer', 'Black Pepper', 'Butter'],
-    allergens: ['Dairy']
-  },
-  {
-    id: 'tue_d',
-    name: 'Dal Tadka, Mix Veg & Phulka',
-    day: 'Tuesday',
-    category: 'Dinner',
-    time: '07:30 PM - 09:30 PM',
-    items: 'Yellow Arhar Dal Double Tadka, Seasonal Mix Veg, Rotis, Gulab Jamun',
-    image: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&q=80&w=600',
-    calories: 590,
-    protein: 16,
-    carbs: 76,
-    fats: 18,
-    ingredients: ['Yellow Lentils', 'Carrots', 'Beans', 'Cauliflower', 'Whole Wheat'],
-    allergens: ['Gluten', 'Dairy']
-  },
-
-  // Wednesday
   {
     id: 'wed_b',
-    name: 'Methi Paratha & White Butter',
+    name: 'Aloo Pyaz Paratha & Fresh Curd',
     day: 'Wednesday',
     category: 'Breakfast',
     time: '07:30 AM - 09:30 AM',
-    items: 'Fresh Fenugreek Flatbread, Curd, Homemade White Butter, Boiled Eggs / Banana',
+    items: 'Stuffed Parathas, Fresh Curd, Mint Chutney, Butter, Tea',
     image: 'https://images.unsplash.com/photo-1626777552726-4a6b54c97e46?auto=format&fit=crop&q=80&w=600',
-    calories: 430,
+    calories: 420,
     protein: 14,
-    carbs: 58,
-    fats: 16,
-    ingredients: ['Fresh Fenugreek', 'Wheat Flour', 'Butter', 'Curd', 'Eggs'],
-    allergens: ['Dairy', 'Gluten', 'Egg']
+    carbs: 62,
+    fats: 14,
+    ingredients: ['Wheat Flour', 'Potatoes', 'Onions', 'Fresh Curd', 'Spices']
   },
   {
     id: 'wed_l',
-    name: 'Chole Bhature & Boondi Raita',
+    name: 'Chole Masala, Jeera Rice & Poori',
     day: 'Wednesday',
     category: 'Lunch',
     time: '12:30 PM - 02:30 PM',
-    items: 'Amritsari Spiced Chole, Crisp Fluffy Bhature, Roasted Cumin Raita, Pickled Onions',
-    image: 'https://images.unsplash.com/photo-1626777552726-4a6b54c97e46?auto=format&fit=crop&q=80&w=600',
-    calories: 680,
-    protein: 18,
-    carbs: 92,
-    fats: 24,
-    ingredients: ['Kabuli Chickpeas', 'Flour', 'Curd', 'Spices', 'Mint Sauce'],
-    allergens: ['Gluten', 'Dairy']
+    items: 'Punjabi Chole, Jeera Pulao, Fresh Poori, Boondi Raita, Onion Salad',
+    image: 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&q=80&w=600',
+    calories: 620,
+    protein: 21,
+    carbs: 88,
+    fats: 18,
+    ingredients: ['Chickpeas', 'Basmati Rice', 'Wheat Flour', 'Curd', 'Indian Masalas']
   },
   {
     id: 'wed_s',
-    name: 'Crispy Veg Cutlet & Green Chutney',
+    name: 'Veg Cutlet & Adrak Chai',
     day: 'Wednesday',
     category: 'Snacks',
     time: '05:00 PM - 06:00 PM',
-    items: 'Minced Veggie & Potato Cutlets, Mint Coriander Dip, Ginger Chai',
-    image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&q=80&w=600',
+    items: 'Crispy Veg Cutlet, Mint Dip, Masala Chai',
+    image: 'https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&q=80&w=600',
     calories: 240,
     protein: 6,
-    carbs: 36,
+    carbs: 34,
     fats: 8,
-    ingredients: ['Potatoes', 'Carrots', 'Peas', 'Breadcrumbs', 'Mint'],
-    allergens: ['Gluten']
+    ingredients: ['Mix Veggies', 'Potatoes', 'Breadcrumbs', 'Milk', 'Ginger Tea']
   },
   {
     id: 'wed_d',
-    name: 'Paneer Do Pyaza & Dal Makhani',
+    name: 'Paneer Butter Masala & Roti',
     day: 'Wednesday',
     category: 'Dinner',
     time: '07:30 PM - 09:30 PM',
-    items: 'Caramelized Onion Paneer, Creamy Black Dal Makhani, Tawa Roti, Rice Kheer',
+    items: 'Fresh Paneer Butter Masala, Tawa Roti, Yellow Dal Fry, Jeera Rice, Gulab Jamun',
     image: 'https://images.unsplash.com/photo-1631452180519-c014fe946bc7?auto=format&fit=crop&q=80&w=600',
-    calories: 690,
+    calories: 680,
     protein: 26,
-    carbs: 74,
-    fats: 28,
-    ingredients: ['Paneer', 'Black Urad Dal', 'Onions', 'Butter', 'Whole Milk'],
-    allergens: ['Dairy', 'Gluten']
+    carbs: 82,
+    fats: 22,
+    ingredients: ['Fresh Paneer', 'Butter Gravy', 'Wheat Flour', 'Toor Dal', 'Rice']
   },
-
   // Thursday
   {
     id: 'thu_b',
-    name: 'Poha with Roasted Peanuts & Sprouts',
+    name: 'Poha & Jalebi with Sprouts',
     day: 'Thursday',
     category: 'Breakfast',
     time: '07:30 AM - 09:30 AM',
-    items: 'Flattened Rice Tempered with Mustard & Curry Leaves, Crunchy Peanuts, Lemon Tea',
-    image: 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&q=80&w=600',
-    calories: 360,
-    protein: 12,
-    carbs: 60,
+    items: 'Indori Poha, Lemon, Sev, Moong Sprouts, Hot Jalebi, Tea',
+    image: 'https://images.unsplash.com/photo-1606491956689-2ea866880c84?auto=format&fit=crop&q=80&w=600',
+    calories: 380,
+    protein: 11,
+    carbs: 64,
     fats: 9,
-    ingredients: ['Flattened Rice', 'Peanuts', 'Curry Leaves', 'Turmeric', 'Green Peas'],
-    allergens: ['Peanuts']
+    ingredients: ['Flattened Rice', 'Peanuts', 'Moong Sprouts', 'Mustard Seeds', 'Tea']
   },
   {
     id: 'thu_l',
-    name: 'Black Chana Curry & Steamed Rice',
+    name: 'Rajma Masala & Steamed Rice',
     day: 'Thursday',
     category: 'Lunch',
     time: '12:30 PM - 02:30 PM',
-    items: 'High-Fiber Kala Chana Gravy, Steamed Rice, Tawa Roti, Lemon Onion Salad',
+    items: 'Kashmiri Rajma, Long Grain Rice, Roti, Cucumber Salad, Curd',
     image: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&q=80&w=600',
-    calories: 550,
-    protein: 19,
-    carbs: 84,
-    fats: 11,
-    ingredients: ['Black Chickpeas', 'Rice', 'Wheat Flour', 'Ginger', 'Tomato'],
-    allergens: ['Gluten']
+    calories: 590,
+    protein: 23,
+    carbs: 85,
+    fats: 12,
+    ingredients: ['Kidney Beans', 'Rice', 'Wheat Flour', 'Tomato Puree', 'Spices']
   },
   {
     id: 'thu_s',
-    name: 'Bun Maska & Masala Chai',
+    name: 'Mix Veg Pakora & Chai',
     day: 'Thursday',
     category: 'Snacks',
     time: '05:00 PM - 06:00 PM',
-    items: 'Warm Soft Bun with Salted Butter, Adrak Elaichi Chai',
-    image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&q=80&w=600',
+    items: 'Crispy Onion & Potato Pakora, Green Chutney, Hot Tea',
+    image: 'https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&q=80&w=600',
     calories: 270,
     protein: 7,
-    carbs: 38,
+    carbs: 32,
     fats: 11,
-    ingredients: ['Wheat Bun', 'Butter', 'Cardamom', 'Milk Tea'],
-    allergens: ['Gluten', 'Dairy']
+    ingredients: ['Gram Flour', 'Onions', 'Potatoes', 'Spices', 'Chai']
   },
   {
     id: 'thu_d',
-    name: 'Soya Chaap Gravy & Roti',
+    name: 'Dal Makhani & Butter Roti',
     day: 'Thursday',
     category: 'Dinner',
     time: '07:30 PM - 09:30 PM',
-    items: 'High Protein Soya Chaap in Spicy Onion Gravy, Arhar Dal, Phulka, Steamed Rice',
-    image: 'https://images.unsplash.com/photo-1631452180519-c014fe946bc7?auto=format&fit=crop&q=80&w=600',
-    calories: 610,
-    protein: 25,
-    carbs: 72,
-    fats: 19,
-    ingredients: ['Soya Chunks', 'Wheat Flour', 'Tomato', 'Coriander', 'Ghee'],
-    allergens: ['Soy', 'Gluten', 'Dairy']
+    items: 'Slow Cooked Dal Makhani, Mixed Vegetable Sabzi, Tawa Roti, Rice, Kheer',
+    image: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&q=80&w=600',
+    calories: 640,
+    protein: 22,
+    carbs: 84,
+    fats: 18,
+    ingredients: ['Black Urad Dal', 'Butter', 'Fresh Cream', 'Wheat Flour', 'Rice']
   },
-
   // Friday
   {
     id: 'fri_b',
-    name: 'Masala Dosa, Sambar & Chutneys',
+    name: 'Masala Dosa, Sambar & Coconut Chutney',
     day: 'Friday',
     category: 'Breakfast',
     time: '07:30 AM - 09:30 AM',
-    items: 'Crisp Fermented Rice Crepe with Spiced Potato Mash, Sambar, 2 Chutneys, Milk',
+    items: 'Crispy Dosa, Potato Masala, Vegetable Sambar, Coconut Chutney, Filter Coffee',
     image: 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&q=80&w=600',
-    calories: 460,
-    protein: 13,
-    carbs: 72,
-    fats: 13,
-    ingredients: ['Rice', 'Urad Dal', 'Potatoes', 'Mustard Seeds', 'Coconut'],
-    allergens: ['Dairy']
+    calories: 410,
+    protein: 10,
+    carbs: 68,
+    fats: 11,
+    ingredients: ['Rice Batter', 'Urad Dal', 'Potatoes', 'Sambar Veggies', 'Coconut']
   },
   {
     id: 'fri_l',
-    name: 'Dal Makhani & Shahi Pulao',
+    name: 'Shahi Paneer, Pulao & Naan',
     day: 'Friday',
     category: 'Lunch',
     time: '12:30 PM - 02:30 PM',
-    items: 'Rich Creamy Dal Makhani, Saffron Pulao, Whole Wheat Roti, Mixed Vegetable Raita',
-    image: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&q=80&w=600',
-    calories: 630,
-    protein: 21,
-    carbs: 85,
-    fats: 20,
-    ingredients: ['Black Lentils', 'Kidney Beans', 'Basmati Rice', 'Curd', 'Butter'],
-    allergens: ['Dairy', 'Gluten']
+    items: 'Shahi Paneer, Peas Pulao, Butter Tandoori Roti, Boondi Raita, Salad',
+    image: 'https://images.unsplash.com/photo-1631452180519-c014fe946bc7?auto=format&fit=crop&q=80&w=600',
+    calories: 690,
+    protein: 25,
+    carbs: 86,
+    fats: 22,
+    ingredients: ['Paneer', 'Cashew Paste', 'Rice', 'Wheat Flour', 'Green Peas']
   },
   {
     id: 'fri_s',
-    name: 'Crispy Veg Samosa & Sweet Imli Chutney',
+    name: 'Samosa & Chai',
     day: 'Friday',
     category: 'Snacks',
     time: '05:00 PM - 06:00 PM',
-    items: 'Two Crisp Potato Peas Samosas, Tamarind & Mint Chutneys, Hot Tea',
-    image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&q=80&w=600',
-    calories: 310,
+    items: 'Crispy Samosa, Imli Chutney, Ginger Tea',
+    image: 'https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&q=80&w=600',
+    calories: 280,
     protein: 6,
-    carbs: 42,
-    fats: 14,
-    ingredients: ['Potatoes', 'Green Peas', 'Wheat Flour', 'Tamarind', 'Cumin'],
-    allergens: ['Gluten']
+    carbs: 36,
+    fats: 12,
+    ingredients: ['Potatoes', 'Green Peas', 'Maida', 'Spices', 'Tea']
   },
   {
     id: 'fri_d',
-    name: 'Special Matar Paneer & Butter Naan',
+    name: 'Kadhai Paneer & Missi Roti',
     day: 'Friday',
     category: 'Dinner',
     time: '07:30 PM - 09:30 PM',
-    items: 'Fresh Cottage Cheese & Sweet Green Peas in Rich Gravy, Butter Naan, Rice, Rasgulla',
-    image: 'https://images.unsplash.com/photo-1631452180519-c014fe946bc7?auto=format&fit=crop&q=80&w=600',
-    calories: 680,
-    protein: 24,
-    carbs: 80,
-    fats: 26,
-    ingredients: ['Paneer', 'Green Peas', 'Tomato Gravy', 'Refined & Whole Wheat Flour', 'Ghee'],
-    allergens: ['Dairy', 'Gluten']
-  },
-
-  // Saturday
-  {
-    id: 'sat_b',
-    name: 'Pav Bhaji & Lemon Wedges',
-    day: 'Saturday',
-    category: 'Breakfast',
-    time: '07:30 AM - 09:30 AM',
-    items: 'Buttered Mumbai Pav Buns, Mashed Spiced Veg Bhaji, Diced Onions, Lemon',
-    image: 'https://images.unsplash.com/photo-1626777552726-4a6b54c97e46?auto=format&fit=crop&q=80&w=600',
-    calories: 480,
-    protein: 11,
-    carbs: 68,
-    fats: 17,
-    ingredients: ['Pav Bread', 'Potatoes', 'Cauliflower', 'Capsicum', 'Butter', 'Spices'],
-    allergens: ['Gluten', 'Dairy']
-  },
-  {
-    id: 'sat_l',
-    name: 'Hyderabadi Veg Biryani & Mirchi Salan',
-    day: 'Saturday',
-    category: 'Lunch',
-    time: '12:30 PM - 02:30 PM',
-    items: 'Dum Cooked Aromatic Basmati Rice with Soya & Veggies, Spicy Peanut Salan, Raita',
-    image: 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?auto=format&fit=crop&q=80&w=600',
-    calories: 650,
-    protein: 18,
-    carbs: 92,
-    fats: 21,
-    ingredients: ['Basmati Rice', 'Soya Chunks', 'Beans', 'Fried Onions', 'Mint', 'Yogurt'],
-    allergens: ['Dairy', 'Soy', 'Peanuts']
-  },
-  {
-    id: 'sat_s',
-    name: 'Bhelpuri & Sweet Corn',
-    day: 'Saturday',
-    category: 'Snacks',
-    time: '05:00 PM - 06:00 PM',
-    items: 'Puffed Rice, Sev, Onions, Sweet Corn, Tangy Sauces, Cold Coffee',
-    image: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&q=80&w=600',
-    calories: 230,
-    protein: 6,
-    carbs: 42,
-    fats: 5,
-    ingredients: ['Puffed Rice', 'Gram Flour Sev', 'Sweet Corn', 'Tamarind'],
-    allergens: []
-  },
-  {
-    id: 'sat_d',
-    name: 'Shahi Paneer, Dal Palak & Jeera Rice',
-    day: 'Saturday',
-    category: 'Dinner',
-    time: '07:30 PM - 09:30 PM',
-    items: 'Royal Cashew Gravy Cottage Cheese, Spinach Lentils, Cumin Rice, Phulka',
+    items: 'Kadhai Paneer, Missi Roti, Chana Dal Fry, Jeera Rice, Rasgulla',
     image: 'https://images.unsplash.com/photo-1631452180519-c014fe946bc7?auto=format&fit=crop&q=80&w=600',
     calories: 670,
-    protein: 26,
-    carbs: 74,
-    fats: 26,
-    ingredients: ['Paneer', 'Spinach', 'Moong Dal', 'Cashews', 'Cream', 'Whole Wheat'],
-    allergens: ['Dairy', 'Nuts', 'Gluten']
-  },
-
-  // Sunday
-  {
-    id: 'sun_b',
-    name: 'Bedmi Puri & Aloo Sabzi with Halwa',
-    day: 'Sunday',
-    category: 'Breakfast',
-    time: '08:00 AM - 10:00 AM',
-    items: 'Spiced Lentil Stuffed Crispy Puris, Mathura Aloo Gravy, Sooji Halwa, Fresh Buttermilk',
-    image: 'https://images.unsplash.com/photo-1626777552726-4a6b54c97e46?auto=format&fit=crop&q=80&w=600',
-    calories: 590,
-    protein: 14,
-    carbs: 82,
-    fats: 24,
-    ingredients: ['Whole Wheat', 'Urad Dal', 'Potatoes', 'Semolina', 'Ghee'],
-    allergens: ['Gluten', 'Dairy']
-  },
-  {
-    id: 'sun_l',
-    name: 'Sunday Feast: Paneer Lababdar & Veg Pulao',
-    day: 'Sunday',
-    category: 'Lunch',
-    time: '12:30 PM - 02:30 PM',
-    items: 'Rich Tomato Cheese Curry, Saffron Pulao, Tawa Paratha, Boondi Raita, Ice Cream',
-    image: 'https://images.unsplash.com/photo-1631452180519-c014fe946bc7?auto=format&fit=crop&q=80&w=600',
-    calories: 720,
-    protein: 25,
-    carbs: 88,
-    fats: 28,
-    ingredients: ['Paneer', 'Basmati Rice', 'Butter', 'Cream', 'Spices'],
-    allergens: ['Dairy', 'Gluten']
-  },
-  {
-    id: 'sun_s',
-    name: 'Club Veg Sandwich & Lemonade',
-    day: 'Sunday',
-    category: 'Snacks',
-    time: '05:00 PM - 06:00 PM',
-    items: 'Grilled Whole Wheat Sandwich with Cucumber, Tomato & Cheese, Fresh Lemon Water',
-    image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&q=80&w=600',
-    calories: 260,
-    protein: 9,
-    carbs: 38,
-    fats: 8,
-    ingredients: ['Whole Wheat Bread', 'Cheese Slice', 'Cucumber', 'Tomato', 'Butter'],
-    allergens: ['Gluten', 'Dairy']
-  },
-  {
-    id: 'sun_d',
-    name: 'Moong Dal Khichdi & Aloo Bharta (Light Dinner)',
-    day: 'Sunday',
-    category: 'Dinner',
-    time: '07:30 PM - 09:30 PM',
-    items: 'Desi Ghee Tempered Khichdi, Mashed Potato Roast, Roasted Papad, Fresh Curd, Pickle',
-    image: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&q=80&w=600',
-    calories: 490,
-    protein: 16,
-    carbs: 78,
-    fats: 12,
-    ingredients: ['Rice', 'Yellow Moong Dal', 'Potatoes', 'Pure Cow Ghee', 'Cumin'],
-    allergens: ['Dairy']
+    protein: 27,
+    carbs: 80,
+    fats: 20,
+    ingredients: ['Paneer', 'Bell Peppers', 'Gram Flour', 'Wheat Flour', 'Chana Dal']
   }
 ];
 
-// Initial Real Ratings from 10+ students across hostel blocks
-export const INITIAL_RATINGS_DB = [
-  { id: 'rat_1', userId: 'usr_rahul', userName: 'Rahul Verma', mealId: 'fri_b', mealName: 'Masala Dosa, Sambar & Chutneys', rating: 5, feedback: 'Dosa was hot and crispy, sambar was flavorful!', tags: ['Tasty', 'Good Quality'], timestamp: '2026-08-25T08:15:00Z' },
-  { id: 'rat_2', userId: 'usr_ananya', userName: 'Ananya Singh', mealId: 'fri_b', mealName: 'Masala Dosa, Sambar & Chutneys', rating: 5, feedback: 'Coconut chutney was very fresh today.', tags: ['Tasty'], timestamp: '2026-08-25T08:30:00Z' },
-  { id: 'rat_3', userId: 'usr_priya', userName: 'Priya Sharma', mealId: 'fri_b', mealName: 'Masala Dosa, Sambar & Chutneys', rating: 4, feedback: 'Good portion size.', tags: ['Good Quantity'], timestamp: '2026-08-25T08:45:00Z' },
-  { id: 'rat_4', userId: 'usr_rahul', userName: 'Rahul Verma', mealId: 'fri_l', mealName: 'Dal Makhani & Shahi Pulao', rating: 5, feedback: 'Very rich and creamy.', tags: ['Tasty', 'Good Quality'], timestamp: '2026-08-25T13:10:00Z' },
-  { id: 'rat_5', userId: 'usr_ananya', userName: 'Ananya Singh', mealId: 'fri_l', mealName: 'Dal Makhani & Shahi Pulao', rating: 4, feedback: 'Good high protein lunch.', tags: ['Good Quality'], timestamp: '2026-08-25T13:20:00Z' },
-  { id: 'rat_6', userId: 'usr_parth', userName: 'Parth Sharma', mealId: 'fri_l', mealName: 'Dal Makhani & Shahi Pulao', rating: 5, feedback: 'Best meal of the week.', tags: ['Tasty'], timestamp: '2026-08-25T13:30:00Z' },
-  { id: 'rat_7', userId: 'usr_rahul', userName: 'Rahul Verma', mealId: 'fri_s', mealName: 'Crispy Veg Samosa & Sweet Imli Chutney', rating: 4, feedback: 'Nice evening snack with chai.', tags: ['Tasty'], timestamp: '2026-08-25T17:25:00Z' },
-  { id: 'rat_8', userId: 'usr_ananya', userName: 'Ananya Singh', mealId: 'fri_d', mealName: 'Special Matar Paneer & Butter Naan', rating: 5, feedback: 'Paneer quality is Grade A.', tags: ['Tasty', 'Good Quality'], timestamp: '2026-08-25T20:10:00Z' },
-  { id: 'rat_9', userId: 'usr_priya', userName: 'Priya Sharma', mealId: 'fri_d', mealName: 'Special Matar Paneer & Butter Naan', rating: 4, feedback: 'Hot naans served on time.', tags: ['Good Quantity'], timestamp: '2026-08-25T20:30:00Z' },
-  { id: 'rat_10', userId: 'usr_parth', userName: 'Parth Sharma', mealId: 'wed_l', mealName: 'Chole Bhature & Boondi Raita', rating: 5, feedback: 'Super tasty!', tags: ['Tasty'], timestamp: '2026-08-24T13:00:00Z' }
-];
+// Launch state: EMPTY records (0 fake reviews, 0 fake complaints, 0 fake votes)
+export const INITIAL_RATINGS_DB = [];
+export const INITIAL_COMPLAINTS_DB = [];
+export const INITIAL_VOTES_DB = [];
+export const INITIAL_PROTEIN_LOGS_DB = [];
+export const INITIAL_REDEMPTIONS_DB = [];
 
-// Initial Real Complaints
-export const INITIAL_COMPLAINTS_DB = [
+export const INITIAL_REWARDS_CATALOG = [
   {
-    id: 'cmp_1',
-    userId: 'usr_rahul',
-    userName: 'Rahul Verma',
-    block: 'DNB Block',
-    category: 'Quality',
-    description: 'The dal on Thursday was slightly too watery compared to usual standard.',
-    status: 'IN REVIEW',
-    timestamp: '2026-08-25T14:30:00Z'
-  },
-  {
-    id: 'cmp_2',
-    userId: 'usr_ananya',
-    userName: 'Ananya Singh',
-    block: 'Kalpana Chawla (Girls)',
-    category: 'Cleanliness',
-    description: 'Please ensure water cooler in Girls dining hall is sanitized on weekends.',
-    status: 'RESOLVED',
-    timestamp: '2026-08-24T18:00:00Z',
-    resolvedAt: '2026-08-25T10:00:00Z'
-  },
-  {
-    id: 'cmp_3',
-    userId: 'usr_priya',
-    userName: 'Priya Sharma',
-    block: 'Sarojini Block (Girls)',
-    category: 'Menu',
-    description: 'Requesting more high-protein sprout salad varieties during evening snacks.',
-    status: 'PENDING',
-    timestamp: '2026-08-26T09:15:00Z'
-  }
-];
-
-// Initial Active Voting Poll
-export const INITIAL_POLL_DB = {
-  id: 'poll_101',
-  dishToReplace: 'Aloo Tamatar',
-  currentRating: 2.3,
-  category: 'Dinner',
-  options: [
-    { id: 'opt_chole', name: 'Chole Masala', protein: '14g' },
-    { id: 'opt_rajma', name: 'Rajma Rasila', protein: '15g' },
-    { id: 'opt_mixveg', name: 'Mix Veg Korma', protein: '9g' }
-  ],
-  status: 'ACTIVE',
-  closingDate: 'Aug 27, 2026 - 10:00 PM',
-  createdAt: '2026-08-25T10:00:00Z'
-};
-
-// Initial Real Votes Records (1 vote per user)
-export const INITIAL_VOTES_DB = [
-  { id: 'v_1', pollId: 'poll_101', userId: 'usr_rahul', userName: 'Rahul Verma', optionId: 'opt_chole', timestamp: '2026-08-25T11:00:00Z' },
-  { id: 'v_2', pollId: 'poll_101', userId: 'usr_ananya', userName: 'Ananya Singh', optionId: 'opt_chole', timestamp: '2026-08-25T11:30:00Z' },
-  { id: 'v_3', pollId: 'poll_101', userId: 'usr_priya', userName: 'Priya Sharma', optionId: 'opt_rajma', timestamp: '2026-08-25T12:00:00Z' },
-  { id: 'v_4', pollId: 'usr_seed_1', userName: 'Arjun Mehta', optionId: 'opt_chole', timestamp: '2026-08-25T13:00:00Z' },
-  { id: 'v_5', pollId: 'usr_seed_2', userName: 'Sneha Roy', optionId: 'opt_rajma', timestamp: '2026-08-25T14:00:00Z' },
-  { id: 'v_6', pollId: 'usr_seed_3', userName: 'Deepak Joshi', optionId: 'opt_chole', timestamp: '2026-08-25T15:00:00Z' },
-  { id: 'v_7', pollId: 'usr_seed_4', userName: 'Kavita Nair', optionId: 'opt_mixveg', timestamp: '2026-08-25T16:00:00Z' }
-];
-
-// Initial Health Rewards Catalog (Strictly Healthy Items)
-export const HEALTHY_REWARDS_CATALOG = [
-  {
-    id: 'r_fruit',
+    id: 'rew_1',
     name: 'Fresh Fruit Bowl',
-    points: 150,
-    category: 'Fruit',
-    image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&q=80&w=400',
-    description: 'Seasonal cut apples, bananas, pomegranates & papaya with honey chia seeds.'
-  },
-  {
-    id: 'r_milk',
-    name: 'Extra Fresh Milk Pack',
-    points: 100,
-    category: 'Dairy',
-    image: 'https://images.unsplash.com/photo-1550583724-b2692b85b150?auto=format&fit=crop&q=80&w=400',
-    description: '500ml pasteurized pure toned milk token for gym recovery.'
-  },
-  {
-    id: 'r_curd',
-    name: 'Chilled Fresh Curd Bowl',
-    points: 80,
-    category: 'Probiotic',
-    image: 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&q=80&w=400',
-    description: 'Probiotic fresh set curd bowl for optimal digestion.'
-  },
-  {
-    id: 'r_sprouts',
-    name: 'High-Protein Sprouts Box',
-    points: 120,
-    category: 'Protein',
-    image: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&q=80&w=400',
-    description: 'Sprouted green moong & black chana box with lemon seasoning.'
-  },
-  {
-    id: 'r_snack',
-    name: 'Healthy Roasted Nut Box',
-    points: 200,
     category: 'Nutrition',
-    image: 'https://images.unsplash.com/photo-1622484210800-c0953a559d24?auto=format&fit=crop&q=80&w=400',
-    description: 'Roasted almonds, walnuts, pumpkin seeds and roasted chana pack.'
+    points: 100,
+    image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&q=80&w=400',
+    description: 'Fresh seasonal fruits from mess fruit counter.'
   },
   {
-    id: 'r_gym',
-    name: 'Campus Gym / Wellness Pass',
-    points: 300,
-    category: 'Fitness',
-    image: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&q=80&w=400',
-    description: '1-Week VIP Access to ABES campus cardio & weight training facility.'
+    id: 'rew_2',
+    name: 'Full Cream Milk (500ml)',
+    category: 'Protein Boost',
+    points: 150,
+    image: 'https://images.unsplash.com/photo-1550583724-b2692b85b150?auto=format&fit=crop&q=80&w=400',
+    description: 'Hot boiled full cream milk with optional turmeric.'
+  },
+  {
+    id: 'rew_3',
+    name: 'Fresh Sweet Curd Pot',
+    category: 'Probiotic',
+    points: 80,
+    image: 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?auto=format&fit=crop&q=80&w=400',
+    description: 'Fresh homestyle chilled curd cup.'
+  },
+  {
+    id: 'rew_4',
+    name: 'High-Protein Sprout Salad',
+    category: 'Gym Fuel',
+    points: 120,
+    image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&q=80&w=400',
+    description: 'Sprouted moong & chana with chopped cucumber and lemon.'
+  },
+  {
+    id: 'rew_5',
+    name: 'Healthy Campus Snack Box',
+    category: 'Wellness',
+    points: 200,
+    image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&q=80&w=400',
+    description: 'Roasted makhana, almonds, walnuts & roasted chana.'
   }
 ];
 
-// STORAGE HELPERS
-const getStorage = (key, fallback) => {
-  try {
-    const item = localStorage.getItem(DB_PREFIX + key);
-    return item ? JSON.parse(item) : fallback;
-  } catch (e) {
-    console.error(`Error reading ${key} from storage:`, e);
-    return fallback;
+class LaunchDatabase {
+  constructor() {
+    this.init();
   }
-};
 
-const setStorage = (key, data) => {
-  try {
-    localStorage.setItem(DB_PREFIX + key, JSON.stringify(data));
-  } catch (e) {
-    console.error(`Error saving ${key} to storage:`, e);
-  }
-};
-
-// INITIALIZE DATABASE TABLES
-export const initDB = () => {
-  if (!localStorage.getItem(DB_PREFIX + 'initialized')) {
-    setStorage('users', INITIAL_USERS);
-    setStorage('meals', INITIAL_MEALS_DB);
-    setStorage('ratings', INITIAL_RATINGS_DB);
-    setStorage('complaints', INITIAL_COMPLAINTS_DB);
-    setStorage('poll', INITIAL_POLL_DB);
-    setStorage('votes', INITIAL_VOTES_DB);
-    setStorage('rewards_catalog', HEALTHY_REWARDS_CATALOG);
-    setStorage('redemptions', []);
-    setStorage('protein_logs', []);
-    localStorage.setItem(DB_PREFIX + 'initialized', 'true');
-  }
-};
-
-// CALL ONCE ON IMPORT
-initDB();
-
-// DATABASE API
-export const db = {
-  // USERS & AUTH
-  getUsers: () => getStorage('users', INITIAL_USERS),
-  
-  getUserById: (id) => {
-    const users = getStorage('users', INITIAL_USERS);
-    return users.find(u => u.id === id) || null;
-  },
-
-  getUserByEmail: (email) => {
-    const users = getStorage('users', INITIAL_USERS);
-    return users.find(u => u.email?.toLowerCase() === email?.toLowerCase()) || null;
-  },
-
-  registerUser: (userData) => {
-    const users = getStorage('users', INITIAL_USERS);
-    const existing = users.find(u => u.email.toLowerCase() === userData.email.toLowerCase());
-    if (existing) {
-      throw new Error('An account with this email already exists.');
+  init() {
+    if (!localStorage.getItem(DB_PREFIX + 'initialized_launch_v1')) {
+      localStorage.setItem(DB_PREFIX + 'users', JSON.stringify(INITIAL_USERS));
+      localStorage.setItem(DB_PREFIX + 'meals', JSON.stringify(INITIAL_MEALS_DB));
+      localStorage.setItem(DB_PREFIX + 'ratings', JSON.stringify(INITIAL_RATINGS_DB));
+      localStorage.setItem(DB_PREFIX + 'complaints', JSON.stringify(INITIAL_COMPLAINTS_DB));
+      localStorage.setItem(DB_PREFIX + 'votes', JSON.stringify(INITIAL_VOTES_DB));
+      localStorage.setItem(DB_PREFIX + 'protein_logs', JSON.stringify(INITIAL_PROTEIN_LOGS_DB));
+      localStorage.setItem(DB_PREFIX + 'redemptions', JSON.stringify(INITIAL_REDEMPTIONS_DB));
+      localStorage.setItem(DB_PREFIX + 'rewards_catalog', JSON.stringify(INITIAL_REWARDS_CATALOG));
+      localStorage.setItem(DB_PREFIX + 'initialized_launch_v1', 'true');
     }
+  }
+
+  // Generic Get & Set
+  getItem(key, fallback = []) {
+    try {
+      const data = localStorage.getItem(DB_PREFIX + key);
+      return data ? JSON.parse(data) : fallback;
+    } catch (e) {
+      return fallback;
+    }
+  }
+
+  setItem(key, value) {
+    try {
+      localStorage.setItem(DB_PREFIX + key, JSON.stringify(value));
+    } catch (e) {
+      console.error('Storage error:', e);
+    }
+  }
+
+  // USERS & AUTH
+  getUsers() {
+    return this.getItem('users', INITIAL_USERS);
+  }
+
+  getUserById(id) {
+    const users = this.getUsers();
+    return users.find(u => u.id === id || u.uid === id) || null;
+  }
+
+  getUserByEmail(email) {
+    if (!email) return null;
+    const users = this.getUsers();
+    return users.find(u => u.email.toLowerCase() === email.toLowerCase().trim()) || null;
+  }
+
+  registerUser(userData) {
+    const users = this.getUsers();
+    const cleanEmail = userData.email.toLowerCase().trim();
+    const existing = users.find(u => u.email.toLowerCase() === cleanEmail);
+    if (existing) {
+      return existing;
+    }
+
+    const id = userData.id || userData.uid || ('usr_' + Date.now());
     const newUser = {
-      id: 'usr_' + Date.now(),
-      name: userData.name.trim(),
-      email: userData.email.toLowerCase().trim(),
-      password: userData.password,
+      id,
+      uid: id,
+      name: userData.name,
+      admissionNumber: userData.admissionNumber || '',
+      email: cleanEmail,
+      password: userData.password || 'password123',
       role: userData.role || 'student',
-      hostelBlock: userData.hostelBlock || 'DNB Block',
-      roomNumber: userData.roomNumber || '',
       gender: userData.gender || 'Male',
-      year: userData.year || '2nd Year',
-      branch: userData.branch || 'Engineering',
+      hostelBlock: userData.hostelBlock || 'DNB Block',
       dietPreference: userData.dietPreference || 'High Protein / Eggetarian',
       proteinTarget: Number(userData.proteinTarget) || 120,
-      rewardPoints: 200, // Welcome bonus points
+      rewardPoints: 0,
       avatar: userData.gender === 'Female' 
-        ? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=300'
-        : 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&q=80&w=300',
+        ? 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=300'
+        : 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=300',
       createdAt: new Date().toISOString()
     };
-    const updated = [newUser, ...users];
-    setStorage('users', updated);
-    return newUser;
-  },
 
-  updateUserProfile: (userId, updates) => {
-    const users = getStorage('users', INITIAL_USERS);
-    let updatedUser = null;
-    const updatedUsers = users.map(u => {
-      if (u.id === userId) {
-        updatedUser = { ...u, ...updates };
-        return updatedUser;
+    if (isFirebaseConfigured) {
+      try {
+        setDoc(doc(firestoreDb, 'users', id), newUser);
+      } catch (e) {
+        console.error('Error saving user profile to Firestore:', e);
       }
-      return u;
-    });
-    setStorage('users', updatedUsers);
-    return updatedUser;
-  },
+    }
 
-  // MEALS & MENUS
-  getAllMeals: () => getStorage('meals', INITIAL_MEALS_DB),
+    users.push(newUser);
+    this.setItem('users', users);
+    return newUser;
+  }
 
-  getDayMeals: (day) => {
-    const meals = getStorage('meals', INITIAL_MEALS_DB);
-    return meals.filter(m => m.day === day);
-  },
+  updateUserProfile(userId, updates) {
+    const users = this.getUsers();
+    const index = users.findIndex(u => u.id === userId || u.uid === userId);
+    if (index !== -1) {
+      const updated = { ...users[index], ...updates, updatedAt: new Date().toISOString() };
+      
+      if (isFirebaseConfigured) {
+        try {
+          updateDoc(doc(firestoreDb, 'users', userId), { ...updates, updatedAt: new Date().toISOString() });
+        } catch (e) {
+          console.error('Error updating user profile in Firestore:', e);
+        }
+      }
 
-  getMealById: (id) => {
-    const meals = getStorage('meals', INITIAL_MEALS_DB);
+      users[index] = updated;
+      this.setItem('users', users);
+      return users[index];
+    }
+    return null;
+  }
+
+  // MEALS & MENU
+  getAllMeals() {
+    return this.getItem('meals', INITIAL_MEALS_DB);
+  }
+
+  getDayMeals(day) {
+    const meals = this.getAllMeals();
+    return meals.filter(m => m.day?.toLowerCase() === day.toLowerCase());
+  }
+
+  getMealById(id) {
+    const meals = this.getAllMeals();
     return meals.find(m => m.id === id) || null;
-  },
+  }
 
-  saveMeal: (mealData) => {
-    const meals = getStorage('meals', INITIAL_MEALS_DB);
-    let updatedMeals;
-    if (mealData.id) {
-      updatedMeals = meals.map(m => m.id === mealData.id ? { ...m, ...mealData } : m);
+  saveMeal(mealData) {
+    const meals = this.getAllMeals();
+    let id = mealData.id;
+    let targetMeal = null;
+
+    if (id) {
+      const idx = meals.findIndex(m => m.id === id);
+      if (idx !== -1) {
+        targetMeal = { ...meals[idx], ...mealData };
+        meals[idx] = targetMeal;
+      } else {
+        targetMeal = { ...mealData };
+        meals.push(targetMeal);
+      }
     } else {
-      const newMeal = {
+      id = 'meal_' + Date.now();
+      targetMeal = {
         ...mealData,
-        id: 'm_' + Date.now(),
-        rating: 5.0,
-        ratingCount: 0
+        id
       };
-      updatedMeals = [newMeal, ...meals];
+      meals.push(targetMeal);
     }
-    setStorage('meals', updatedMeals);
-    return updatedMeals;
-  },
 
-  deleteMeal: (mealId) => {
-    const meals = getStorage('meals', INITIAL_MEALS_DB);
-    const updated = meals.filter(m => m.id !== mealId);
-    setStorage('meals', updated);
-    return updated;
-  },
+    if (isFirebaseConfigured) {
+      try {
+        setDoc(doc(firestoreDb, 'meals', id), targetMeal, { merge: true });
+      } catch (e) {
+        console.error('Error saving meal to Firestore:', e);
+      }
+    }
 
-  // RATINGS & REAL-TIME STATS
-  getAllRatings: () => getStorage('ratings', INITIAL_RATINGS_DB),
+    this.setItem('meals', meals);
+    return targetMeal;
+  }
 
-  getMealRatings: (mealId) => {
-    const ratings = getStorage('ratings', INITIAL_RATINGS_DB);
+  deleteMeal(mealId) {
+    if (isFirebaseConfigured) {
+      try {
+        deleteDoc(doc(firestoreDb, 'meals', mealId));
+      } catch (e) {
+        console.error('Error deleting meal from Firestore:', e);
+      }
+    }
+    const meals = this.getAllMeals();
+    const filtered = meals.filter(m => m.id !== mealId);
+    this.setItem('meals', filtered);
+  }
+
+  // RATINGS & FEEDBACK (100% Dynamic from real records)
+  getAllRatings() {
+    return this.getItem('ratings', []);
+  }
+
+  getMealRatings(mealId) {
+    const ratings = this.getAllRatings();
     return ratings.filter(r => r.mealId === mealId);
-  },
+  }
 
-  getMealStats: (mealId) => {
-    const ratings = getStorage('ratings', INITIAL_RATINGS_DB);
-    const mealRatings = ratings.filter(r => r.mealId === mealId);
-    if (mealRatings.length === 0) {
-      return { rating: 4.5, ratingCount: 0 };
+  getMealStats(mealId) {
+    const ratings = this.getMealRatings(mealId);
+    if (ratings.length === 0) {
+      return { rating: null, ratingDisplay: 'No ratings yet', ratingCount: 0 };
     }
-    const sum = mealRatings.reduce((acc, r) => acc + Number(r.rating), 0);
-    const avg = Number((sum / mealRatings.length).toFixed(1));
-    return { rating: avg, ratingCount: mealRatings.length };
-  },
+    const sum = ratings.reduce((acc, cur) => acc + Number(cur.rating), 0);
+    const avg = Number((sum / ratings.length).toFixed(1));
+    return { rating: avg, ratingDisplay: `${avg} ★`, ratingCount: ratings.length };
+  }
 
-  getUserRatingForMeal: (userId, mealId) => {
-    const ratings = getStorage('ratings', INITIAL_RATINGS_DB);
-    return ratings.find(r => r.userId === userId && r.mealId === mealId) || null;
-  },
+  getOverallMessRating() {
+    const ratings = this.getAllRatings();
+    if (ratings.length === 0) {
+      return { score: null, scoreDisplay: 'No ratings yet', count: 0 };
+    }
+    const sum = ratings.reduce((acc, cur) => acc + Number(cur.rating), 0);
+    const avg = Number((sum / ratings.length).toFixed(1));
+    return { score: avg, scoreDisplay: `${avg} / 5.0`, count: ratings.length };
+  }
 
-  submitRating: ({ userId, userName, mealId, mealName, rating, feedback = '', tags = [] }) => {
-    const ratings = getStorage('ratings', INITIAL_RATINGS_DB);
-    const existingIndex = ratings.findIndex(r => r.userId === userId && r.mealId === mealId);
-    
+  submitRating({ userId, userName, mealId, mealName, rating, feedback = '', tags = [] }) {
+    const ratings = this.getAllRatings();
+    const existingIdx = ratings.findIndex(r => r.userId === userId && r.mealId === mealId);
+
+    const ratingId = existingIdx !== -1 ? ratings[existingIdx].id : 'rat_' + Date.now();
     const ratingEntry = {
-      id: existingIndex >= 0 ? ratings[existingIndex].id : 'rat_' + Date.now(),
+      id: ratingId,
       userId,
-      userName,
+      userName: userName || 'Student',
       mealId,
       mealName,
       rating: Number(rating),
       feedback: feedback.trim(),
-      tags: Array.isArray(tags) ? tags : [tags].filter(Boolean),
+      tags,
       timestamp: new Date().toISOString()
     };
 
-    let updatedRatings;
-    if (existingIndex >= 0) {
-      updatedRatings = [...ratings];
-      updatedRatings[existingIndex] = ratingEntry;
-    } else {
-      updatedRatings = [ratingEntry, ...ratings];
+    if (isFirebaseConfigured) {
+      try {
+        setDoc(doc(firestoreDb, 'ratings', ratingId), ratingEntry);
+      } catch (e) {
+        console.error('Error saving rating to Firestore:', e);
+      }
     }
-    setStorage('ratings', updatedRatings);
 
-    // Award +20 points to user
-    db.adjustUserPoints(userId, 20);
+    if (existingIdx !== -1) {
+      ratings[existingIdx] = ratingEntry;
+    } else {
+      ratings.unshift(ratingEntry);
+      // Award 20 health points
+      this.addRewardPoints(userId, 20);
+    }
 
+    this.setItem('ratings', ratings);
     return ratingEntry;
-  },
+  }
 
-  getOverallMessRating: () => {
-    const ratings = getStorage('ratings', INITIAL_RATINGS_DB);
-    if (ratings.length === 0) return { score: 4.4, count: 0 };
-    const sum = ratings.reduce((acc, r) => acc + Number(r.rating), 0);
-    return {
-      score: Number((sum / ratings.length).toFixed(1)),
-      count: ratings.length
-    };
-  },
+  getUserRatingForMeal(userId, mealId) {
+    const ratings = this.getAllRatings();
+    return ratings.find(r => r.userId === userId && r.mealId === mealId) || null;
+  }
 
   // COMPLAINTS
-  getAllComplaints: () => getStorage('complaints', INITIAL_COMPLAINTS_DB),
+  getAllComplaints() {
+    return this.getItem('complaints', []);
+  }
 
-  getUserComplaints: (userId) => {
-    const complaints = getStorage('complaints', INITIAL_COMPLAINTS_DB);
+  getUserComplaints(userId) {
+    const complaints = this.getAllComplaints();
     return complaints.filter(c => c.userId === userId);
-  },
+  }
 
-  createComplaint: ({ userId, userName, block, category, description }) => {
-    const complaints = getStorage('complaints', INITIAL_COMPLAINTS_DB);
+  createComplaint({ userId, userName, block, category, description }) {
+    const complaints = this.getAllComplaints();
+    const id = 'cmp_' + Date.now();
     const newComplaint = {
-      id: 'cmp_' + Date.now(),
+      id,
       userId,
-      userName,
-      block,
-      category,
+      userName: userName || 'Student',
+      block: block || 'DNB Block',
+      category: category || 'Quality',
       description: description.trim(),
       status: 'PENDING',
       timestamp: new Date().toISOString()
     };
-    const updated = [newComplaint, ...complaints];
-    setStorage('complaints', updated);
-    return newComplaint;
-  },
 
-  updateComplaintStatus: (complaintId, newStatus) => {
-    const complaints = getStorage('complaints', INITIAL_COMPLAINTS_DB);
-    const updated = complaints.map(c => {
-      if (c.id === complaintId) {
-        return {
-          ...c,
-          status: newStatus,
-          resolvedAt: newStatus === 'RESOLVED' ? new Date().toISOString() : c.resolvedAt
-        };
+    if (isFirebaseConfigured) {
+      try {
+        setDoc(doc(firestoreDb, 'complaints', id), newComplaint);
+      } catch (e) {
+        console.error('Error saving complaint to Firestore:', e);
       }
-      return c;
-    });
-    setStorage('complaints', updated);
-    return updated;
-  },
+    }
 
-  // VOTING & POLLS
-  getPoll: () => {
-    const poll = getStorage('poll', INITIAL_POLL_DB);
-    const votes = getStorage('votes', INITIAL_VOTES_DB);
+    complaints.unshift(newComplaint);
+    this.setItem('complaints', complaints);
+    return newComplaint;
+  }
+
+  updateComplaintStatus(complaintId, newStatus) {
+    const complaints = this.getAllComplaints();
+    const idx = complaints.findIndex(c => c.id === complaintId);
+    if (idx !== -1) {
+      complaints[idx].status = newStatus;
+      let resolvedAt = null;
+      if (newStatus === 'RESOLVED') {
+        resolvedAt = new Date().toISOString();
+        complaints[idx].resolvedAt = resolvedAt;
+      }
+
+      if (isFirebaseConfigured) {
+        try {
+          const updateData = { status: newStatus };
+          if (resolvedAt) updateData.resolvedAt = resolvedAt;
+          updateDoc(doc(firestoreDb, 'complaints', complaintId), updateData);
+        } catch (e) {
+          console.error('Error updating complaint status in Firestore:', e);
+        }
+      }
+
+      this.setItem('complaints', complaints);
+      return complaints[idx];
+    }
+    return null;
+  }
+
+  // POLLS & VOTING
+  getPoll() {
+    const poll = this.getItem('poll', null);
+    if (!poll) return null;
+
+    const votes = this.getItem('votes', []);
     const pollVotes = votes.filter(v => v.pollId === poll.id);
     const totalVotes = pollVotes.length;
 
-    // Calculate real percentages dynamically from database vote records
-    const optionsWithStats = poll.options.map(opt => {
+    const enrichedOptions = poll.options.map(opt => {
       const optVotes = pollVotes.filter(v => v.optionId === opt.id).length;
       const percent = totalVotes > 0 ? Math.round((optVotes / totalVotes) * 100) : 0;
       return {
@@ -967,121 +685,199 @@ export const db = {
     return {
       ...poll,
       totalVotes,
-      options: optionsWithStats
+      options: enrichedOptions
     };
-  },
+  }
 
-  hasUserVoted: (pollId, userId) => {
-    const votes = getStorage('votes', INITIAL_VOTES_DB);
-    const userVote = votes.find(v => v.pollId === pollId && v.userId === userId);
-    return userVote ? userVote.optionId : null;
-  },
+  createPoll(pollData) {
+    const pollId = 'poll_' + Date.now();
+    const newPoll = {
+      id: pollId,
+      dishToReplace: pollData.dishToReplace,
+      options: pollData.options.map((opt, i) => ({
+        id: 'opt_' + (i + 1),
+        name: opt.name,
+        protein: opt.protein || '14g'
+      })),
+      closingDate: pollData.closingDate || 'Tomorrow at 10:00 PM',
+      createdAt: new Date().toISOString(),
+      status: 'ACTIVE'
+    };
 
-  castVote: ({ pollId, userId, userName, optionId }) => {
-    const votes = getStorage('votes', INITIAL_VOTES_DB);
-    const existing = votes.find(v => v.pollId === pollId && v.userId === userId);
-    if (existing) {
+    if (isFirebaseConfigured) {
+      try {
+        setDoc(doc(firestoreDb, 'polls', pollId), newPoll);
+      } catch (e) {
+        console.error('Error creating poll in Firestore:', e);
+      }
+    }
+
+    this.setItem('poll', newPoll);
+    return newPoll;
+  }
+
+  castVote({ pollId, userId, userName, optionId }) {
+    const votes = this.getItem('votes', []);
+    const alreadyVoted = votes.some(v => v.pollId === pollId && v.userId === userId);
+    if (alreadyVoted) {
       throw new Error('You have already voted in this poll.');
     }
+
+    const voteId = 'vote_' + Date.now();
     const newVote = {
-      id: 'v_' + Date.now(),
+      id: voteId,
       pollId,
       userId,
-      userName,
+      userName: userName || 'Student',
       optionId,
       timestamp: new Date().toISOString()
     };
-    const updated = [newVote, ...votes];
-    setStorage('votes', updated);
 
-    // Award +30 points
-    db.adjustUserPoints(userId, 30);
+    if (isFirebaseConfigured) {
+      try {
+        setDoc(doc(firestoreDb, 'votes', voteId), newVote);
+      } catch (e) {
+        console.error('Error casting vote in Firestore:', e);
+      }
+    }
 
+    votes.push(newVote);
+    this.setItem('votes', votes);
+    this.addRewardPoints(userId, 30);
     return newVote;
-  },
+  }
 
-  createPoll: (pollData) => {
-    const newPoll = {
-      id: 'poll_' + Date.now(),
-      dishToReplace: pollData.dishToReplace,
-      currentRating: Number(pollData.currentRating) || 2.5,
-      category: pollData.category || 'Dinner',
-      options: pollData.options.map((opt, i) => ({
-        id: 'opt_' + i + '_' + Date.now(),
-        name: opt.name,
-        protein: opt.protein || '12g'
-      })),
-      status: 'ACTIVE',
-      closingDate: pollData.closingDate || 'In 24 Hours',
-      createdAt: new Date().toISOString()
-    };
-    setStorage('poll', newPoll);
-    return newPoll;
-  },
+  hasUserVoted(pollId, userId) {
+    if (!pollId || !userId) return null;
+    const votes = this.getItem('votes', []);
+    const vote = votes.find(v => v.pollId === pollId && v.userId === userId);
+    return vote ? vote.optionId : null;
+  }
 
-  // PROTEIN LOGGING & GYM MODE
-  getTodayUserProtein: (userId) => {
-    const logs = getStorage('protein_logs', []);
+  // PROTEIN LOGS (Gym Mode)
+  getTodayUserProtein(userId) {
+    if (!userId) return 0;
+    const logs = this.getItem('protein_logs', []);
     const todayStr = new Date().toISOString().split('T')[0];
-    const userTodayLogs = logs.filter(l => l.userId === userId && l.date === todayStr);
-    return userTodayLogs.reduce((acc, l) => acc + Number(l.protein), 0);
-  },
+    const todayLogs = logs.filter(l => l.userId === userId && l.timestamp.startsWith(todayStr));
+    return todayLogs.reduce((acc, cur) => acc + Number(cur.protein), 0);
+  }
 
-  logProtein: ({ userId, dishName, protein }) => {
-    const logs = getStorage('protein_logs', []);
-    const todayStr = new Date().toISOString().split('T')[0];
+  logProtein({ userId, dishName, protein }) {
+    const logs = this.getItem('protein_logs', []);
+    const logId = 'plog_' + Date.now();
     const newLog = {
-      id: 'plog_' + Date.now(),
+      id: logId,
       userId,
       dishName,
       protein: Number(protein),
-      date: todayStr,
       timestamp: new Date().toISOString()
     };
-    setStorage('protein_logs', [newLog, ...logs]);
+
+    if (isFirebaseConfigured) {
+      try {
+        setDoc(doc(firestoreDb, 'protein_logs', logId), newLog);
+      } catch (e) {
+        console.error('Error logging protein to Firestore:', e);
+      }
+    }
+
+    logs.push(newLog);
+    this.setItem('protein_logs', logs);
     return newLog;
-  },
+  }
 
   // REWARDS
-  getRewardsCatalog: () => getStorage('rewards_catalog', HEALTHY_REWARDS_CATALOG),
+  getRewardsCatalog() {
+    return this.getItem('rewards_catalog', INITIAL_REWARDS_CATALOG);
+  }
 
-  adjustUserPoints: (userId, delta) => {
-    const users = getStorage('users', INITIAL_USERS);
-    const updatedUsers = users.map(u => {
-      if (u.id === userId) {
-        return { ...u, rewardPoints: Math.max(0, (u.rewardPoints || 0) + delta) };
+  getUserRedemptions(userId) {
+    const redemptions = this.getItem('redemptions', []);
+    return redemptions.filter(r => r.userId === userId);
+  }
+
+  addRewardPoints(userId, points) {
+    if (isFirebaseConfigured) {
+      try {
+        updateDoc(doc(firestoreDb, 'users', userId), {
+          rewardPoints: increment(points)
+        });
+      } catch (e) {
+        console.error('Error adjusting user points in Firestore:', e);
       }
-      return u;
-    });
-    setStorage('users', updatedUsers);
-  },
-
-  redeemReward: (userId, userName, rewardItem) => {
-    const user = db.getUserById(userId);
-    if (!user || (user.rewardPoints || 0) < rewardItem.points) {
-      throw new Error('Insufficient health points to redeem this item.');
     }
-    // Deduct points
-    db.adjustUserPoints(userId, -rewardItem.points);
 
-    const redemptions = getStorage('redemptions', []);
+    const users = this.getUsers();
+    const idx = users.findIndex(u => u.id === userId || u.uid === userId);
+    if (idx !== -1) {
+      users[idx].rewardPoints = Math.max(0, (users[idx].rewardPoints || 0) + Number(points));
+      this.setItem('users', users);
+    }
+  }
+
+  redeemReward(userId, userName, rewardItem) {
+    const user = this.getUserById(userId);
+    if (!user || (user.rewardPoints || 0) < rewardItem.points) {
+      throw new Error('Insufficient Health Points to claim this reward.');
+    }
+
+    const redemptionId = 'red_' + Date.now();
+    const claimCode = 'HEALTHY-' + Math.random().toString(36).substring(2, 7).toUpperCase();
     const newRedemption = {
-      id: 'red_' + Date.now(),
+      id: redemptionId,
       userId,
-      userName,
+      userName: userName || user.name,
       rewardId: rewardItem.id,
       rewardName: rewardItem.name,
       pointsSpent: rewardItem.points,
-      claimCode: 'HEALTHY-' + Math.random().toString(36).substring(2, 7).toUpperCase(),
-      status: 'CLAIMED',
+      claimCode,
+      status: 'READY FOR COLLECTION',
       timestamp: new Date().toISOString()
     };
-    setStorage('redemptions', [newRedemption, ...redemptions]);
-    return newRedemption;
-  },
 
-  getUserRedemptions: (userId) => {
-    const redemptions = getStorage('redemptions', []);
-    return redemptions.filter(r => r.userId === userId);
+    if (isFirebaseConfigured) {
+      try {
+        setDoc(doc(firestoreDb, 'redemptions', redemptionId), newRedemption);
+      } catch (e) {
+        console.error('Error redeeming reward in Firestore:', e);
+      }
+    }
+
+    this.addRewardPoints(userId, -rewardItem.points);
+
+    const redemptions = this.getItem('redemptions', []);
+    redemptions.unshift(newRedemption);
+    this.setItem('redemptions', redemptions);
+    return newRedemption;
+  }
+}
+
+export const db = new LaunchDatabase();
+
+export const seedFirestoreData = async () => {
+  if (!isFirebaseConfigured) return;
+
+  try {
+    const mealsRef = collection(firestoreDb, 'meals');
+    const mealsSnap = await getDocs(mealsRef);
+    if (mealsSnap.empty) {
+      console.log('Seeding initial meals to Firestore...');
+      for (const meal of INITIAL_MEALS_DB) {
+        await setDoc(doc(firestoreDb, 'meals', meal.id), meal);
+      }
+    }
+
+    const rewardsRef = collection(firestoreDb, 'rewards_catalog');
+    const rewardsSnap = await getDocs(rewardsRef);
+    if (rewardsSnap.empty) {
+      console.log('Seeding healthy rewards catalog to Firestore...');
+      for (const reward of INITIAL_REWARDS_CATALOG) {
+        await setDoc(doc(firestoreDb, 'rewards_catalog', reward.id), reward);
+      }
+    }
+
+  } catch (e) {
+    console.error('Error seeding Firestore data:', e);
   }
 };

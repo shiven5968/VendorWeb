@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { User, Star, MessageSquare, Gift, Dumbbell, Settings, LogOut, ChevronRight, Camera, Save, Check } from 'lucide-react';
+import { User, Star, MessageSquare, Gift, Dumbbell, Settings, LogOut, ChevronRight, Camera, Save, Check, FileBadge } from 'lucide-react';
 
 export const ProfilePage = () => {
   const { currentUser, updateUserProfile, setCurrentPage, logout, rewardPoints } = useApp();
   const [showSettings, setShowSettings] = useState(false);
   const [name, setName] = useState(currentUser?.name || '');
+  const [admissionNumber, setAdmissionNumber] = useState(currentUser?.admissionNumber || '');
   const [block, setBlock] = useState(currentUser?.hostelBlock || 'DNB Block');
   const [diet, setDiet] = useState(currentUser?.dietPreference || 'High Protein / Eggetarian');
   const [saved, setSaved] = useState(false);
@@ -23,7 +24,7 @@ export const ProfilePage = () => {
 
   const handleSave = (e) => {
     e.preventDefault();
-    updateUserProfile({ name, hostelBlock: block, dietPreference: diet });
+    updateUserProfile({ name, admissionNumber, hostelBlock: block, dietPreference: diet });
     setSaved(true);
     setTimeout(() => {
       setSaved(false);
@@ -40,7 +41,7 @@ export const ProfilePage = () => {
       <div className="p-6 rounded-3xl bg-slate-900 text-white flex items-center space-x-4 shadow-xl border border-slate-800">
         <div className="relative group">
           <img
-            src={currentUser.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=300"}
+            src={currentUser.avatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=300"}
             alt={currentUser.name}
             className="w-16 h-16 rounded-full object-cover ring-2 ring-emerald-500"
           />
@@ -55,9 +56,12 @@ export const ProfilePage = () => {
           <p className="text-xs text-emerald-400 font-bold">
             {currentUser.role?.toUpperCase()} • {currentUser.hostelBlock || 'Campus'}
           </p>
-          <span className="text-[11px] text-slate-400 font-semibold block mt-0.5">
-            {currentUser.email} • {rewardPoints} Health Points
-          </span>
+          <div className="text-[11px] text-slate-400 font-semibold space-y-0.5 mt-1">
+            {currentUser.admissionNumber && (
+              <p>Admission No: <span className="text-slate-300 font-mono">{currentUser.admissionNumber}</span></p>
+            )}
+            <p>{currentUser.email} • {rewardPoints} Points</p>
+          </div>
         </div>
       </div>
 
@@ -78,6 +82,17 @@ export const ProfilePage = () => {
           </div>
 
           <div>
+            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Admission Number</label>
+            <input
+              type="text"
+              value={admissionNumber}
+              onChange={e => setAdmissionNumber(e.target.value)}
+              placeholder="e.g. 2100320100001"
+              className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold outline-none"
+            />
+          </div>
+
+          <div>
             <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Hostel Block</label>
             <select
               value={block}
@@ -88,7 +103,6 @@ export const ProfilePage = () => {
               <option value="VKB Block">VKB Block (Boys)</option>
               <option value="RKB Block">RKB Block (Boys)</option>
               <option value="ABB Block">ABB Block (Boys)</option>
-              <option value="CKB Block">CKB Block (Boys)</option>
               <option value="Kalpana Chawla (Girls)">Kalpana Chawla (Girls)</option>
               <option value="Sarojini Block (Girls)">Sarojini Block (Girls)</option>
               <option value="Kasturba Block (Girls)">Kasturba Block (Girls)</option>
@@ -110,7 +124,7 @@ export const ProfilePage = () => {
           </div>
 
           {saved && (
-            <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400 text-center">Profile saved to database!</p>
+            <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400 text-center">Profile saved!</p>
           )}
 
           <div className="flex justify-end space-x-2 pt-1">
@@ -141,18 +155,7 @@ export const ProfilePage = () => {
         >
           <div className="flex items-center space-x-3">
             <Star className="w-4 h-4 text-amber-500 fill-current" />
-            <span className="text-xs font-bold text-slate-900 dark:text-white">My Ratings</span>
-          </div>
-          <ChevronRight className="w-4 h-4 text-slate-400" />
-        </button>
-
-        <button
-          onClick={() => setCurrentPage('activity')}
-          className="w-full p-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors text-left"
-        >
-          <div className="flex items-center space-x-3">
-            <MessageSquare className="w-4 h-4 text-emerald-500" />
-            <span className="text-xs font-bold text-slate-900 dark:text-white">My Feedback</span>
+            <span className="text-xs font-bold text-slate-900 dark:text-white">My Ratings & Feedback</span>
           </div>
           <ChevronRight className="w-4 h-4 text-slate-400" />
         </button>
@@ -168,27 +171,31 @@ export const ProfilePage = () => {
           <ChevronRight className="w-4 h-4 text-slate-400" />
         </button>
 
-        <button
-          onClick={() => setCurrentPage('rewards')}
-          className="w-full p-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors text-left"
-        >
-          <div className="flex items-center space-x-3">
-            <Gift className="w-4 h-4 text-purple-500" />
-            <span className="text-xs font-bold text-slate-900 dark:text-white">My Rewards</span>
-          </div>
-          <ChevronRight className="w-4 h-4 text-slate-400" />
-        </button>
+        {currentUser.role === 'student' && (
+          <>
+            <button
+              onClick={() => setCurrentPage('rewards')}
+              className="w-full p-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors text-left"
+            >
+              <div className="flex items-center space-x-3">
+                <Gift className="w-4 h-4 text-purple-500" />
+                <span className="text-xs font-bold text-slate-900 dark:text-white">Health Points & Rewards</span>
+              </div>
+              <ChevronRight className="w-4 h-4 text-slate-400" />
+            </button>
 
-        <button
-          onClick={() => setCurrentPage('muscle-pass')}
-          className="w-full p-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors text-left"
-        >
-          <div className="flex items-center space-x-3">
-            <Dumbbell className="w-4 h-4 text-teal-500" />
-            <span className="text-xs font-bold text-slate-900 dark:text-white">Muscle Pass</span>
-          </div>
-          <ChevronRight className="w-4 h-4 text-slate-400" />
-        </button>
+            <button
+              onClick={() => setCurrentPage('muscle-pass')}
+              className="w-full p-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors text-left"
+            >
+              <div className="flex items-center space-x-3">
+                <Dumbbell className="w-4 h-4 text-teal-500" />
+                <span className="text-xs font-bold text-slate-900 dark:text-white">Muscle Pass (Gym Mode)</span>
+              </div>
+              <ChevronRight className="w-4 h-4 text-slate-400" />
+            </button>
+          </>
+        )}
 
         <button
           onClick={() => setShowSettings(prev => !prev)}
@@ -196,7 +203,7 @@ export const ProfilePage = () => {
         >
           <div className="flex items-center space-x-3">
             <Settings className="w-4 h-4 text-slate-500" />
-            <span className="text-xs font-bold text-slate-900 dark:text-white">Settings</span>
+            <span className="text-xs font-bold text-slate-900 dark:text-white">Edit Profile</span>
           </div>
           <ChevronRight className="w-4 h-4 text-slate-400" />
         </button>

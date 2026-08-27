@@ -22,6 +22,7 @@ export const StudentDashboard = () => {
     todayMeals,
     rateMeal, 
     getUserRating,
+    getMealStats,
     setSelectedMealModal,
     currentMessInfo,
     setCurrentPage,
@@ -32,7 +33,7 @@ export const StudentDashboard = () => {
 
   const [selectedTag, setSelectedTag] = useState('');
   const [feedbackText, setFeedbackText] = useState('');
-  const [quickRatingMealId, setQuickRatingMealId] = useState(todayMeals[0]?.id || 'mon_b');
+  const [quickRatingMealId, setQuickRatingMealId] = useState(todayMeals[0]?.id || '');
   const [ratedNotice, setRatedNotice] = useState(false);
 
   const todayDateString = new Date().toLocaleDateString('en-US', {
@@ -52,24 +53,25 @@ export const StudentDashboard = () => {
   const proteinPercent = Math.min(100, Math.round((consumedProtein / proteinTarget) * 100));
 
   const handleQuickSubmit = (star) => {
-    rateMeal(quickRatingMealId, star, feedbackText, selectedTag ? [selectedTag] : []);
+    const targetMealId = quickRatingMealId || todayMeals[0]?.id;
+    if (!targetMealId) return;
+    rateMeal(targetMealId, star, feedbackText, selectedTag ? [selectedTag] : []);
     setRatedNotice(true);
     setFeedbackText('');
     setSelectedTag('');
     setTimeout(() => setRatedNotice(false), 2500);
   };
 
-  // Safe fallback if meals array is empty
   const mealsList = todayMeals && todayMeals.length > 0 ? todayMeals : [];
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 pb-24 md:pb-12">
       
-      {/* GREETING & LOCATION HEADER (DYNAMIC USER NAME) */}
+      {/* GREETING & LOCATION (DYNAMIC NAME) */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm">
         <div className="flex items-center space-x-3.5">
           <img
-            src={currentUser?.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=300"}
+            src={currentUser?.avatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=300"}
             alt={currentUser?.name}
             className="w-12 h-12 rounded-2xl object-cover ring-2 ring-emerald-500/30"
           />
@@ -89,10 +91,10 @@ export const StudentDashboard = () => {
         </div>
       </div>
 
-      {/* TODAY'S MENU (4 MEAL CARDS) */}
+      {/* TODAY'S MENU */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight flex items-center space-x-2">
+          <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight flex items-center space-x-2">
             <span>TODAY'S MENU</span>
             <span className="px-2 py-0.5 text-[10px] font-extrabold rounded-full bg-emerald-500 text-white">LIVE</span>
           </h2>
@@ -107,6 +109,7 @@ export const StudentDashboard = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {mealsList.map(meal => {
               const myRating = getUserRating(meal.id);
+              const stats = getMealStats ? getMealStats(meal.id) : { rating: null, ratingDisplay: 'No ratings yet', ratingCount: 0 };
               const style = categoryStyles[meal.category] || categoryStyles.Lunch;
               const CategoryIcon = style.icon;
 
@@ -134,9 +137,15 @@ export const StudentDashboard = () => {
                         {meal.time}
                       </span>
 
-                      <div className="absolute bottom-3 right-3 bg-emerald-600 text-white px-2.5 py-1 rounded-xl text-xs font-black flex items-center space-x-1 shadow-md">
-                        <Star className="w-3.5 h-3.5 fill-current" />
-                        <span>{meal.rating || 4.5}</span>
+                      <div className="absolute bottom-3 right-3 bg-black/70 backdrop-blur-md text-white px-2.5 py-1 rounded-xl text-[10px] font-black flex items-center space-x-1 shadow-md">
+                        {stats.rating ? (
+                          <>
+                            <Star className="w-3 h-3 text-amber-400 fill-current" />
+                            <span>{stats.rating} ({stats.ratingCount})</span>
+                          </>
+                        ) : (
+                          <span className="text-slate-300">No ratings yet</span>
+                        )}
                       </div>
                     </div>
 
@@ -150,9 +159,9 @@ export const StudentDashboard = () => {
                       </p>
 
                       <div className="flex items-center space-x-3 text-[11px] font-bold text-slate-500 dark:text-slate-400 pt-1">
-                        <span className="text-emerald-600 dark:text-emerald-400">💪 {meal.protein}g protein</span>
+                        <span className="text-emerald-600 dark:text-emerald-400">{meal.protein}g protein</span>
                         <span>•</span>
-                        <span>🔥 {meal.calories} kcal</span>
+                        <span>{meal.calories} kcal</span>
                       </div>
                     </div>
                   </div>
@@ -164,7 +173,7 @@ export const StudentDashboard = () => {
                     </span>
 
                     <span className="text-[10px] text-slate-400 font-semibold">
-                      {myRating ? `Rated ${myRating.rating}⭐` : 'Tap to rate'}
+                      {myRating ? `Rated ${myRating.rating}★` : 'Tap to rate'}
                     </span>
                   </div>
                 </div>
@@ -174,135 +183,81 @@ export const StudentDashboard = () => {
         )}
       </div>
 
-      {/* QUICK ACTIONS */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <button
-          onClick={() => setCurrentPage('menu')}
-          className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 hover:border-emerald-500 text-left flex items-center space-x-3 transition-all shadow-sm"
-        >
-          <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold">
-            🍽️
-          </div>
-          <div>
-            <p className="text-xs font-black text-slate-900 dark:text-white">Menu</p>
-            <p className="text-[10px] text-slate-400">Weekly Schedule</p>
-          </div>
-        </button>
-
-        <button
-          onClick={() => setCurrentPage('activity')}
-          className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 hover:border-amber-500 text-left flex items-center space-x-3 transition-all shadow-sm"
-        >
-          <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center font-bold">
-            ⭐
-          </div>
-          <div>
-            <p className="text-xs font-black text-slate-900 dark:text-white">Rate Meal</p>
-            <p className="text-[10px] text-slate-400">+20 Health Pts</p>
-          </div>
-        </button>
-
-        <button
-          onClick={() => setCurrentPage('muscle-pass')}
-          className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 hover:border-emerald-500 text-left flex items-center space-x-3 transition-all shadow-sm"
-        >
-          <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold">
-            💪
-          </div>
-          <div>
-            <p className="text-xs font-black text-slate-900 dark:text-white">Gym Mode</p>
-            <p className="text-[10px] text-slate-400">Muscle Pass</p>
-          </div>
-        </button>
-
-        <button
-          onClick={() => setCurrentPage('voting')}
-          className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 hover:border-purple-500 text-left flex items-center space-x-3 transition-all shadow-sm"
-        >
-          <div className="w-9 h-9 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center font-bold">
-            🗳️
-          </div>
-          <div>
-            <p className="text-xs font-black text-slate-900 dark:text-white">Vote</p>
-            <p className="text-[10px] text-slate-400">Next Dish</p>
-          </div>
-        </button>
-      </div>
-
       {/* RATING CARD: “How was your meal?” */}
-      <div className="p-5 sm:p-6 rounded-3xl bg-slate-900 text-white shadow-xl space-y-4 border border-emerald-500/30">
-        <div className="flex items-center justify-between">
-          <h3 className="text-base font-extrabold flex items-center space-x-2">
-            <span>How was your meal?</span>
-          </h3>
-          <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold">
-            +20 Health Pts
-          </span>
-        </div>
-
-        {/* Meal Selector */}
-        <select
-          value={quickRatingMealId}
-          onChange={(e) => setQuickRatingMealId(e.target.value)}
-          className="w-full px-3 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-xs font-bold text-slate-200 outline-none"
-        >
-          {mealsList.map(m => (
-            <option key={m.id} value={m.id}>
-              {m.category}: {m.name} ({m.rating} ⭐)
-            </option>
-          ))}
-        </select>
-
-        {/* 5 Stars */}
-        <div className="flex items-center justify-center space-x-3 py-1">
-          {[1, 2, 3, 4, 5].map(star => {
-            const userMealRating = getUserRating(quickRatingMealId);
-            const isFilled = userMealRating ? star <= userMealRating.rating : false;
-            return (
-              <button
-                key={star}
-                onClick={() => handleQuickSubmit(star)}
-                className="p-1.5 hover:scale-125 transition-transform"
-              >
-                <Star
-                  className={`w-7 h-7 ${
-                    isFilled ? 'text-amber-400 fill-amber-400' : 'text-slate-600 hover:text-amber-300'
-                  }`}
-                />
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Quick Tag Chips */}
-        <div className="flex flex-wrap items-center justify-center gap-2">
-          {['Tasty', 'Good Quality', 'Good Quantity', 'Average', 'Needs Improvement'].map(tag => (
-            <button
-              key={tag}
-              onClick={() => {
-                setSelectedTag(tag);
-                rateMeal(quickRatingMealId, 5, '', [tag]);
-                setRatedNotice(true);
-                setTimeout(() => setRatedNotice(false), 2500);
-              }}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                selectedTag === tag
-                  ? 'bg-emerald-500 text-white shadow-md'
-                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-              }`}
-            >
-              {tag}
-            </button>
-          ))}
-        </div>
-
-        {ratedNotice && (
-          <div className="p-2.5 rounded-xl bg-emerald-500/20 text-emerald-300 text-xs font-bold text-center flex items-center justify-center space-x-1 border border-emerald-500/30">
-            <Check className="w-4 h-4" />
-            <span>Rating saved to database! +20 points earned.</span>
+      {mealsList.length > 0 && (
+        <div className="p-5 sm:p-6 rounded-3xl bg-slate-900 text-white shadow-xl space-y-4 border border-emerald-500/30">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm sm:text-base font-extrabold flex items-center space-x-2">
+              <span>How was your meal?</span>
+            </h3>
+            <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold">
+              Rate & Review
+            </span>
           </div>
-        )}
-      </div>
+
+          {/* Meal Selector */}
+          <select
+            value={quickRatingMealId || (mealsList[0]?.id || '')}
+            onChange={(e) => setQuickRatingMealId(e.target.value)}
+            className="w-full px-3 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-xs font-bold text-slate-200 outline-none"
+          >
+            {mealsList.map(m => (
+              <option key={m.id} value={m.id}>
+                {m.category}: {m.name}
+              </option>
+            ))}
+          </select>
+
+          {/* 5 Stars */}
+          <div className="flex items-center justify-center space-x-3 py-1">
+            {[1, 2, 3, 4, 5].map(star => {
+              const activeId = quickRatingMealId || mealsList[0]?.id;
+              const userMealRating = getUserRating(activeId);
+              const isFilled = userMealRating ? star <= userMealRating.rating : false;
+              return (
+                <button
+                  key={star}
+                  onClick={() => handleQuickSubmit(star)}
+                  className="p-1.5 hover:scale-125 transition-transform"
+                >
+                  <Star
+                    className={`w-7 h-7 ${
+                      isFilled ? 'text-amber-400 fill-amber-400' : 'text-slate-600 hover:text-amber-300'
+                    }`}
+                  />
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Quick Tag Chips */}
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            {['Tasty', 'Good Quality', 'Good Quantity', 'Average', 'Needs Improvement'].map(tag => (
+              <button
+                key={tag}
+                onClick={() => {
+                  setSelectedTag(tag);
+                  handleQuickSubmit(5);
+                }}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                  selectedTag === tag
+                    ? 'bg-emerald-500 text-white shadow-md'
+                    : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                }`}
+              >
+                {tag}
+              </button>
+            ))}
+          </div>
+
+          {ratedNotice && (
+            <div className="p-2.5 rounded-xl bg-emerald-500/20 text-emerald-300 text-xs font-bold text-center flex items-center justify-center space-x-1 border border-emerald-500/30">
+              <Check className="w-4 h-4" />
+              <span>Feedback recorded! Thank you for rating.</span>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* MUSCLE PASS & ACTIVE VOTING SUMMARY */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -314,7 +269,7 @@ export const StudentDashboard = () => {
         >
           <div className="flex items-center justify-between">
             <h3 className="text-base font-extrabold text-slate-900 dark:text-white">Muscle Pass</h3>
-            <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">Goal: {proteinTarget}g</span>
+            <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">Target: {proteinTarget}g</span>
           </div>
 
           <div className="space-y-2">
@@ -331,7 +286,7 @@ export const StudentDashboard = () => {
           </div>
 
           <div className="pt-1 flex items-center justify-between text-xs font-bold text-slate-500">
-            <span>Recommended: High-protein mess meals</span>
+            <span>High-protein dish tracking</span>
             <span className="text-emerald-600 dark:text-emerald-400 flex items-center">Open →</span>
           </div>
         </div>
@@ -342,22 +297,29 @@ export const StudentDashboard = () => {
           className="glass-card p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 space-y-3 cursor-pointer hover:border-purple-500/40 transition-all"
         >
           <div className="flex items-center justify-between">
-            <h3 className="text-base font-extrabold text-slate-900 dark:text-white">HELP CHOOSE THE NEXT DISH</h3>
-            <span className="text-xs font-bold text-purple-600 dark:text-purple-400">{poll.totalVotes} Votes</span>
+            <h3 className="text-base font-extrabold text-slate-900 dark:text-white">Active Voting Poll</h3>
+            {poll ? (
+              <span className="text-xs font-bold text-purple-600 dark:text-purple-400">{poll.totalVotes} Votes</span>
+            ) : null}
           </div>
 
-          <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
-            Replacement for: <strong className="text-amber-500">{poll.dishToReplace}</strong>
-          </p>
-
-          <div className="space-y-1.5">
-            {poll.options.slice(0, 2).map(opt => (
-              <div key={opt.id} className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 flex items-center justify-between text-xs font-bold">
-                <span>{opt.name}</span>
-                <span className="text-emerald-600 dark:text-emerald-400">{opt.percent}% ({opt.votes} votes)</span>
-              </div>
-            ))}
-          </div>
+          {poll ? (
+            <div className="space-y-1.5">
+              <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                Replace: <strong className="text-amber-500">{poll.dishToReplace}</strong>
+              </p>
+              {poll.options.slice(0, 2).map(opt => (
+                <div key={opt.id} className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 flex items-center justify-between text-xs font-bold">
+                  <span>{opt.name}</span>
+                  <span className="text-emerald-600 dark:text-emerald-400">{opt.percent}%</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="py-4 text-center text-xs font-bold text-slate-400">
+              No active voting polls at this time.
+            </div>
+          )}
         </div>
 
       </div>

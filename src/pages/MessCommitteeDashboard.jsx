@@ -34,9 +34,7 @@ export const MessCommitteeDashboard = () => {
     wardenMetrics
   } = useApp();
 
-  const [activeTab, setActiveTab] = useState('menu'); // 'menu' | 'feedback' | 'complaints' | 'voting' | 'analytics' | 'reports'
-  
-  // New Poll Form State
+  const [activeTab, setActiveTab] = useState('menu');
   const [showPollCreator, setShowPollCreator] = useState(false);
   const [newPollDish, setNewPollDish] = useState('');
   const [newPollOptions, setNewPollOptions] = useState([
@@ -62,6 +60,8 @@ export const MessCommitteeDashboard = () => {
     setShowPollCreator(false);
   };
 
+  const ratedMeals = meals.filter(m => m.rating !== null && m.rating !== undefined);
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 pb-24 md:pb-12">
       
@@ -83,19 +83,25 @@ export const MessCommitteeDashboard = () => {
         </button>
       </div>
 
-      {/* QUICK METRICS */}
+      {/* LAUNCH-STATE REAL METRICS */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <div className="glass-card p-4 rounded-3xl border border-slate-200/80 dark:border-slate-800 text-center">
-          <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Today's Meals</span>
+          <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Today's Menu</span>
           <p className="text-2xl font-black text-slate-900 dark:text-white">{meals.length} Dishes</p>
-          <span className="text-[10px] text-emerald-500 font-semibold">Active in student app</span>
+          <span className="text-[10px] text-emerald-500 font-semibold">Active for {selectedDay}</span>
         </div>
 
         <div className="glass-card p-4 rounded-3xl border border-slate-200/80 dark:border-slate-800 text-center">
           <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Average Meal Rating</span>
           <p className="text-2xl font-black text-amber-500 flex items-center justify-center space-x-1">
-            <Star className="w-4 h-4 fill-current" />
-            <span>{wardenMetrics.messQualityScore} / 5.0</span>
+            {wardenMetrics.messQualityScore ? (
+              <>
+                <Star className="w-4 h-4 fill-current" />
+                <span>{wardenMetrics.messQualityScore} / 5.0</span>
+              </>
+            ) : (
+              <span className="text-sm font-bold text-slate-400">No ratings yet</span>
+            )}
           </p>
           <span className="text-[10px] text-slate-400 font-semibold">{allRatings.length} total reviews</span>
         </div>
@@ -108,12 +114,12 @@ export const MessCommitteeDashboard = () => {
 
         <div className="glass-card p-4 rounded-3xl border border-slate-200/80 dark:border-slate-800 text-center">
           <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Active Poll Votes</span>
-          <p className="text-2xl font-black text-purple-600 dark:text-purple-400">{poll.totalVotes}</p>
-          <span className="text-[10px] text-slate-400 font-semibold">Live votes received</span>
+          <p className="text-2xl font-black text-purple-600 dark:text-purple-400">{poll ? poll.totalVotes : 0}</p>
+          <span className="text-[10px] text-slate-400 font-semibold">{poll ? 'Live votes received' : 'No active poll'}</span>
         </div>
       </div>
 
-      {/* QUICK ACTIONS */}
+      {/* QUICK ACTION BUTTONS */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <button
           onClick={() => { setEditingMeal(null); setIsAddMealModalOpen(true); }}
@@ -199,46 +205,51 @@ export const MessCommitteeDashboard = () => {
             </button>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {meals.map(meal => (
-              <div key={meal.id} className="glass-card rounded-3xl overflow-hidden border border-slate-200/80 dark:border-slate-800 flex flex-col justify-between shadow-sm">
-                <div>
-                  <div className="relative h-36 w-full">
-                    <img src={meal.image} alt={meal.name} className="w-full h-full object-cover" />
-                    <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-black/70 text-white text-[10px] font-bold">
-                      {meal.category}
-                    </span>
-                    <span className="absolute bottom-2 right-2 bg-emerald-600 text-white px-2 py-0.5 rounded-lg text-xs font-bold flex items-center space-x-0.5">
-                      <Star className="w-3 h-3 fill-current" />
-                      <span>{meal.rating || 4.5}</span>
-                    </span>
+          {meals.length === 0 ? (
+            <div className="p-8 text-center text-xs font-bold text-slate-400 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800">
+              No dishes scheduled for {selectedDay}. Click "Add Dish" to publish items.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {meals.map(meal => (
+                <div key={meal.id} className="glass-card rounded-3xl overflow-hidden border border-slate-200/80 dark:border-slate-800 flex flex-col justify-between shadow-sm">
+                  <div>
+                    <div className="relative h-36 w-full">
+                      <img src={meal.image} alt={meal.name} className="w-full h-full object-cover" />
+                      <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-black/70 text-white text-[10px] font-bold">
+                        {meal.category}
+                      </span>
+                      <span className="absolute bottom-2 right-2 bg-black/70 backdrop-blur-md text-white px-2 py-0.5 rounded-lg text-[10px] font-bold flex items-center space-x-0.5">
+                        {meal.rating ? `${meal.rating} ★` : 'No ratings yet'}
+                      </span>
+                    </div>
+                    <div className="p-3 space-y-1">
+                      <h4 className="text-xs font-black text-slate-900 dark:text-white">{meal.name}</h4>
+                      <p className="text-[11px] text-slate-500 line-clamp-1">{meal.items}</p>
+                      <span className="text-[10px] text-slate-400 block">{meal.calories} kcal • {meal.protein}g protein</span>
+                    </div>
                   </div>
-                  <div className="p-3 space-y-1">
-                    <h4 className="text-xs font-black text-slate-900 dark:text-white">{meal.name}</h4>
-                    <p className="text-[11px] text-slate-500 line-clamp-1">{meal.items}</p>
-                    <span className="text-[10px] text-slate-400 block">{meal.calories} kcal • {meal.protein}g protein</span>
-                  </div>
-                </div>
 
-                <div className="p-2 bg-slate-50 dark:bg-slate-800/50 border-t flex justify-between">
-                  <button
-                    onClick={() => { setEditingMeal(meal); setIsAddMealModalOpen(true); }}
-                    className="px-2.5 py-1 rounded-lg text-emerald-600 dark:text-emerald-400 text-xs font-bold flex items-center space-x-1 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
-                  >
-                    <Edit3 className="w-3 h-3" />
-                    <span>Edit</span>
-                  </button>
-                  <button
-                    onClick={() => deleteMeal(meal.id)}
-                    className="px-2.5 py-1 rounded-lg text-rose-600 dark:text-rose-400 text-xs font-bold flex items-center space-x-1 hover:bg-rose-50 dark:hover:bg-rose-950/40"
-                  >
-                    <Trash2 className="w-3 h-3" />
-                    <span>Delete</span>
-                  </button>
+                  <div className="p-2 bg-slate-50 dark:bg-slate-800/50 border-t flex justify-between">
+                    <button
+                      onClick={() => { setEditingMeal(meal); setIsAddMealModalOpen(true); }}
+                      className="px-2.5 py-1 rounded-lg text-emerald-600 dark:text-emerald-400 text-xs font-bold flex items-center space-x-1 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
+                    >
+                      <Edit3 className="w-3 h-3" />
+                      <span>Edit</span>
+                    </button>
+                    <button
+                      onClick={() => deleteMeal(meal.id)}
+                      className="px-2.5 py-1 rounded-lg text-rose-600 dark:text-rose-400 text-xs font-bold flex items-center space-x-1 hover:bg-rose-50 dark:hover:bg-rose-950/40"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                      <span>Delete</span>
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -246,8 +257,8 @@ export const MessCommitteeDashboard = () => {
       {activeTab === 'feedback' && (
         <div className="space-y-3">
           {allRatings.length === 0 ? (
-            <div className="p-6 text-center text-xs font-bold text-slate-400 bg-white dark:bg-slate-900 rounded-2xl border">
-              No feedback yet.
+            <div className="p-8 text-center text-xs font-bold text-slate-400 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800">
+              No feedback received yet.
             </div>
           ) : (
             allRatings.map(r => (
@@ -255,7 +266,7 @@ export const MessCommitteeDashboard = () => {
                 <div>
                   <div className="flex items-center space-x-2">
                     <h4 className="text-xs font-black text-slate-900 dark:text-white">{r.mealName}</h4>
-                    <span className="text-xs font-black text-amber-500">{r.rating} ⭐</span>
+                    <span className="text-xs font-black text-amber-500">{r.rating} ★</span>
                   </div>
                   {r.feedback && <p className="text-[11px] text-slate-500 italic mt-0.5">"{r.feedback}"</p>}
                   <span className="text-[10px] text-slate-400 block mt-0.5">
@@ -272,8 +283,8 @@ export const MessCommitteeDashboard = () => {
       {activeTab === 'complaints' && (
         <div className="space-y-3">
           {allComplaints.length === 0 ? (
-            <div className="p-6 text-center text-xs font-bold text-slate-400 bg-white dark:bg-slate-900 rounded-2xl border">
-              No complaints yet.
+            <div className="p-8 text-center text-xs font-bold text-slate-400 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800">
+              No complaints filed yet.
             </div>
           ) : (
             allComplaints.map(c => (
@@ -367,43 +378,55 @@ export const MessCommitteeDashboard = () => {
           )}
 
           {/* Current Poll Results */}
-          <div className="p-5 rounded-3xl bg-slate-900 text-white space-y-3 border border-slate-800">
-            <div className="flex justify-between items-center text-xs">
-              <span className="font-bold">Target Dish: {poll.dishToReplace}</span>
-              <span className="text-emerald-400">{poll.totalVotes} Total Student Votes</span>
-            </div>
-            <div className="space-y-2">
-              {poll.options.map(opt => (
-                <div key={opt.id} className="space-y-1">
-                  <div className="flex justify-between text-xs font-bold">
-                    <span>{opt.name} ({opt.protein})</span>
-                    <span className="text-emerald-400">{opt.percent}% ({opt.votes} votes)</span>
+          {poll ? (
+            <div className="p-5 rounded-3xl bg-slate-900 text-white space-y-3 border border-slate-800">
+              <div className="flex justify-between items-center text-xs">
+                <span className="font-bold">Target Dish: {poll.dishToReplace}</span>
+                <span className="text-emerald-400">{poll.totalVotes} Total Student Votes</span>
+              </div>
+              <div className="space-y-2">
+                {poll.options.map(opt => (
+                  <div key={opt.id} className="space-y-1">
+                    <div className="flex justify-between text-xs font-bold">
+                      <span>{opt.name} ({opt.protein})</span>
+                      <span className="text-emerald-400">{opt.percent}% ({opt.votes} votes)</span>
+                    </div>
+                    <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+                      <div className="h-full bg-emerald-500" style={{ width: `${opt.percent}%` }}></div>
+                    </div>
                   </div>
-                  <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
-                    <div className="h-full bg-emerald-500" style={{ width: `${opt.percent}%` }}></div>
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="p-8 text-center text-xs font-bold text-slate-400 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800">
+              No active voting polls. Click "Create New Poll" to launch one.
+            </div>
+          )}
         </div>
       )}
 
       {/* TAB 5: ANALYTICS */}
       {activeTab === 'analytics' && (
         <div className="glass-card p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 space-y-3">
-          <h3 className="text-xs font-black uppercase text-slate-400">Meal Ratings (Database Calculated)</h3>
-          <div className="h-56 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={meals}>
-                <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                <XAxis dataKey="name" tick={{ fontSize: 9 }} />
-                <YAxis domain={[0, 5]} tick={{ fontSize: 9 }} />
-                <Tooltip />
-                <Bar dataKey="rating" fill="#10b981" radius={[6, 6, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+          <h3 className="text-xs font-black uppercase text-slate-400">Meal Ratings</h3>
+          {ratedMeals.length > 0 ? (
+            <div className="h-56 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={ratedMeals}>
+                  <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                  <XAxis dataKey="name" tick={{ fontSize: 9 }} />
+                  <YAxis domain={[0, 5]} tick={{ fontSize: 9 }} />
+                  <Tooltip />
+                  <Bar dataKey="rating" fill="#10b981" radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <div className="py-12 text-center text-xs font-bold text-slate-400">
+              No rating analytics available yet.
+            </div>
+          )}
         </div>
       )}
 
@@ -411,6 +434,7 @@ export const MessCommitteeDashboard = () => {
       {activeTab === 'reports' && (
         <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center space-y-2">
           <h3 className="text-sm font-black text-slate-900 dark:text-white">Mess Committee Monthly Summary</h3>
+          <p className="text-xs text-slate-500">Export official meal records and feedback summary.</p>
           <button
             onClick={() => window.print()}
             className="px-5 py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold shadow-md inline-flex items-center space-x-1"

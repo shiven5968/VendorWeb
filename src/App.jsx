@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { AppProvider, useApp } from './context/AppContext';
 import { Navbar } from './components/Navbar';
 import { BottomNav } from './components/BottomNav';
-import { RoleSwitcherBar } from './components/RoleSwitcherBar';
 import { Footer } from './components/Footer';
 import { NotificationDrawer } from './components/NotificationDrawer';
 import { SearchModal } from './components/SearchModal';
@@ -23,41 +23,123 @@ import { ActivityPage } from './pages/ActivityPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { AnalyticsPage } from './pages/AnalyticsPage';
 import { ReportsPage } from './pages/ReportsPage';
-import { AboutPage } from './pages/AboutPage';
-import { ContactPage } from './pages/ContactPage';
+import { Loader2 } from 'lucide-react';
 
 const AppContent = () => {
-  const { currentUser, currentRole, currentPage } = useApp();
+  const { user, profile, role, loading: authLoading } = useAuth();
+  const { currentPage, setCurrentPage } = useApp();
 
-  const renderMainView = () => {
-    // Unauthenticated or login
-    if (!currentUser || currentPage === 'login') return <LoginPage />;
-    if (currentPage === 'home' && currentRole === 'landing') return <LandingPage />;
-    if (currentPage === 'about') return <AboutPage />;
-    if (currentPage === 'contact') return <ContactPage />;
+  // Role selection state for unauthenticated landing -> login flow
+  const [selectedRole, setSelectedRole] = useState('student');
+  const [isLoginFlow, setIsLoginFlow] = useState(false);
 
-    // Common pages
+  // URL Path Synchronization & Strict Role Guarding
+  useEffect(() => {
+    const path = window.location.pathname.toLowerCase();
+
+    if (path.startsWith('/student')) {
+      if (!user) {
+        setSelectedRole('student');
+        setIsLoginFlow(true);
+      } else if (role !== 'student') {
+        const target = role === 'warden' ? '/warden' : '/committee';
+        window.history.replaceState(null, '', target);
+        setCurrentPage('dashboard');
+      } else {
+        setCurrentPage('dashboard');
+      }
+    } else if (path.startsWith('/committee')) {
+      if (!user) {
+        setSelectedRole('committee');
+        setIsLoginFlow(true);
+      } else if (role !== 'mess_committee') {
+        const target = role === 'warden' ? '/warden' : '/student';
+        window.history.replaceState(null, '', target);
+        setCurrentPage('dashboard');
+      } else {
+        setCurrentPage('dashboard');
+      }
+    } else if (path.startsWith('/warden')) {
+      if (!user) {
+        setSelectedRole('warden');
+        setIsLoginFlow(true);
+      } else if (role !== 'warden') {
+        const target = role === 'mess_committee' ? '/committee' : '/student';
+        window.history.replaceState(null, '', target);
+        setCurrentPage('dashboard');
+      } else {
+        setCurrentPage('dashboard');
+      }
+    }
+  }, [user, role, setCurrentPage]);
+
+  // Loading Screen
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center space-y-3 text-white">
+        <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
+        <p className="text-xs font-bold text-slate-400">Loading MessMates...</p>
+      </div>
+    );
+  }
+
+  // 1. Unauthenticated Flow: Landing (Role Selection) -> Login
+  if (!user) {
+    if (isLoginFlow) {
+      return (
+        <div className="min-h-screen flex flex-col justify-between bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
+          <Navbar />
+          <main className="flex-1 flex items-center justify-center">
+            <LoginPage 
+              initialRole={selectedRole} 
+              onBackToRoles={() => setIsLoginFlow(false)} 
+            />
+          </main>
+          <Footer />
+        </div>
+      );
+    }
+
+    return (
+      <div className="min-h-screen flex flex-col justify-between bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
+        <Navbar />
+        <main className="flex-1">
+          <LandingPage 
+            onSelectRole={(chosenRole) => {
+              setSelectedRole(chosenRole);
+              setIsLoginFlow(true);
+            }} 
+          />
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  // 2. Authenticated Flow with Strict Role Guarding
+  const renderAuthenticatedPage = () => {
+    // Common Authenticated Pages
     if (currentPage === 'activity') return <ActivityPage />;
     if (currentPage === 'profile') return <ProfilePage />;
     if (currentPage === 'menu') return <MenuPage />;
     if (currentPage === 'voting') return <VotingPage />;
 
-    // Student Only Pages
-    if (currentUser.role === 'student') {
+    // STUDENT ONLY
+    if (role === 'student') {
       if (currentPage === 'muscle-pass') return <MusclePassPage />;
       if (currentPage === 'rewards') return <HealthyRewardsPage />;
       return <StudentDashboard />;
     }
 
-    // Mess Committee Only Pages
-    if (currentUser.role === 'committee') {
+    // MESS COMMITTEE ONLY
+    if (role === 'mess_committee') {
       if (currentPage === 'analytics') return <AnalyticsPage />;
       if (currentPage === 'reports') return <ReportsPage />;
       return <MessCommitteeDashboard />;
     }
 
-    // Warden Only Pages
-    if (currentUser.role === 'warden') {
+    // WARDEN ONLY
+    if (role === 'warden') {
       if (currentPage === 'analytics') return <AnalyticsPage />;
       if (currentPage === 'reports') return <ReportsPage />;
       return <WardenDashboard />;
@@ -67,12 +149,11 @@ const AppContent = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-between bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 selection:bg-emerald-500 selection:text-white transition-colors duration-300 relative">
+    <div className="min-h-screen flex flex-col justify-between bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-300 relative">
       <div>
-        <RoleSwitcherBar />
         <Navbar />
         <main className="transition-all duration-300">
-          {renderMainView()}
+          {renderAuthenticatedPage()}
         </main>
       </div>
 
@@ -91,8 +172,10 @@ const AppContent = () => {
 
 export default function App() {
   return (
-    <AppProvider>
-      <AppContent />
-    </AppProvider>
+    <AuthProvider>
+      <AppProvider>
+        <AppContent />
+      </AppProvider>
+    </AuthProvider>
   );
 }

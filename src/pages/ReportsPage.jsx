@@ -47,7 +47,7 @@ export const ReportsPage = () => {
         </div>
 
         <div className="text-xs text-slate-500 space-y-2 pt-4">
-          <p>✔ Signed off by Chief Warden Pathak Sir.</p>
+          <p>✔ Signed off by Chief Warden ({currentUser?.name || 'Authorized Office'}).</p>
           <p>✔ All dish replacement polls successfully concluded.</p>
           <p>✔ Gym Mode high-protein guidelines verified by hostel mess nutritionist.</p>
         </div>
