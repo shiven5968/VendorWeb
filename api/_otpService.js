@@ -1,13 +1,6 @@
 import crypto from 'crypto';
-import { initializeApp, getApps } from 'firebase/app';
-import { 
-  getFirestore, 
-  doc, 
-  setDoc, 
-  getDoc, 
-  updateDoc, 
-  deleteDoc 
-} from 'firebase/firestore';
+import { initializeApp as initAdminApp, getApps as getAdminApps, cert } from 'firebase-admin/app';
+import { getFirestore as getAdminFirestore } from 'firebase-admin/firestore';
 
 // 10 minutes validity
 export const OTP_EXPIRY_MS = 10 * 60 * 1000;
@@ -18,20 +11,71 @@ export const MAX_ATTEMPTS = 5;
 
 // Secret salt for HMAC hashing OTP codes and signing session tokens (Plaintext OTP is NEVER stored)
 const OTP_SALT = process.env.OTP_SECRET_SALT || 'messmates_abes_ec_otp_salt_sec_2026';
+const PROJECT_ID = process.env.VITE_FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT_ID || 'messmates-f69a3';
 
-// Initialize Firebase for server-side durable Firestore access
-const firebaseConfig = {
-  apiKey: process.env.VITE_FIREBASE_API_KEY || 'AIzaSyARw4CyvhbiItVCC4HiKvaR-N8a1nmi3JU',
-  authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN || 'messmates-f69a3.firebaseapp.com',
-  projectId: process.env.VITE_FIREBASE_PROJECT_ID || 'messmates-f69a3',
-  storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET || 'messmates-f69a3.firebasestorage.app',
-  messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '39348747656',
-  appId: process.env.VITE_FIREBASE_APP_ID || '1:39348747656:web:8e5b4170ebb25ae2978e3d',
-  measurementId: process.env.VITE_FIREBASE_MEASUREMENT_ID || 'G-4EPLXE763Y'
-};
+let adminDb = null;
 
-const serverApp = getApps().find(a => a.name === '[DEFAULT]') || initializeApp(firebaseConfig);
-const firestoreDb = getFirestore(serverApp);
+/**
+ * Privileged Firebase Admin SDK Firestore instance
+ * Bypasses client-side security rules; accessible ONLY on serverless backend
+ */
+function getFirebaseAdminDb() {
+  if (adminDb) return adminDb;
+
+  const hasCredentials = Boolean(
+    process.env.FIREBASE_SERVICE_ACCOUNT_KEY ||
+    (process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_CLIENT_EMAIL) ||
+    process.env.GOOGLE_APPLICATION_CREDENTIALS
+  );
+
+  if (!hasCredentials) {
+    return null;
+  }
+
+  const existingApps = getAdminApps();
+  let adminApp = existingApps.length > 0 ? existingApps[0] : null;
+
+  if (!adminApp) {
+    try {
+      if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
+        let serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+        if (typeof serviceAccount === 'string') {
+          serviceAccount = JSON.parse(serviceAccount);
+        }
+        adminApp = initAdminApp({
+          credential: cert(serviceAccount),
+          projectId: PROJECT_ID
+        });
+      } else if (process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_CLIENT_EMAIL) {
+        adminApp = initAdminApp({
+          credential: cert({
+            projectId: PROJECT_ID,
+            clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+            privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
+          }),
+          projectId: PROJECT_ID
+        });
+      } else if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+        adminApp = initAdminApp({
+          projectId: PROJECT_ID
+        });
+      }
+    } catch (initErr) {
+      console.warn('[Firebase Admin Init Notice]:', initErr.message);
+      return null;
+    }
+  }
+
+  if (adminApp) {
+    try {
+      adminDb = getAdminFirestore(adminApp);
+    } catch (e) {
+      console.warn('[Firebase Admin Firestore Notice]:', e.message);
+      adminDb = null;
+    }
+  }
+  return adminDb;
+}
 
 /**
  * Validates that an email belongs to the official ABES college domain (@abes.ac.in)
@@ -87,7 +131,7 @@ export function generateSecureOTP() {
 }
 
 /**
- * Dispatch 6-digit OTP via Resend API and persist durable session in Cloud Firestore
+ * Dispatch 6-digit OTP via Resend API and manage durable session in Firestore via Firebase Admin SDK
  */
 export async function sendOtpEmail({ email, admissionNumber, name }) {
   const cleanEmail = (email || '').trim().toLowerCase();
@@ -104,22 +148,23 @@ export async function sendOtpEmail({ email, admissionNumber, name }) {
 
   const now = Date.now();
 
-  // 1. Check existing session in Cloud Firestore for 30s cooldown
-  const sessionRef = doc(firestoreDb, 'otp_sessions', cleanEmail);
-  try {
-    const existingSnap = await getDoc(sessionRef);
-    if (existingSnap.exists()) {
-      const data = existingSnap.data();
-      if (data.lastSentAt && (now - data.lastSentAt) < RESEND_COOLDOWN_MS) {
-        const remainingSec = Math.ceil((RESEND_COOLDOWN_MS - (now - data.lastSentAt)) / 1000);
-        throw new Error(`Please wait ${remainingSec} seconds before requesting a new verification code.`);
+  // 1. Check existing session in Cloud Firestore for 30s cooldown via Firebase Admin SDK
+  const adminFirestore = getFirebaseAdminDb();
+  if (adminFirestore) {
+    try {
+      const existingDoc = await adminFirestore.collection('otp_sessions').doc(cleanEmail).get();
+      if (existingDoc.exists) {
+        const data = existingDoc.data();
+        if (data.lastSentAt && (now - data.lastSentAt) < RESEND_COOLDOWN_MS) {
+          const remainingSec = Math.ceil((RESEND_COOLDOWN_MS - (now - data.lastSentAt)) / 1000);
+          throw new Error(`Please wait ${remainingSec} seconds before requesting a new verification code.`);
+        }
+      }
+    } catch (err) {
+      if (err.message && err.message.includes('Please wait')) {
+        throw err;
       }
     }
-  } catch (err) {
-    if (err.message && err.message.includes('Please wait')) {
-      throw err;
-    }
-    // Proceed if Firestore read permissions are pending
   }
 
   // 2. Generate cryptographically strong 6-digit OTP and HMAC hash
@@ -241,24 +286,27 @@ export async function sendOtpEmail({ email, admissionNumber, name }) {
     throw new Error('Unable to send verification code: RESEND_API_KEY is not configured on the server.');
   }
 
-  // 4. Save DURABLE OTP Session to Cloud Firestore (/otp_sessions/{cleanEmail})
-  try {
-    await setDoc(sessionRef, {
-      sessionId: signedSessionToken,
-      email: cleanEmail,
-      admissionNumber: cleanAdmission,
-      name: cleanName,
-      hashedOtp,
-      createdAt: now,
-      expiresAt,
-      lastSentAt: now,
-      attempts: 0,
-      verified: false,
-      resendMessageId: resendMessageId || null,
-      verificationProofToken: null
-    });
-  } catch (dbErr) {
-    console.warn('[Firestore durable write notice]:', dbErr.message);
+  // 4. Save PRIVILEGED OTP Session via Firebase Admin SDK (/otp_sessions/{cleanEmail})
+  // Direct client access is DENIED in security rules. Accessible ONLY via server.
+  if (adminFirestore) {
+    try {
+      await adminFirestore.collection('otp_sessions').doc(cleanEmail).set({
+        sessionId: signedSessionToken,
+        email: cleanEmail,
+        admissionNumber: cleanAdmission,
+        name: cleanName,
+        hashedOtp,
+        createdAt: now,
+        expiresAt,
+        lastSentAt: now,
+        attempts: 0,
+        verified: false,
+        resendMessageId: resendMessageId || null,
+        verificationProofToken: null
+      });
+    } catch (dbErr) {
+      console.warn('[Firebase Admin Session Save Notice]:', dbErr.message);
+    }
   }
 
   return {
@@ -272,7 +320,7 @@ export async function sendOtpEmail({ email, admissionNumber, name }) {
 }
 
 /**
- * Verify 6-digit OTP code against durable Firestore session & cryptographically signed proof
+ * Verify 6-digit OTP code using privileged Firebase Admin SDK & cryptographic token validation
  */
 export async function verifyOtpCode({ email, otp, sessionId, sessionToken }) {
   const cleanEmail = (email || '').trim().toLowerCase();
@@ -288,19 +336,21 @@ export async function verifyOtpCode({ email, otp, sessionId, sessionToken }) {
   }
 
   let sessionData = null;
-  const sessionRef = doc(firestoreDb, 'otp_sessions', cleanEmail);
+  const adminFirestore = getFirebaseAdminDb();
 
-  // 1. Try reading durable session from Cloud Firestore
-  try {
-    const snap = await getDoc(sessionRef);
-    if (snap.exists()) {
-      sessionData = snap.data();
+  // 1. Try reading durable session via privileged Firebase Admin SDK
+  if (adminFirestore) {
+    try {
+      const snap = await adminFirestore.collection('otp_sessions').doc(cleanEmail).get();
+      if (snap.exists) {
+        sessionData = snap.data();
+      }
+    } catch (err) {
+      console.warn('[Firebase Admin Read Notice]:', err.message);
     }
-  } catch (err) {
-    console.warn('[Firestore durable read notice]:', err.message);
   }
 
-  // 2. If Firestore session is not found or inaccessible, decode and verify signed session token
+  // 2. If Admin Firestore is not available, decode and verify signed session token
   if (!sessionData) {
     const decodedToken = verifySignedSessionToken(targetToken);
     if (decodedToken && decodedToken.email === cleanEmail) {
@@ -314,13 +364,17 @@ export async function verifyOtpCode({ email, otp, sessionId, sessionToken }) {
 
   // 3. Validate Expiry (10 minutes)
   if (Date.now() > sessionData.expiresAt) {
-    try { await deleteDoc(sessionRef); } catch (e) {}
+    if (adminFirestore) {
+      try { await adminFirestore.collection('otp_sessions').doc(cleanEmail).delete(); } catch (e) {}
+    }
     throw new Error('Code expired. Request a new code.');
   }
 
   // 4. Validate Max Attempts (5 attempts limit)
   if ((sessionData.attempts || 0) >= MAX_ATTEMPTS) {
-    try { await deleteDoc(sessionRef); } catch (e) {}
+    if (adminFirestore) {
+      try { await adminFirestore.collection('otp_sessions').doc(cleanEmail).delete(); } catch (e) {}
+    }
     throw new Error('Too many invalid attempts. Please request a new verification code.');
   }
 
@@ -330,28 +384,34 @@ export async function verifyOtpCode({ email, otp, sessionId, sessionToken }) {
   if (computedHash !== sessionData.hashedOtp) {
     const newAttempts = (sessionData.attempts || 0) + 1;
     if (newAttempts >= MAX_ATTEMPTS) {
-      try { await deleteDoc(sessionRef); } catch (e) {}
+      if (adminFirestore) {
+        try { await adminFirestore.collection('otp_sessions').doc(cleanEmail).delete(); } catch (e) {}
+      }
       throw new Error('Too many invalid attempts. Please request a new verification code.');
     }
 
-    try {
-      await updateDoc(sessionRef, { attempts: newAttempts });
-    } catch (e) {}
+    if (adminFirestore) {
+      try {
+        await adminFirestore.collection('otp_sessions').doc(cleanEmail).update({ attempts: newAttempts });
+      } catch (e) {}
+    }
 
     const remaining = MAX_ATTEMPTS - newAttempts;
     throw new Error(`Invalid verification code. (${remaining} attempt${remaining === 1 ? '' : 's'} remaining)`);
   }
 
-  // 6. OTP Verified! Issue single-use server verification proof and clear session
+  // 6. OTP Verified! Issue single-use server verification proof and clear hash to prevent replay
   const verificationProofToken = 'mm_proof_' + crypto.randomBytes(24).toString('hex');
 
-  try {
-    await updateDoc(sessionRef, {
-      verified: true,
-      hashedOtp: null,
-      verificationProofToken
-    });
-  } catch (e) {}
+  if (adminFirestore) {
+    try {
+      await adminFirestore.collection('otp_sessions').doc(cleanEmail).update({
+        verified: true,
+        hashedOtp: null,
+        verificationProofToken
+      });
+    } catch (e) {}
+  }
 
   return {
     verified: true,
