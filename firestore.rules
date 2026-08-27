@@ -246,5 +246,16 @@ service cloud.firestore {
     match /otp_sessions/{sessionKey} {
       allow read, write: if false;
     }
+
+    // ===============================================================
+    // 12. MUSCLE PASS SUBSCRIPTIONS (/subscriptions/{userId})
+    // ===============================================================
+    match /subscriptions/{userId} {
+      // Students can read their own subscription state; Staff can audit
+      allow read: if isOwner(userId) || isStaff();
+
+      // Only serverless Admin SDK with verified Razorpay payment writes subscriptions
+      allow write: if false;
+    }
   }
 }

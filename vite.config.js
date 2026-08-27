@@ -1,6 +1,8 @@
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import { sendOtpEmail, verifyOtpCode } from './api/_otpService.js';
+import createRazorpayOrderHandler from './api/create-razorpay-order.js';
+import verifyRazorpayPaymentHandler from './api/verify-razorpay-payment.js';
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
@@ -10,6 +12,12 @@ export default defineConfig(({ mode }) => {
   }
   if (env.RESEND_FROM_EMAIL) {
     process.env.RESEND_FROM_EMAIL = env.RESEND_FROM_EMAIL;
+  }
+  if (env.RAZORPAY_KEY_ID) {
+    process.env.RAZORPAY_KEY_ID = env.RAZORPAY_KEY_ID;
+  }
+  if (env.RAZORPAY_KEY_SECRET) {
+    process.env.RAZORPAY_KEY_SECRET = env.RAZORPAY_KEY_SECRET;
   }
 
   return {
@@ -53,6 +61,52 @@ export default defineConfig(({ mode }) => {
                   res.statusCode = 400;
                   res.end(JSON.stringify({ message: err.message || 'Error verifying OTP' }));
                 }
+              });
+              return;
+            }
+
+            if (req.url?.startsWith('/api/create-razorpay-order') && req.method === 'POST') {
+              let body = '';
+              req.on('data', chunk => { body += chunk; });
+              req.on('end', async () => {
+                const mockReq = { method: 'POST', body: JSON.parse(body || '{}') };
+                const mockRes = {
+                  setHeader: (k, v) => res.setHeader(k, v),
+                  status: (code) => {
+                    res.statusCode = code;
+                    return {
+                      json: (data) => {
+                        res.setHeader('Content-Type', 'application/json');
+                        res.end(JSON.stringify(data));
+                      },
+                      end: () => res.end()
+                    };
+                  }
+                };
+                await createRazorpayOrderHandler(mockReq, mockRes);
+              });
+              return;
+            }
+
+            if (req.url?.startsWith('/api/verify-razorpay-payment') && req.method === 'POST') {
+              let body = '';
+              req.on('data', chunk => { body += chunk; });
+              req.on('end', async () => {
+                const mockReq = { method: 'POST', body: JSON.parse(body || '{}') };
+                const mockRes = {
+                  setHeader: (k, v) => res.setHeader(k, v),
+                  status: (code) => {
+                    res.statusCode = code;
+                    return {
+                      json: (data) => {
+                        res.setHeader('Content-Type', 'application/json');
+                        res.end(JSON.stringify(data));
+                      },
+                      end: () => res.end()
+                    };
+                  }
+                };
+                await verifyRazorpayPaymentHandler(mockReq, mockRes);
               });
               return;
             }
