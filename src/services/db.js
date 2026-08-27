@@ -351,6 +351,39 @@ export const INITIAL_REWARDS_CATALOG = [
 
 class LaunchDatabase {
   constructor() {
+    this.init = this.init.bind(this);
+    this.getItem = this.getItem.bind(this);
+    this.setItem = this.setItem.bind(this);
+    this.getUsers = this.getUsers.bind(this);
+    this.getUserById = this.getUserById.bind(this);
+    this.getUserByEmail = this.getUserByEmail.bind(this);
+    this.registerUser = this.registerUser.bind(this);
+    this.updateUserProfile = this.updateUserProfile.bind(this);
+    this.getAllMeals = this.getAllMeals.bind(this);
+    this.getDayMeals = this.getDayMeals.bind(this);
+    this.getMealById = this.getMealById.bind(this);
+    this.saveMeal = this.saveMeal.bind(this);
+    this.deleteMeal = this.deleteMeal.bind(this);
+    this.getAllRatings = this.getAllRatings.bind(this);
+    this.getMealRatings = this.getMealRatings.bind(this);
+    this.getMealStats = this.getMealStats.bind(this);
+    this.getOverallMessRating = this.getOverallMessRating.bind(this);
+    this.submitRating = this.submitRating.bind(this);
+    this.getUserRatingForMeal = this.getUserRatingForMeal.bind(this);
+    this.getAllComplaints = this.getAllComplaints.bind(this);
+    this.getUserComplaints = this.getUserComplaints.bind(this);
+    this.createComplaint = this.createComplaint.bind(this);
+    this.updateComplaintStatus = this.updateComplaintStatus.bind(this);
+    this.getPoll = this.getPoll.bind(this);
+    this.createPoll = this.createPoll.bind(this);
+    this.castVote = this.castVote.bind(this);
+    this.hasUserVoted = this.hasUserVoted.bind(this);
+    this.getTodayUserProtein = this.getTodayUserProtein.bind(this);
+    this.logProtein = this.logProtein.bind(this);
+    this.getRewardsCatalog = this.getRewardsCatalog.bind(this);
+    this.getUserRedemptions = this.getUserRedemptions.bind(this);
+    this.addRewardPoints = this.addRewardPoints.bind(this);
+    this.redeemReward = this.redeemReward.bind(this);
     this.init();
   }
 

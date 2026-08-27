@@ -1,9 +1,18 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { db, MESS_BLOCK_MAP, seedFirestoreData } from '../services/db';
-import { useAuth } from './AuthContext';
-import { collection, onSnapshot } from 'firebase/firestore';
+import { 
+  db, 
+  MESS_BLOCK_MAP, 
+  INITIAL_MEALS_DB, 
+  INITIAL_RATINGS_DB, 
+  INITIAL_COMPLAINTS_DB, 
+  INITIAL_USERS,
+  INITIAL_REWARDS_CATALOG,
+  seedFirestoreData
+} from '../services/db';
 import { db as firestoreDb, isFirebaseConfigured } from '../services/firebase';
+import { collection, onSnapshot } from 'firebase/firestore';
 import { seedPilotAccounts } from '../services/seedUsers';
+import { useAuth } from './AuthContext';
 
 const AppContext = createContext();
 
@@ -29,48 +38,8 @@ export const AppProvider = ({ children }) => {
   const todayDay = getTodayDayName();
   const [selectedDay, setSelectedDay] = useState(todayDay);
 
-  const [currentPage, setCurrentPage] = useState('dashboard');
-  const [darkMode, setDarkMode] = useState(false);
-
-  // Live Database Sync State
-  const [mealsVersion, setMealsVersion] = useState(0);
-  const [ratingsVersion, setRatingsVersion] = useState(0);
-  const [complaintsVersion, setComplaintsVersion] = useState(0);
-  const [pollsVersion, setPollsVersion] = useState(0);
-
-  // Synced Collection States
-  const [allMeals, setAllMeals] = useState(() => db.getAllMeals());
-  const [allRatings, setAllRatings] = useState(() => db.getAllRatings());
-  const [allComplaints, setAllComplaints] = useState(() => db.getAllComplaints());
-  const [poll, setPoll] = useState(() => db.getPoll());
-  const [votesList, setVotesList] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem('messmates_launch_votes')) || [];
-    } catch(e) {
-      return [];
-    }
-  });
-  const [proteinLogs, setProteinLogs] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem('messmates_launch_protein_logs')) || [];
-    } catch(e) {
-      return [];
-    }
-  });
-  const [redemptions, setRedemptions] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem('messmates_launch_redemptions')) || [];
-    } catch(e) {
-      return [];
-    }
-  });
-  const [usersList, setUsersList] = useState(() => db.getUsers());
-
-  // Get live user profile from synced usersList state
-  const liveUserProfile = usersList.find(u => u.uid === authUser?.uid || u.id === authUser?.uid);
-
   // Synchronize current user with AuthContext profile or fallback
-  const currentUser = liveUserProfile || authProfile || (authUser ? {
+  const currentUser = authProfile || (authUser ? {
     uid: authUser.uid,
     id: authUser.uid,
     name: authUser.displayName || 'Student',
@@ -78,10 +47,29 @@ export const AppProvider = ({ children }) => {
     role: authRole || 'student',
     hostelBlock: 'DNB Block',
     proteinTarget: 120,
-    rewardPoints: 200
+    rewardPoints: 0
   } : null);
 
   const currentRole = authRole || currentUser?.role || 'student';
+
+  const [currentPage, setCurrentPage] = useState('dashboard');
+  const [darkMode, setDarkMode] = useState(false);
+
+  // Real-time collections / local state
+  const [allMeals, setAllMeals] = useState(() => db.getAllMeals() || INITIAL_MEALS_DB);
+  const [allRatings, setAllRatings] = useState(() => db.getAllRatings() || []);
+  const [allComplaints, setAllComplaints] = useState(() => db.getAllComplaints() || []);
+  const [poll, setPoll] = useState(() => db.getPoll() || null);
+  const [votesList, setVotesList] = useState(() => db.getItem('votes', []));
+  const [proteinLogs, setProteinLogs] = useState(() => db.getItem('protein_logs', []));
+  const [redemptions, setRedemptions] = useState(() => db.getItem('redemptions', []));
+  const [usersList, setUsersList] = useState(() => db.getUsers() || INITIAL_USERS);
+
+  // Live Database Sync State
+  const [mealsVersion, setMealsVersion] = useState(0);
+  const [ratingsVersion, setRatingsVersion] = useState(0);
+  const [complaintsVersion, setComplaintsVersion] = useState(0);
+  const [pollsVersion, setPollsVersion] = useState(0);
 
   // Modals
   const [selectedMealModal, setSelectedMealModal] = useState(null);
@@ -92,7 +80,7 @@ export const AppProvider = ({ children }) => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [notifications, setNotifications] = useState([
-    { id: 'n_1', title: 'Welcome to MessMate', message: 'Know your meal before you eat it.', time: 'Today', type: 'info', read: false }
+    { id: 'n_1', title: 'Welcome to MessMates', message: 'Know your meal before you eat it.', time: 'Today', type: 'info', read: false }
   ]);
   const [menuApproved, setMenuApproved] = useState(false);
 
@@ -122,70 +110,50 @@ export const AppProvider = ({ children }) => {
       // 2. Attach listeners
       const unsubMeals = onSnapshot(collection(firestoreDb, 'meals'), (snapshot) => {
         const list = [];
-        snapshot.forEach(doc => {
-          list.push(doc.data());
-        });
-        if (list.length > 0) {
-          setAllMeals(list);
-        }
+        snapshot.forEach(doc => list.push(doc.data()));
+        if (list.length > 0) setAllMeals(list);
       });
 
       const unsubRatings = onSnapshot(collection(firestoreDb, 'ratings'), (snapshot) => {
         const list = [];
-        snapshot.forEach(doc => {
-          list.push(doc.data());
-        });
+        snapshot.forEach(doc => list.push(doc.data()));
         setAllRatings(list);
       });
 
       const unsubComplaints = onSnapshot(collection(firestoreDb, 'complaints'), (snapshot) => {
         const list = [];
-        snapshot.forEach(doc => {
-          list.push(doc.data());
-        });
+        snapshot.forEach(doc => list.push(doc.data()));
         setAllComplaints(list);
       });
 
       const unsubPolls = onSnapshot(collection(firestoreDb, 'polls'), (snapshot) => {
         const list = [];
-        snapshot.forEach(doc => {
-          list.push(doc.data());
-        });
+        snapshot.forEach(doc => list.push(doc.data()));
         const activePoll = list.find(p => p.status === 'ACTIVE') || list[0] || null;
-        if (activePoll) {
-          setPoll(activePoll);
-        }
+        if (activePoll) setPoll(activePoll);
       });
 
       const unsubVotes = onSnapshot(collection(firestoreDb, 'votes'), (snapshot) => {
         const list = [];
-        snapshot.forEach(doc => {
-          list.push(doc.data());
-        });
+        snapshot.forEach(doc => list.push(doc.data()));
         setVotesList(list);
       });
 
       const unsubProtein = onSnapshot(collection(firestoreDb, 'protein_logs'), (snapshot) => {
         const list = [];
-        snapshot.forEach(doc => {
-          list.push(doc.data());
-        });
+        snapshot.forEach(doc => list.push(doc.data()));
         setProteinLogs(list);
       });
 
       const unsubRedemptions = onSnapshot(collection(firestoreDb, 'redemptions'), (snapshot) => {
         const list = [];
-        snapshot.forEach(doc => {
-          list.push(doc.data());
-        });
+        snapshot.forEach(doc => list.push(doc.data()));
         setRedemptions(list);
       });
 
       const unsubUsers = onSnapshot(collection(firestoreDb, 'users'), (snapshot) => {
         const list = [];
-        snapshot.forEach(doc => {
-          list.push(doc.data());
-        });
+        snapshot.forEach(doc => list.push(doc.data()));
         setUsersList(list);
       });
 
@@ -215,7 +183,7 @@ export const AppProvider = ({ children }) => {
   const register = async (userData) => {
     const res = await authRegister(userData);
     setCurrentPage('dashboard');
-    addNotification('Registration Complete', `Welcome to MessMate, ${res.profile?.name || 'Student'}!`, 'success');
+    addNotification('Registration Complete', `Welcome to MessMates, ${res.profile?.name || 'Student'}!`, 'success');
     return res;
   };
 
@@ -225,7 +193,6 @@ export const AppProvider = ({ children }) => {
       try {
         await authLogin(target.email, target.password || 'password123');
       } catch (e) {
-        // Fallback for immediate test switching
         localStorage.setItem('messmate_session_uid', target.id);
         window.location.reload();
       }
@@ -234,7 +201,7 @@ export const AppProvider = ({ children }) => {
 
   const logout = async () => {
     await authLogout();
-    setCurrentPage('login');
+    setCurrentPage('dashboard');
   };
 
   const updateUserProfile = async (updates) => {
@@ -242,11 +209,20 @@ export const AppProvider = ({ children }) => {
     addNotification('Profile Updated', 'Your profile details have been saved.', 'success');
   };
 
-  // REAL MEALS QUERY & ACTIONS
-  
-  // Calculate dynamic ratings from real database records
+  // 1. STATS CALCULATION (Declared FIRST before any functions that invoke it)
+  const getMealStats = (mealId) => {
+    const mealRatings = (allRatings || []).filter(r => r.mealId === mealId);
+    if (mealRatings.length === 0) {
+      return { rating: null, ratingDisplay: 'No ratings yet', ratingCount: 0 };
+    }
+    const sum = mealRatings.reduce((acc, r) => acc + Number(r.rating), 0);
+    const avg = Number((sum / mealRatings.length).toFixed(1));
+    return { rating: avg, ratingDisplay: `${avg} ★`, ratingCount: mealRatings.length };
+  };
+
+  // 2. MEALS QUERY & ACTIONS
   const getEnrichedMeals = (day) => {
-    const rawMeals = allMeals.filter(m => m.day === day);
+    const rawMeals = (allMeals || []).filter(m => (m.day || '').toLowerCase() === (day || '').toLowerCase());
     return rawMeals.map(m => {
       const stats = getMealStats(m.id);
       return {
@@ -261,8 +237,8 @@ export const AppProvider = ({ children }) => {
   const dayMeals = getEnrichedMeals(selectedDay);
   const todayMeals = getEnrichedMeals(todayDay);
 
-  const saveMeal = async (mealData) => {
-    const updatedMeals = await db.saveMeal({ ...mealData, day: mealData.day || selectedDay });
+  const saveMeal = async (mealData, targetDay) => {
+    const updatedMeals = await db.saveMeal({ ...mealData, day: targetDay || mealData.day || selectedDay });
     if (!isFirebaseConfigured) {
       setAllMeals(updatedMeals);
     }
@@ -279,11 +255,11 @@ export const AppProvider = ({ children }) => {
     addNotification('Meal Deleted', 'Dish removed from menu schedule.', 'warning');
   };
 
-  // REAL RATINGS & FEEDBACK
+  // 3. RATINGS & FEEDBACK
   const rateMeal = async (mealId, stars, feedback = '', tags = []) => {
     if (!currentUser) return;
-    const meal = allMeals.find(m => m.id === mealId);
-    const newRating = await db.submitRating({
+    const meal = (allMeals || []).find(m => m.id === mealId);
+    await db.submitRating({
       userId: currentUser.uid || currentUser.id,
       userName: currentUser.name,
       mealId,
@@ -302,12 +278,12 @@ export const AppProvider = ({ children }) => {
 
   const getUserRating = (mealId) => {
     if (!currentUser) return null;
-    return allRatings.find(r => r.userId === (currentUser.uid || currentUser.id) && r.mealId === mealId) || null;
+    return (allRatings || []).find(r => r.userId === (currentUser.uid || currentUser.id) && r.mealId === mealId) || null;
   };
 
-  // REAL COMPLAINTS
+  // 4. COMPLAINTS
   const userComplaints = currentUser 
-    ? allComplaints.filter(c => c.userId === (currentUser.uid || currentUser.id)) 
+    ? (allComplaints || []).filter(c => c.userId === (currentUser.uid || currentUser.id)) 
     : [];
 
   const createComplaint = async (category, description) => {
@@ -336,10 +312,10 @@ export const AppProvider = ({ children }) => {
     addNotification('Status Updated', `Complaint marked as ${newStatus}.`, 'success');
   };
 
-  // REAL VOTING & POLLS
+  // 5. VOTING & POLLS
   const getEnrichedPoll = () => {
-    if (!poll) return { id: 'poll_101', options: [], totalVotes: 0 };
-    const pollVotes = votesList.filter(v => v.pollId === poll.id);
+    if (!poll) return null;
+    const pollVotes = (votesList || []).filter(v => v.pollId === poll.id);
     const totalVotes = pollVotes.length;
 
     const optionsWithStats = (poll.options || []).map(opt => {
@@ -362,7 +338,7 @@ export const AppProvider = ({ children }) => {
   const enrichedPoll = getEnrichedPoll();
 
   const userVotedOptionId = (currentUser && enrichedPoll)
-    ? (votesList.find(v => v.pollId === enrichedPoll.id && v.userId === (currentUser.uid || currentUser.id))?.optionId || null)
+    ? ((votesList || []).find(v => v.pollId === enrichedPoll.id && v.userId === (currentUser.uid || currentUser.id))?.optionId || null)
     : null;
 
   const voteDish = async (optionId) => {
@@ -396,11 +372,11 @@ export const AppProvider = ({ children }) => {
     addNotification('Poll Created', 'New dish replacement poll is now live.', 'success');
   };
 
-  // REAL PROTEIN & MUSCLE PASS
+  // 6. PROTEIN & MUSCLE PASS
   const getTodayUserProtein = () => {
     if (!currentUser) return 0;
     const todayStr = new Date().toISOString().split('T')[0];
-    const userTodayLogs = proteinLogs.filter(
+    const userTodayLogs = (proteinLogs || []).filter(
       l => l.userId === (currentUser.uid || currentUser.id) && l.timestamp?.startsWith(todayStr)
     );
     return userTodayLogs.reduce((acc, l) => acc + Number(l.protein), 0);
@@ -429,10 +405,10 @@ export const AppProvider = ({ children }) => {
     updateUserProfile({ proteinTarget: Number(newTarget) });
   };
 
-  // REWARDS
-  const rewardsCatalog = db.getRewardsCatalog();
+  // 7. REWARDS
+  const rewardsCatalog = db.getRewardsCatalog() || INITIAL_REWARDS_CATALOG;
   const userRedemptions = currentUser
-    ? redemptions.filter(r => r.userId === (currentUser.uid || currentUser.id))
+    ? (redemptions || []).filter(r => r.userId === (currentUser.uid || currentUser.id))
     : [];
 
   const redeemReward = async (rewardItem) => {
@@ -454,27 +430,17 @@ export const AppProvider = ({ children }) => {
     }
   };
 
-  const getMealStats = (mealId) => {
-    const mealRatings = allRatings.filter(r => r.mealId === mealId);
-    if (mealRatings.length === 0) {
-      return { rating: null, ratingDisplay: 'No ratings yet', ratingCount: 0 };
-    }
-    const sum = mealRatings.reduce((acc, r) => acc + Number(r.rating), 0);
-    const avg = Number((sum / mealRatings.length).toFixed(1));
-    return { rating: avg, ratingDisplay: `${avg} ★`, ratingCount: mealRatings.length };
-  };
-
-  // WARDEN METRICS (100% Calculated from Real Database Data)
+  // 8. WARDEN METRICS & GOVERNANCE
   const getWardenMetrics = () => {
-    const overallCount = allRatings.length;
+    const overallCount = (allRatings || []).length;
     const overallScore = overallCount === 0 
       ? null 
-      : Number((allRatings.reduce((acc, r) => acc + Number(r.rating), 0) / overallCount).toFixed(1));
+      : Number(((allRatings || []).reduce((acc, r) => acc + Number(r.rating), 0) / overallCount).toFixed(1));
     const overallDisplay = overallCount === 0 ? 'No ratings yet' : `${overallScore} / 5.0`;
 
-    const openComplaintsCount = allComplaints.filter(c => c.status !== 'RESOLVED').length;
-    const resolvedComplaintsCount = allComplaints.filter(c => c.status === 'RESOLVED').length;
-    const totalVotesCount = enrichedPoll ? votesList.filter(v => v.pollId === enrichedPoll.id).length : 0;
+    const openComplaintsCount = (allComplaints || []).filter(c => c.status !== 'RESOLVED').length;
+    const resolvedComplaintsCount = (allComplaints || []).filter(c => c.status === 'RESOLVED').length;
+    const totalVotesCount = enrichedPoll ? (votesList || []).filter(v => v.pollId === enrichedPoll.id).length : 0;
 
     return {
       messQualityScore: overallScore,
@@ -482,15 +448,28 @@ export const AppProvider = ({ children }) => {
       totalRatings: overallCount,
       openComplaints: openComplaintsCount,
       resolvedComplaints: resolvedComplaintsCount,
-      studentSatisfaction: Math.round(
-        (allRatings.filter(r => r.rating >= 4).length / Math.max(1, allRatings.length)) * 100
-      ),
-      mealsReviewed: allRatings.length,
+      studentSatisfaction: overallCount > 0 
+        ? Math.round(((allRatings || []).filter(r => r.rating >= 4).length / overallCount) * 100)
+        : 0,
+      mealsReviewed: overallCount,
       activeVotes: totalVotesCount
     };
   };
 
   const wardenMetrics = getWardenMetrics();
+
+  const wardenAnalytics = {
+    satisfactionRate: wardenMetrics.studentSatisfaction,
+    messQualityScore: wardenMetrics.messQualityScore || 0,
+    foodWasteIndex: 0,
+    ratingDistribution: [
+      { rating: '5 Star', percentage: (allRatings || []).length > 0 ? Math.round(((allRatings || []).filter(r => r.rating === 5).length / allRatings.length) * 100) : 0 },
+      { rating: '4 Star', percentage: (allRatings || []).length > 0 ? Math.round(((allRatings || []).filter(r => r.rating === 4).length / allRatings.length) * 100) : 0 },
+      { rating: '3 Star', percentage: (allRatings || []).length > 0 ? Math.round(((allRatings || []).filter(r => r.rating === 3).length / allRatings.length) * 100) : 0 },
+      { rating: '2 Star', percentage: (allRatings || []).length > 0 ? Math.round(((allRatings || []).filter(r => r.rating === 2).length / allRatings.length) * 100) : 0 },
+      { rating: '1 Star', percentage: (allRatings || []).length > 0 ? Math.round(((allRatings || []).filter(r => r.rating === 1).length / allRatings.length) * 100) : 0 },
+    ]
+  };
 
   const approveWeeklyMenu = () => {
     setMenuApproved(true);
@@ -557,7 +536,7 @@ export const AppProvider = ({ children }) => {
         allMeals,
         saveMeal,
         deleteMeal,
-        getMealStats: getMealStats,
+        getMealStats,
 
         // Ratings & Feedback
         rateMeal,
@@ -590,6 +569,7 @@ export const AppProvider = ({ children }) => {
 
         // Warden Governance
         wardenMetrics,
+        wardenAnalytics,
         menuApproved,
         approveWeeklyMenu,
 
