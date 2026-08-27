@@ -1,6 +1,6 @@
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
-import { auth, db, isFirebaseConfigured } from './firebase';
+import { auth, db, isFirebaseConfigured } from './firebase.js';
 
 export const PILOT_ACCOUNTS = [
   {
@@ -73,10 +73,31 @@ export const seedPilotAccounts = async () => {
       };
 
       await setDoc(doc(db, 'users', user.uid), profileDoc);
+      
+      // Index in admission_map
+      if (account.admissionNumber) {
+        await setDoc(doc(db, 'admission_map', account.admissionNumber), {
+          admissionNumber: account.admissionNumber,
+          email: account.email,
+          uid: user.uid,
+          createdAt: new Date().toISOString()
+        });
+      }
+
       seededCount++;
     } catch (err) {
       if (err.code === 'auth/email-already-in-use') {
-        // Account already exists
+        // Ensure admission_map document exists even if user is already in Auth
+        if (account.admissionNumber) {
+          try {
+            await setDoc(doc(db, 'admission_map', account.admissionNumber), {
+              admissionNumber: account.admissionNumber,
+              email: account.email
+            }, { merge: true });
+          } catch (e) {
+            // Ignore if silent
+          }
+        }
       } else {
         console.warn(`Error seeding account ${account.email}:`, err.message);
       }

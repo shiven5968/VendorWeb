@@ -6,9 +6,11 @@ import {
   signUpStudent, 
   signInUser, 
   signOutUser, 
-  sendPasswordReset, 
+  sendPasswordResetForIdentifier, 
   getUserProfile, 
   updateUserProfileDoc,
+  sendRegistrationOTP,
+  verifyRegistrationOTP,
   formatAuthError 
 } from '../services/auth';
 import { db as localDb } from '../services/db';
@@ -51,6 +53,7 @@ export const AuthProvider = ({ children }) => {
                 dietPreference: 'High Protein / Eggetarian',
                 proteinTarget: 120,
                 rewardPoints: 0,
+                emailVerified: true,
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString()
               };
@@ -92,12 +95,12 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  // LOGIN METHOD
-  const login = async (email, password) => {
+  // LOGIN METHOD (Admission Number + Password for Student, Email + Password for Staff)
+  const login = async (identifier, password) => {
     setLoading(true);
     setAuthError('');
     try {
-      const { user: authUser, profile: userProfile } = await signInUser(email, password);
+      const { user: authUser, profile: userProfile } = await signInUser(identifier, password);
       setUser(authUser);
       setProfile(userProfile);
       localStorage.setItem('messmate_session_uid', authUser.uid);
@@ -111,8 +114,32 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // REGISTER STUDENT METHOD
-  const register = async ({ name, admissionNumber, email, password, gender, hostelBlock }) => {
+  // SEND OTP METHOD
+  const sendOTP = async (details) => {
+    setAuthError('');
+    try {
+      return await sendRegistrationOTP(details);
+    } catch (err) {
+      const msg = err.message || 'Failed to dispatch verification code.';
+      setAuthError(msg);
+      throw new Error(msg);
+    }
+  };
+
+  // VERIFY OTP METHOD
+  const verifyOTP = async (details) => {
+    setAuthError('');
+    try {
+      return await verifyRegistrationOTP(details);
+    } catch (err) {
+      const msg = err.message || 'Verification failed.';
+      setAuthError(msg);
+      throw new Error(msg);
+    }
+  };
+
+  // REGISTER STUDENT METHOD (Executed ONLY after verified OTP)
+  const register = async ({ name, admissionNumber, email, password, gender, hostelBlock, isOtpVerified = true }) => {
     setLoading(true);
     setAuthError('');
     try {
@@ -122,7 +149,8 @@ export const AuthProvider = ({ children }) => {
         email,
         password,
         gender,
-        hostelBlock
+        hostelBlock,
+        isOtpVerified
       });
       setUser(authUser);
       setProfile(userProfile);
@@ -152,11 +180,10 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // PASSWORD RESET METHOD
-  const resetPassword = async (email) => {
+  // PASSWORD RESET METHOD (Supports Admission Number or Email)
+  const resetPassword = async (identifier) => {
     try {
-      await sendPasswordReset(email);
-      return true;
+      return await sendPasswordResetForIdentifier(identifier);
     } catch (err) {
       throw new Error(err.message || 'Failed to send password reset email.');
     }
@@ -186,6 +213,8 @@ export const AuthProvider = ({ children }) => {
         authError,
         login,
         register,
+        sendOTP,
+        verifyOTP,
         logout,
         resetPassword,
         updateProfile,

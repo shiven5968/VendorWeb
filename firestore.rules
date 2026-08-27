@@ -218,5 +218,22 @@ service cloud.firestore {
                             && resource.data.userId == request.auth.uid 
                             && (request.method == 'delete' || request.resource.data.userId == request.auth.uid);
     }
+
+
+    // ===============================================================
+    // 10. ADMISSION NUMBER DIRECTORY (/admission_map/{admissionNumber})
+    // Public resolution of Student Admission Number -> College Email for login
+    // ===============================================================
+    match /admission_map/{admissionNumber} {
+      // Public read allowed for Admission Number login resolution and pre-registration uniqueness
+      allow read: if true;
+
+      // Creation allowed during authenticated registration or by staff
+      allow create: if isAuthenticated() 
+                    && (request.resource.data.email == request.auth.token.email || isStaff());
+
+      // Modification or deletion strictly reserved for Chief Warden
+      allow update, delete: if isWarden();
+    }
   }
 }

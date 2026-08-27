@@ -2,7 +2,7 @@
 // Clean Zero-Fluff Launch State for ABES College Mess
 
 import { doc, collection, setDoc, addDoc, updateDoc, deleteDoc, getDocs, increment } from 'firebase/firestore';
-import { db as firestoreDb, isFirebaseConfigured } from './firebase';
+import { db as firestoreDb, isFirebaseConfigured } from './firebase.js';
 
 const DB_PREFIX = 'messmates_launch_';
 
@@ -619,28 +619,43 @@ class LaunchDatabase {
     this.getUserRedemptions = this.getUserRedemptions.bind(this);
     this.addRewardPoints = this.addRewardPoints.bind(this);
     this.redeemReward = this.redeemReward.bind(this);
+    this.memoryStore = new Map();
     this.init();
   }
 
   init() {
-    if (!localStorage.getItem(DB_PREFIX + 'initialized_launch_v1')) {
-      localStorage.setItem(DB_PREFIX + 'users', JSON.stringify(INITIAL_USERS));
-      localStorage.setItem(DB_PREFIX + 'meals', JSON.stringify(INITIAL_MEALS_DB));
-      localStorage.setItem(DB_PREFIX + 'ratings', JSON.stringify(INITIAL_RATINGS_DB));
-      localStorage.setItem(DB_PREFIX + 'complaints', JSON.stringify(INITIAL_COMPLAINTS_DB));
-      localStorage.setItem(DB_PREFIX + 'votes', JSON.stringify(INITIAL_VOTES_DB));
-      localStorage.setItem(DB_PREFIX + 'protein_logs', JSON.stringify(INITIAL_PROTEIN_LOGS_DB));
-      localStorage.setItem(DB_PREFIX + 'redemptions', JSON.stringify(INITIAL_REDEMPTIONS_DB));
-      localStorage.setItem(DB_PREFIX + 'rewards_catalog', JSON.stringify(INITIAL_REWARDS_CATALOG));
-      localStorage.setItem(DB_PREFIX + 'initialized_launch_v1', 'true');
+    if (typeof localStorage !== 'undefined') {
+      if (!localStorage.getItem(DB_PREFIX + 'initialized_launch_v1')) {
+        localStorage.setItem(DB_PREFIX + 'users', JSON.stringify(INITIAL_USERS));
+        localStorage.setItem(DB_PREFIX + 'meals', JSON.stringify(INITIAL_MEALS_DB));
+        localStorage.setItem(DB_PREFIX + 'ratings', JSON.stringify(INITIAL_RATINGS_DB));
+        localStorage.setItem(DB_PREFIX + 'complaints', JSON.stringify(INITIAL_COMPLAINTS_DB));
+        localStorage.setItem(DB_PREFIX + 'votes', JSON.stringify(INITIAL_VOTES_DB));
+        localStorage.setItem(DB_PREFIX + 'protein_logs', JSON.stringify(INITIAL_PROTEIN_LOGS_DB));
+        localStorage.setItem(DB_PREFIX + 'redemptions', JSON.stringify(INITIAL_REDEMPTIONS_DB));
+        localStorage.setItem(DB_PREFIX + 'rewards_catalog', JSON.stringify(INITIAL_REWARDS_CATALOG));
+        localStorage.setItem(DB_PREFIX + 'initialized_launch_v1', 'true');
+      }
+    } else {
+      this.memoryStore.set(DB_PREFIX + 'users', INITIAL_USERS);
+      this.memoryStore.set(DB_PREFIX + 'meals', INITIAL_MEALS_DB);
+      this.memoryStore.set(DB_PREFIX + 'ratings', INITIAL_RATINGS_DB);
+      this.memoryStore.set(DB_PREFIX + 'complaints', INITIAL_COMPLAINTS_DB);
+      this.memoryStore.set(DB_PREFIX + 'votes', INITIAL_VOTES_DB);
+      this.memoryStore.set(DB_PREFIX + 'protein_logs', INITIAL_PROTEIN_LOGS_DB);
+      this.memoryStore.set(DB_PREFIX + 'redemptions', INITIAL_REDEMPTIONS_DB);
+      this.memoryStore.set(DB_PREFIX + 'rewards_catalog', INITIAL_REWARDS_CATALOG);
     }
   }
 
   // Generic Get & Set
   getItem(key, fallback = []) {
     try {
-      const data = localStorage.getItem(DB_PREFIX + key);
-      return data ? JSON.parse(data) : fallback;
+      if (typeof localStorage !== 'undefined') {
+        const data = localStorage.getItem(DB_PREFIX + key);
+        return data ? JSON.parse(data) : fallback;
+      }
+      return this.memoryStore.get(DB_PREFIX + key) || fallback;
     } catch (e) {
       return fallback;
     }
@@ -648,7 +663,11 @@ class LaunchDatabase {
 
   setItem(key, value) {
     try {
-      localStorage.setItem(DB_PREFIX + key, JSON.stringify(value));
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(DB_PREFIX + key, JSON.stringify(value));
+      } else {
+        this.memoryStore.set(DB_PREFIX + key, value);
+      }
     } catch (e) {
       console.error('Storage error:', e);
     }
@@ -685,27 +704,20 @@ class LaunchDatabase {
       name: userData.name,
       admissionNumber: userData.admissionNumber || '',
       email: cleanEmail,
-      password: userData.password || 'password123',
       role: userData.role || 'student',
       gender: userData.gender || 'Male',
       hostelBlock: userData.hostelBlock || 'DNB Block',
       dietPreference: userData.dietPreference || 'High Protein / Eggetarian',
       proteinTarget: Number(userData.proteinTarget) || 120,
       rewardPoints: 0,
+      emailVerified: true,
       avatar: userData.gender === 'Female' 
         ? 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=300'
         : 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=300',
       createdAt: new Date().toISOString()
     };
 
-    if (isFirebaseConfigured) {
-      try {
-        setDoc(doc(firestoreDb, 'users', id), newUser);
-      } catch (e) {
-        console.error('Error saving user profile to Firestore:', e);
-      }
-    }
-
+    // Note: Plaintext passwords are NEVER written to Cloud Firestore (handled exclusively by Firebase Auth)
     users.push(newUser);
     this.setItem('users', users);
     return newUser;
