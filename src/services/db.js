@@ -11,70 +11,70 @@ export const MESS_BLOCK_MAP = {
     messName: 'ABES Boys Hostel Mess',
     location: 'Campus Dining Hall 1',
     timings: {
-      Breakfast: '07:30 AM - 09:30 AM',
-      Lunch: '12:30 PM - 02:30 PM',
+      Breakfast: '07:20 AM - 08:30 AM',
+      Lunch: '12:20 PM - 02:00 PM',
       Snacks: '05:00 PM - 06:00 PM',
-      Dinner: '07:30 PM - 09:30 PM',
+      Dinner: '07:40 PM - 09:00 PM',
     }
   },
   'VKB Block': {
     messName: 'ABES Boys Hostel Mess',
     location: 'Campus Dining Hall 1',
     timings: {
-      Breakfast: '07:30 AM - 09:30 AM',
-      Lunch: '12:30 PM - 02:30 PM',
+      Breakfast: '07:20 AM - 08:30 AM',
+      Lunch: '12:20 PM - 02:00 PM',
       Snacks: '05:00 PM - 06:00 PM',
-      Dinner: '07:30 PM - 09:30 PM',
+      Dinner: '07:40 PM - 09:00 PM',
     }
   },
   'RKB Block': {
     messName: 'ABES Boys Hostel Mess',
     location: 'Campus Dining Hall 1',
     timings: {
-      Breakfast: '07:30 AM - 09:30 AM',
-      Lunch: '12:30 PM - 02:30 PM',
+      Breakfast: '07:20 AM - 08:30 AM',
+      Lunch: '12:20 PM - 02:00 PM',
       Snacks: '05:00 PM - 06:00 PM',
-      Dinner: '07:30 PM - 09:30 PM',
+      Dinner: '07:40 PM - 09:00 PM',
     }
   },
   'ABB Block': {
     messName: 'ABES Boys Hostel Mess',
     location: 'Campus Dining Hall 1',
     timings: {
-      Breakfast: '07:30 AM - 09:30 AM',
-      Lunch: '12:30 PM - 02:30 PM',
+      Breakfast: '07:20 AM - 08:30 AM',
+      Lunch: '12:20 PM - 02:00 PM',
       Snacks: '05:00 PM - 06:00 PM',
-      Dinner: '07:30 PM - 09:30 PM',
+      Dinner: '07:40 PM - 09:00 PM',
     }
   },
   'Kalpana Chawla (Girls)': {
     messName: 'ABES Girls Dining Hall 1',
     location: 'Girls Hostel Complex',
     timings: {
-      Breakfast: '07:30 AM - 09:30 AM',
-      Lunch: '12:30 PM - 02:30 PM',
+      Breakfast: '07:20 AM - 08:30 AM',
+      Lunch: '12:20 PM - 02:00 PM',
       Snacks: '05:00 PM - 06:00 PM',
-      Dinner: '07:30 PM - 09:30 PM',
+      Dinner: '07:40 PM - 09:00 PM',
     }
   },
   'Sarojini Block (Girls)': {
     messName: 'ABES Girls Dining Hall 2',
     location: 'Girls Hostel Complex',
     timings: {
-      Breakfast: '07:30 AM - 09:30 AM',
-      Lunch: '12:30 PM - 02:30 PM',
+      Breakfast: '07:20 AM - 08:30 AM',
+      Lunch: '12:20 PM - 02:00 PM',
       Snacks: '05:00 PM - 06:00 PM',
-      Dinner: '07:30 PM - 09:30 PM',
+      Dinner: '07:40 PM - 09:00 PM',
     }
   },
   'Kasturba Block (Girls)': {
     messName: 'ABES Girls Dining Hall 2',
     location: 'Girls Hostel Complex',
     timings: {
-      Breakfast: '07:30 AM - 09:30 AM',
-      Lunch: '12:30 PM - 02:30 PM',
+      Breakfast: '07:20 AM - 08:30 AM',
+      Lunch: '12:20 PM - 02:00 PM',
       Snacks: '05:00 PM - 06:00 PM',
-      Dinner: '07:30 PM - 09:30 PM',
+      Dinner: '07:40 PM - 09:00 PM',
     }
   }
 };
@@ -841,7 +841,11 @@ class LaunchDatabase {
     const ratings = this.getAllRatings();
     const existingIdx = ratings.findIndex(r => r.userId === userId && r.mealId === mealId);
 
-    const ratingId = existingIdx !== -1 ? ratings[existingIdx].id : 'rat_' + Date.now();
+    if (existingIdx !== -1) {
+      throw new Error('Rating already submitted for this meal. Repeated ratings or edits are not allowed.');
+    }
+
+    const ratingId = 'rat_' + Date.now();
     const ratingEntry = {
       id: ratingId,
       userId,
@@ -863,13 +867,9 @@ class LaunchDatabase {
       }
     }
 
-    if (existingIdx !== -1) {
-      ratings[existingIdx] = ratingEntry;
-    } else {
-      ratings.unshift(ratingEntry);
-      // Award 20 health points
-      await this.addRewardPoints(userId, 20);
-    }
+    ratings.unshift(ratingEntry);
+    // Award strictly +1 reward point for valid submitted meal rating
+    await this.addRewardPoints(userId, 1);
 
     this.setItem('ratings', ratings);
     return ratingEntry;
@@ -999,11 +999,11 @@ class LaunchDatabase {
     return newPoll;
   }
 
-  castVote({ pollId, userId, userName, optionId }) {
+  async castVote({ pollId, userId, userName, optionId }) {
     const votes = this.getItem('votes', []);
     const alreadyVoted = votes.some(v => v.pollId === pollId && v.userId === userId);
     if (alreadyVoted) {
-      throw new Error('You have already voted in this poll.');
+      throw new Error('You have already voted in this poll. Duplicate votes are not allowed.');
     }
 
     const voteId = 'vote_' + Date.now();
@@ -1018,16 +1018,50 @@ class LaunchDatabase {
 
     if (isFirebaseConfigured) {
       try {
-        setDoc(doc(firestoreDb, 'votes', voteId), newVote);
+        await setDoc(doc(firestoreDb, 'votes', voteId), newVote);
       } catch (e) {
         console.error('Error casting vote in Firestore:', e);
+        throw e;
       }
     }
 
     votes.push(newVote);
     this.setItem('votes', votes);
-    this.addRewardPoints(userId, 30);
+    // Award strictly +10 reward points for valid monthly poll vote
+    await this.addRewardPoints(userId, 10);
     return newVote;
+  }
+
+  async awardDailyLoginReward(userId) {
+    if (!userId) return { awarded: false, reason: 'NO_USER' };
+
+    const todayStr = new Date().toLocaleDateString('en-CA'); // Local 'YYYY-MM-DD'
+    const user = this.getUserById(userId);
+
+    if (user && user.lastLoginRewardDate === todayStr) {
+      return { awarded: false, reason: 'ALREADY_CLAIMED_TODAY' };
+    }
+
+    if (isFirebaseConfigured) {
+      try {
+        await updateDoc(doc(firestoreDb, 'users', userId), {
+          lastLoginRewardDate: todayStr,
+          rewardPoints: increment(2)
+        });
+      } catch (e) {
+        console.warn('Daily login reward Firestore update notice:', e.message);
+      }
+    }
+
+    const users = this.getUsers();
+    const idx = users.findIndex(u => u.id === userId || u.uid === userId);
+    if (idx !== -1) {
+      users[idx].lastLoginRewardDate = todayStr;
+      users[idx].rewardPoints = (users[idx].rewardPoints || 0) + 2;
+      this.setItem('users', users);
+    }
+
+    return { awarded: true, points: 2, date: todayStr };
   }
 
   hasUserVoted(pollId, userId) {

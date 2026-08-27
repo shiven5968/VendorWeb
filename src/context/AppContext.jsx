@@ -10,15 +10,22 @@ import {
   seedFirestoreData
 } from '../services/db';
 import { db as firestoreDb, isFirebaseConfigured } from '../services/firebase';
-import { collection, onSnapshot, query, where } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, doc } from 'firebase/firestore';
 import { seedPilotAccounts } from '../services/seedUsers';
 import { useAuth } from './AuthContext';
+import {
+  OFFICIAL_MEAL_TIMINGS,
+  getMealTimingStatus,
+  isRatingAllowedForMeal,
+  getActiveAndNextMealSlot,
+  formatHourMinute
+} from '../services/mealTiming';
 
 const AppContext = createContext();
 
-const getTodayDayName = () => {
+const getTodayDayName = (date = new Date()) => {
   const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  const dayIdx = new Date().getDay();
+  const dayIdx = date.getDay();
   return days[dayIdx] || 'Wednesday';
 };
 
@@ -35,8 +42,23 @@ export const AppProvider = ({ children }) => {
     resetPassword: authResetPassword
   } = useAuth();
 
-  const todayDay = getTodayDayName();
+  // REAL CURRENT TIME CLOCK (Ticks dynamically every 10 seconds)
+  const [currentTime, setCurrentTime] = useState(() => new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 10000); // 10s live pulse
+    return () => clearInterval(timer);
+  }, []);
+
+  const todayDay = getTodayDayName(currentTime);
   const [selectedDay, setSelectedDay] = useState(todayDay);
+
+  // Keep selectedDay in sync if user hasn't explicitly navigated away
+  useEffect(() => {
+    setSelectedDay(getTodayDayName(currentTime));
+  }, [todayDay]);
 
   // Synchronize current user with AuthContext profile or fallback
   const currentUser = authProfile || (authUser ? {
@@ -64,6 +86,7 @@ export const AppProvider = ({ children }) => {
   const [proteinLogs, setProteinLogs] = useState(() => db.getItem('protein_logs', []));
   const [redemptions, setRedemptions] = useState(() => db.getItem('redemptions', []));
   const [usersList, setUsersList] = useState(() => db.getUsers() || INITIAL_USERS);
+  const [musclePassSubscription, setMusclePassSubscription] = useState(null);
 
   // Live Database Sync State
   const [mealsVersion, setMealsVersion] = useState(0);
@@ -107,6 +130,18 @@ export const AppProvider = ({ children }) => {
       initializeFirebaseData();
     }
   }, []);
+
+  // DAILY LOGIN REWARD: Award +2 Points ONCE per calendar day
+  useEffect(() => {
+    const studentUid = authUser?.uid || currentUser?.uid;
+    if (studentUid && currentRole === 'student') {
+      db.awardDailyLoginReward(studentUid).then(res => {
+        if (res && res.awarded) {
+          addNotification('Daily Login Reward 🎁', '+2 Health Points awarded for logging in today!', 'success');
+        }
+      }).catch(err => console.warn('Daily login reward notice:', err.message));
+    }
+  }, [authUser?.uid, currentUser?.uid, currentRole]);
 
   // Live Firestore Real-Time Subscriptions (Synchronized upon login & role change)
   useEffect(() => {
@@ -206,7 +241,20 @@ export const AppProvider = ({ children }) => {
       (err) => console.warn('Firestore redemptions listener:', err.message)
     );
 
-    // 8. USERS: Staff directory
+    // 8. MUSCLE PASS SUBSCRIPTION
+    const unsubSubscription = onSnapshot(
+      doc(firestoreDb, 'subscriptions', currentUid),
+      (docSnap) => {
+        if (docSnap.exists()) {
+          setMusclePassSubscription(docSnap.data());
+        } else {
+          setMusclePassSubscription(null);
+        }
+      },
+      (err) => console.warn('Firestore subscription listener:', err.message)
+    );
+
+    // 9. USERS: Staff directory
     let unsubUsers = () => {};
     if (isStaffUser) {
       unsubUsers = onSnapshot(
@@ -228,6 +276,7 @@ export const AppProvider = ({ children }) => {
       unsubComplaints();
       unsubProtein();
       unsubRedemptions();
+      unsubSubscription();
       unsubUsers();
     };
   }, [authUser?.uid, currentRole]);
@@ -267,11 +316,18 @@ export const AppProvider = ({ children }) => {
   };
 
   const updateUserProfile = async (updates) => {
-    await authUpdateProfile(updates);
+    // Only allow updating non-identity fields (hostelBlock, dietPreference, avatar, proteinTarget)
+    const sanitizedUpdates = { ...updates };
+    delete sanitizedUpdates.role;
+    delete sanitizedUpdates.email;
+    delete sanitizedUpdates.admissionNumber;
+    delete sanitizedUpdates.name;
+
+    await authUpdateProfile(sanitizedUpdates);
     addNotification('Profile Updated', 'Your profile details have been saved.', 'success');
   };
 
-  // 1. STATS CALCULATION (Declared FIRST before any functions that invoke it)
+  // 1. STATS CALCULATION
   const getMealStats = (mealId) => {
     const mealRatings = (allRatings || []).filter(r => r.mealId === mealId);
     if (mealRatings.length === 0) {
@@ -317,15 +373,42 @@ export const AppProvider = ({ children }) => {
     addNotification('Meal Deleted', 'Dish removed from menu schedule.', 'warning');
   };
 
-  // 3. RATINGS & FEEDBACK
+  // 3. TIME-AWARE RATINGS & FEEDBACK (Enforces Official Mess Rating Window)
   const rateMeal = async (mealId, stars, feedback = '', tags = []) => {
     if (!currentUser) {
       const err = new Error('You must be logged in to submit a rating.');
-      console.warn('[MessMates Auth Warning]:', err.message);
       addNotification('Authentication Required', err.message, 'warning');
       throw err;
     }
+
+    if (currentRole !== 'student') {
+      const err = new Error('Only students can rate mess meals.');
+      addNotification('Permission Denied', err.message, 'warning');
+      throw err;
+    }
+
     const meal = (allMeals || []).find(m => m.id === mealId);
+    if (!meal) {
+      throw new Error('Meal not found.');
+    }
+
+    // Check Meal Service & Rating Window (+30 min rule)
+    const isAllowed = isRatingAllowedForMeal(meal.category, currentTime);
+    if (!isAllowed) {
+      const timing = OFFICIAL_MEAL_TIMINGS[meal.category];
+      const err = new Error(`Rating is closed for ${meal.category}. Rating is only allowed during meal service and for 30 minutes after (${timing?.ratingWindowLabel || ''}).`);
+      addNotification('Rating Window Closed', err.message, 'warning');
+      throw err;
+    }
+
+    // Check if user already submitted a rating for this meal
+    const existing = getUserRating(mealId);
+    if (existing) {
+      const err = new Error('Rating already submitted for this meal. Repeated or modified ratings are not allowed.');
+      addNotification('Already Rated', err.message, 'info');
+      throw err;
+    }
+
     try {
       const ratingEntry = await db.submitRating({
         userId: currentUser.uid || currentUser.id,
@@ -336,17 +419,10 @@ export const AppProvider = ({ children }) => {
         feedback,
         tags
       });
-      setAllRatings(prev => {
-        const existingIdx = prev.findIndex(r => r.id === ratingEntry.id || (r.userId === ratingEntry.userId && r.mealId === ratingEntry.mealId));
-        if (existingIdx !== -1) {
-          const updated = [...prev];
-          updated[existingIdx] = ratingEntry;
-          return updated;
-        }
-        return [ratingEntry, ...prev];
-      });
+
+      setAllRatings(prev => [ratingEntry, ...prev]);
       setRatingsVersion(v => v + 1);
-      addNotification('Rating Saved 🌟', `+20 Health Points awarded to ${currentUser.name}.`, 'success');
+      addNotification('Rating Submitted 🌟', '+1 Health Point awarded to your account.', 'success');
       return ratingEntry;
     } catch (e) {
       console.error('[Firebase Error in rateMeal]:', e);
@@ -368,7 +444,6 @@ export const AppProvider = ({ children }) => {
   const createComplaint = async (category, description) => {
     if (!currentUser) {
       const err = new Error('You must be logged in to submit a complaint.');
-      console.warn('[MessMates Auth Warning]:', err.message);
       addNotification('Authentication Required', err.message, 'warning');
       throw err;
     }
@@ -452,7 +527,7 @@ export const AppProvider = ({ children }) => {
         setUsersList(db.getUsers());
       }
       setPollsVersion(v => v + 1);
-      addNotification('Vote Recorded 🗳️', `+30 Health Points earned by ${currentUser.name}.`, 'success');
+      addNotification('Vote Recorded 🗳️', `+10 Health Points earned by ${currentUser.name}.`, 'success');
     } catch (err) {
       addNotification('Vote Failed', err.message, 'warning');
     }
@@ -478,6 +553,11 @@ export const AppProvider = ({ children }) => {
   };
   const consumedProtein = getTodayUserProtein();
   const proteinTarget = currentUser?.proteinTarget || 120;
+
+  const isMusclePassActive = Boolean(
+    currentUser?.musclePassActive ||
+    (musclePassSubscription?.status === 'ACTIVE' && new Date(musclePassSubscription?.expiresAt || 0) > currentTime)
+  );
 
   const logProtein = async (dishName, proteinGrams) => {
     if (!currentUser) return;
@@ -596,16 +676,28 @@ export const AppProvider = ({ children }) => {
     chef: 'Head Chef Naina Caters',
     hygieneScore: '98.8% (Grade A+)',
     timings: {
-      Breakfast: '07:30 AM - 09:30 AM',
-      Lunch: '12:30 PM - 02:30 PM',
-      Snacks: '05:00 PM - 06:00 PM',
-      Dinner: '07:30 PM - 09:30 PM',
+      Breakfast: OFFICIAL_MEAL_TIMINGS.Breakfast.label,
+      Lunch: OFFICIAL_MEAL_TIMINGS.Lunch.label,
+      Snacks: OFFICIAL_MEAL_TIMINGS.Snacks.label,
+      Dinner: OFFICIAL_MEAL_TIMINGS.Dinner.label,
     }
   };
+
+  // Real-time meal slot helpers
+  const mealSlotInfo = getActiveAndNextMealSlot(currentTime);
+  const getTimingStatus = (category) => getMealTimingStatus(category, currentTime);
+  const checkIsRatingAllowed = (category) => isRatingAllowedForMeal(category, currentTime);
 
   return (
     <AppContext.Provider
       value={{
+        // Real-Time Clock & Timers
+        currentTime,
+        mealSlotInfo,
+        getTimingStatus,
+        checkIsRatingAllowed,
+        officialTimings: OFFICIAL_MEAL_TIMINGS,
+
         // Auth & User
         currentUser,
         currentRole,
@@ -643,6 +735,8 @@ export const AppProvider = ({ children }) => {
         setProteinTarget,
         consumedProtein,
         logProtein,
+        isMusclePassActive,
+        musclePassSubscription,
 
         // Rewards
         rewardPoints: currentUser?.rewardPoints || 0,
