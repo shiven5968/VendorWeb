@@ -1,6 +1,9 @@
 // MessMate Launch Data & Storage Engine
 // Clean Zero-Fluff Launch State for ABES College Mess
 
+import { doc, collection, setDoc, addDoc, updateDoc, deleteDoc, getDocs, increment } from 'firebase/firestore';
+import { db as firestoreDb, isFirebaseConfigured } from './firebase';
+
 const DB_PREFIX = 'messmates_launch_';
 
 export const MESS_BLOCK_MAP = {
@@ -440,9 +443,10 @@ class LaunchDatabase {
       return existing;
     }
 
+    const id = userData.id || userData.uid || ('usr_' + Date.now());
     const newUser = {
-      id: userData.id || userData.uid || ('usr_' + Date.now()),
-      uid: userData.uid || userData.id || ('usr_' + Date.now()),
+      id,
+      uid: id,
       name: userData.name,
       admissionNumber: userData.admissionNumber || '',
       email: cleanEmail,
@@ -459,6 +463,14 @@ class LaunchDatabase {
       createdAt: new Date().toISOString()
     };
 
+    if (isFirebaseConfigured) {
+      try {
+        setDoc(doc(firestoreDb, 'users', id), newUser);
+      } catch (e) {
+        console.error('Error saving user profile to Firestore:', e);
+      }
+    }
+
     users.push(newUser);
     this.setItem('users', users);
     return newUser;
@@ -468,7 +480,17 @@ class LaunchDatabase {
     const users = this.getUsers();
     const index = users.findIndex(u => u.id === userId || u.uid === userId);
     if (index !== -1) {
-      users[index] = { ...users[index], ...updates, updatedAt: new Date().toISOString() };
+      const updated = { ...users[index], ...updates, updatedAt: new Date().toISOString() };
+      
+      if (isFirebaseConfigured) {
+        try {
+          updateDoc(doc(firestoreDb, 'users', userId), { ...updates, updatedAt: new Date().toISOString() });
+        } catch (e) {
+          console.error('Error updating user profile in Firestore:', e);
+        }
+      }
+
+      users[index] = updated;
       this.setItem('users', users);
       return users[index];
     }
@@ -492,25 +514,47 @@ class LaunchDatabase {
 
   saveMeal(mealData) {
     const meals = this.getAllMeals();
-    if (mealData.id) {
-      const idx = meals.findIndex(m => m.id === mealData.id);
+    let id = mealData.id;
+    let targetMeal = null;
+
+    if (id) {
+      const idx = meals.findIndex(m => m.id === id);
       if (idx !== -1) {
-        meals[idx] = { ...meals[idx], ...mealData };
+        targetMeal = { ...meals[idx], ...mealData };
+        meals[idx] = targetMeal;
       } else {
-        meals.push(mealData);
+        targetMeal = { ...mealData };
+        meals.push(targetMeal);
       }
     } else {
-      const newMeal = {
+      id = 'meal_' + Date.now();
+      targetMeal = {
         ...mealData,
-        id: 'meal_' + Date.now()
+        id
       };
-      meals.push(newMeal);
+      meals.push(targetMeal);
     }
+
+    if (isFirebaseConfigured) {
+      try {
+        setDoc(doc(firestoreDb, 'meals', id), targetMeal, { merge: true });
+      } catch (e) {
+        console.error('Error saving meal to Firestore:', e);
+      }
+    }
+
     this.setItem('meals', meals);
-    return mealData;
+    return targetMeal;
   }
 
   deleteMeal(mealId) {
+    if (isFirebaseConfigured) {
+      try {
+        deleteDoc(doc(firestoreDb, 'meals', mealId));
+      } catch (e) {
+        console.error('Error deleting meal from Firestore:', e);
+      }
+    }
     const meals = this.getAllMeals();
     const filtered = meals.filter(m => m.id !== mealId);
     this.setItem('meals', filtered);
@@ -550,8 +594,9 @@ class LaunchDatabase {
     const ratings = this.getAllRatings();
     const existingIdx = ratings.findIndex(r => r.userId === userId && r.mealId === mealId);
 
+    const ratingId = existingIdx !== -1 ? ratings[existingIdx].id : 'rat_' + Date.now();
     const ratingEntry = {
-      id: existingIdx !== -1 ? ratings[existingIdx].id : 'rat_' + Date.now(),
+      id: ratingId,
       userId,
       userName: userName || 'Student',
       mealId,
@@ -561,6 +606,14 @@ class LaunchDatabase {
       tags,
       timestamp: new Date().toISOString()
     };
+
+    if (isFirebaseConfigured) {
+      try {
+        setDoc(doc(firestoreDb, 'ratings', ratingId), ratingEntry);
+      } catch (e) {
+        console.error('Error saving rating to Firestore:', e);
+      }
+    }
 
     if (existingIdx !== -1) {
       ratings[existingIdx] = ratingEntry;
@@ -591,8 +644,9 @@ class LaunchDatabase {
 
   createComplaint({ userId, userName, block, category, description }) {
     const complaints = this.getAllComplaints();
+    const id = 'cmp_' + Date.now();
     const newComplaint = {
-      id: 'cmp_' + Date.now(),
+      id,
       userId,
       userName: userName || 'Student',
       block: block || 'DNB Block',
@@ -601,6 +655,15 @@ class LaunchDatabase {
       status: 'PENDING',
       timestamp: new Date().toISOString()
     };
+
+    if (isFirebaseConfigured) {
+      try {
+        setDoc(doc(firestoreDb, 'complaints', id), newComplaint);
+      } catch (e) {
+        console.error('Error saving complaint to Firestore:', e);
+      }
+    }
+
     complaints.unshift(newComplaint);
     this.setItem('complaints', complaints);
     return newComplaint;
@@ -611,9 +674,22 @@ class LaunchDatabase {
     const idx = complaints.findIndex(c => c.id === complaintId);
     if (idx !== -1) {
       complaints[idx].status = newStatus;
+      let resolvedAt = null;
       if (newStatus === 'RESOLVED') {
-        complaints[idx].resolvedAt = new Date().toISOString();
+        resolvedAt = new Date().toISOString();
+        complaints[idx].resolvedAt = resolvedAt;
       }
+
+      if (isFirebaseConfigured) {
+        try {
+          const updateData = { status: newStatus };
+          if (resolvedAt) updateData.resolvedAt = resolvedAt;
+          updateDoc(doc(firestoreDb, 'complaints', complaintId), updateData);
+        } catch (e) {
+          console.error('Error updating complaint status in Firestore:', e);
+        }
+      }
+
       this.setItem('complaints', complaints);
       return complaints[idx];
     }
@@ -647,8 +723,9 @@ class LaunchDatabase {
   }
 
   createPoll(pollData) {
+    const pollId = 'poll_' + Date.now();
     const newPoll = {
-      id: 'poll_' + Date.now(),
+      id: pollId,
       dishToReplace: pollData.dishToReplace,
       options: pollData.options.map((opt, i) => ({
         id: 'opt_' + (i + 1),
@@ -656,8 +733,18 @@ class LaunchDatabase {
         protein: opt.protein || '14g'
       })),
       closingDate: pollData.closingDate || 'Tomorrow at 10:00 PM',
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      status: 'ACTIVE'
     };
+
+    if (isFirebaseConfigured) {
+      try {
+        setDoc(doc(firestoreDb, 'polls', pollId), newPoll);
+      } catch (e) {
+        console.error('Error creating poll in Firestore:', e);
+      }
+    }
+
     this.setItem('poll', newPoll);
     return newPoll;
   }
@@ -669,14 +756,23 @@ class LaunchDatabase {
       throw new Error('You have already voted in this poll.');
     }
 
+    const voteId = 'vote_' + Date.now();
     const newVote = {
-      id: 'vote_' + Date.now(),
+      id: voteId,
       pollId,
       userId,
       userName: userName || 'Student',
       optionId,
       timestamp: new Date().toISOString()
     };
+
+    if (isFirebaseConfigured) {
+      try {
+        setDoc(doc(firestoreDb, 'votes', voteId), newVote);
+      } catch (e) {
+        console.error('Error casting vote in Firestore:', e);
+      }
+    }
 
     votes.push(newVote);
     this.setItem('votes', votes);
@@ -702,13 +798,23 @@ class LaunchDatabase {
 
   logProtein({ userId, dishName, protein }) {
     const logs = this.getItem('protein_logs', []);
+    const logId = 'plog_' + Date.now();
     const newLog = {
-      id: 'plog_' + Date.now(),
+      id: logId,
       userId,
       dishName,
       protein: Number(protein),
       timestamp: new Date().toISOString()
     };
+
+    if (isFirebaseConfigured) {
+      try {
+        setDoc(doc(firestoreDb, 'protein_logs', logId), newLog);
+      } catch (e) {
+        console.error('Error logging protein to Firestore:', e);
+      }
+    }
+
     logs.push(newLog);
     this.setItem('protein_logs', logs);
     return newLog;
@@ -725,10 +831,20 @@ class LaunchDatabase {
   }
 
   addRewardPoints(userId, points) {
+    if (isFirebaseConfigured) {
+      try {
+        updateDoc(doc(firestoreDb, 'users', userId), {
+          rewardPoints: increment(points)
+        });
+      } catch (e) {
+        console.error('Error adjusting user points in Firestore:', e);
+      }
+    }
+
     const users = this.getUsers();
     const idx = users.findIndex(u => u.id === userId || u.uid === userId);
     if (idx !== -1) {
-      users[idx].rewardPoints = (users[idx].rewardPoints || 0) + Number(points);
+      users[idx].rewardPoints = Math.max(0, (users[idx].rewardPoints || 0) + Number(points));
       this.setItem('users', users);
     }
   }
@@ -739,12 +855,10 @@ class LaunchDatabase {
       throw new Error('Insufficient Health Points to claim this reward.');
     }
 
-    this.addRewardPoints(userId, -rewardItem.points);
-
+    const redemptionId = 'red_' + Date.now();
     const claimCode = 'HEALTHY-' + Math.random().toString(36).substring(2, 7).toUpperCase();
-    const redemptions = this.getItem('redemptions', []);
     const newRedemption = {
-      id: 'red_' + Date.now(),
+      id: redemptionId,
       userId,
       userName: userName || user.name,
       rewardId: rewardItem.id,
@@ -755,6 +869,17 @@ class LaunchDatabase {
       timestamp: new Date().toISOString()
     };
 
+    if (isFirebaseConfigured) {
+      try {
+        setDoc(doc(firestoreDb, 'redemptions', redemptionId), newRedemption);
+      } catch (e) {
+        console.error('Error redeeming reward in Firestore:', e);
+      }
+    }
+
+    this.addRewardPoints(userId, -rewardItem.points);
+
+    const redemptions = this.getItem('redemptions', []);
     redemptions.unshift(newRedemption);
     this.setItem('redemptions', redemptions);
     return newRedemption;
@@ -762,3 +887,30 @@ class LaunchDatabase {
 }
 
 export const db = new LaunchDatabase();
+
+export const seedFirestoreData = async () => {
+  if (!isFirebaseConfigured) return;
+
+  try {
+    const mealsRef = collection(firestoreDb, 'meals');
+    const mealsSnap = await getDocs(mealsRef);
+    if (mealsSnap.empty) {
+      console.log('Seeding initial meals to Firestore...');
+      for (const meal of INITIAL_MEALS_DB) {
+        await setDoc(doc(firestoreDb, 'meals', meal.id), meal);
+      }
+    }
+
+    const rewardsRef = collection(firestoreDb, 'rewards_catalog');
+    const rewardsSnap = await getDocs(rewardsRef);
+    if (rewardsSnap.empty) {
+      console.log('Seeding healthy rewards catalog to Firestore...');
+      for (const reward of INITIAL_REWARDS_CATALOG) {
+        await setDoc(doc(firestoreDb, 'rewards_catalog', reward.id), reward);
+      }
+    }
+
+  } catch (e) {
+    console.error('Error seeding Firestore data:', e);
+  }
+};
