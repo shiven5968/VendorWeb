@@ -107,55 +107,87 @@ export const AppProvider = ({ children }) => {
       };
       initializeFirebaseData();
 
-      // 2. Attach listeners
-      const unsubMeals = onSnapshot(collection(firestoreDb, 'meals'), (snapshot) => {
-        const list = [];
-        snapshot.forEach(doc => list.push(doc.data()));
-        if (list.length > 0) setAllMeals(list);
-      });
+      // 2. Attach listeners with graceful error handling
+      const unsubMeals = onSnapshot(
+        collection(firestoreDb, 'meals'),
+        (snapshot) => {
+          const list = [];
+          snapshot.forEach(doc => list.push(doc.data()));
+          if (list.length > 0) setAllMeals(list);
+        },
+        (err) => console.warn('Firestore meals listener:', err.message)
+      );
 
-      const unsubRatings = onSnapshot(collection(firestoreDb, 'ratings'), (snapshot) => {
-        const list = [];
-        snapshot.forEach(doc => list.push(doc.data()));
-        setAllRatings(list);
-      });
+      const unsubRatings = onSnapshot(
+        collection(firestoreDb, 'ratings'),
+        (snapshot) => {
+          const list = [];
+          snapshot.forEach(doc => list.push(doc.data()));
+          setAllRatings(list);
+        },
+        (err) => console.warn('Firestore ratings listener:', err.message)
+      );
 
-      const unsubComplaints = onSnapshot(collection(firestoreDb, 'complaints'), (snapshot) => {
-        const list = [];
-        snapshot.forEach(doc => list.push(doc.data()));
-        setAllComplaints(list);
-      });
+      const unsubComplaints = onSnapshot(
+        collection(firestoreDb, 'complaints'),
+        (snapshot) => {
+          const list = [];
+          snapshot.forEach(doc => list.push(doc.data()));
+          setAllComplaints(list);
+        },
+        (err) => console.warn('Firestore complaints listener:', err.message)
+      );
 
-      const unsubPolls = onSnapshot(collection(firestoreDb, 'polls'), (snapshot) => {
-        const list = [];
-        snapshot.forEach(doc => list.push(doc.data()));
-        const activePoll = list.find(p => p.status === 'ACTIVE') || list[0] || null;
-        if (activePoll) setPoll(activePoll);
-      });
+      const unsubPolls = onSnapshot(
+        collection(firestoreDb, 'polls'),
+        (snapshot) => {
+          const list = [];
+          snapshot.forEach(doc => list.push(doc.data()));
+          const activePoll = list.find(p => p.status === 'ACTIVE') || list[0] || null;
+          if (activePoll) setPoll(activePoll);
+        },
+        (err) => console.warn('Firestore polls listener:', err.message)
+      );
 
-      const unsubVotes = onSnapshot(collection(firestoreDb, 'votes'), (snapshot) => {
-        const list = [];
-        snapshot.forEach(doc => list.push(doc.data()));
-        setVotesList(list);
-      });
+      const unsubVotes = onSnapshot(
+        collection(firestoreDb, 'votes'),
+        (snapshot) => {
+          const list = [];
+          snapshot.forEach(doc => list.push(doc.data()));
+          setVotesList(list);
+        },
+        (err) => console.warn('Firestore votes listener:', err.message)
+      );
 
-      const unsubProtein = onSnapshot(collection(firestoreDb, 'protein_logs'), (snapshot) => {
-        const list = [];
-        snapshot.forEach(doc => list.push(doc.data()));
-        setProteinLogs(list);
-      });
+      const unsubProtein = onSnapshot(
+        collection(firestoreDb, 'protein_logs'),
+        (snapshot) => {
+          const list = [];
+          snapshot.forEach(doc => list.push(doc.data()));
+          setProteinLogs(list);
+        },
+        (err) => console.warn('Firestore protein listener:', err.message)
+      );
 
-      const unsubRedemptions = onSnapshot(collection(firestoreDb, 'redemptions'), (snapshot) => {
-        const list = [];
-        snapshot.forEach(doc => list.push(doc.data()));
-        setRedemptions(list);
-      });
+      const unsubRedemptions = onSnapshot(
+        collection(firestoreDb, 'redemptions'),
+        (snapshot) => {
+          const list = [];
+          snapshot.forEach(doc => list.push(doc.data()));
+          setRedemptions(list);
+        },
+        (err) => console.warn('Firestore redemptions listener:', err.message)
+      );
 
-      const unsubUsers = onSnapshot(collection(firestoreDb, 'users'), (snapshot) => {
-        const list = [];
-        snapshot.forEach(doc => list.push(doc.data()));
-        setUsersList(list);
-      });
+      const unsubUsers = onSnapshot(
+        collection(firestoreDb, 'users'),
+        (snapshot) => {
+          const list = [];
+          snapshot.forEach(doc => list.push(doc.data()));
+          setUsersList(list);
+        },
+        (err) => console.warn('Firestore users listener:', err.message)
+      );
 
       return () => {
         unsubMeals();

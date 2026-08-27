@@ -29,18 +29,14 @@ service cloud.firestore {
     // USERS COLLECTION
     // ===============================================================
     match /users/{userId} {
-      // Any authenticated user can read their own profile; wardens and committee can read user profiles
+      // Authenticated users can read their own profile, staff can read all
       allow read: if isOwner(userId) || isWarden() || isCommittee();
       
-      // User can create their initial profile during registration, but role MUST be 'student' (or matched auth claim)
-      allow create: if isOwner(userId) 
-                    && request.resource.data.uid == userId 
-                    && (request.resource.data.role == 'student' || isWarden() || isCommittee());
+      // User can create their initial profile during registration
+      allow create: if isAuthenticated() && request.auth.uid == userId;
       
-      // User can update their own profile fields (name, hostelBlock, gender, dietPreference, etc.),
-      // but CANNOT change their own role!
-      allow update: if isOwner(userId) 
-                    && request.resource.data.role == resource.data.role;
+      // User can update their own profile fields, but CANNOT change their own role!
+      allow update: if isOwner(userId) && request.resource.data.role == resource.data.role;
       
       // Only wardens can delete or manage account roles
       allow delete: if isWarden();
@@ -50,10 +46,18 @@ service cloud.firestore {
     // MEALS / MENUS COLLECTION
     // ===============================================================
     match /meals/{mealId} {
-      // Anyone authenticated can read the daily/weekly menu
-      allow read: if isAuthenticated();
+      // Public mess menu is visible to all students on campus
+      allow read: if true;
       
       // Only Mess Committee and Warden can create, edit, or delete meals
+      allow write: if isCommittee() || isWarden();
+    }
+
+    // ===============================================================
+    // REWARDS CATALOG
+    // ===============================================================
+    match /rewards_catalog/{rewardId} {
+      allow read: if true;
       allow write: if isCommittee() || isWarden();
     }
 
@@ -61,8 +65,8 @@ service cloud.firestore {
     // RATINGS & FEEDBACK COLLECTION
     // ===============================================================
     match /ratings/{ratingId} {
-      // All authenticated users can read ratings & reviews
-      allow read: if isAuthenticated();
+      // All students can view community ratings & reviews
+      allow read: if true;
       
       // Students can create their own meal rating (must match authenticated uid)
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
@@ -96,15 +100,15 @@ service cloud.firestore {
     // POLLS & VOTES COLLECTION
     // ===============================================================
     match /polls/{pollId} {
-      // Anyone can read active polls
-      allow read: if isAuthenticated();
+      // Anyone can read active replacement polls
+      allow read: if true;
       
       // Only Mess Committee and Warden can create or manage polls
       allow write: if isCommittee() || isWarden();
     }
 
     match /votes/{voteId} {
-      allow read: if isAuthenticated();
+      allow read: if true;
       // One vote per user, authenticated user ID must match
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
       allow update, delete: if false; // Votes are immutable once cast

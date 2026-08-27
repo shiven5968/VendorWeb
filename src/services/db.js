@@ -125,8 +125,125 @@ export const INITIAL_USERS = [
   }
 ];
 
-// Launch Menu Schedule
+// Launch Menu Schedule (Full 7-Day College Mess Cycle: Mon-Sun)
 export const INITIAL_MEALS_DB = [
+  // Monday
+  {
+    id: 'mon_b',
+    name: 'Idli Sambar & Coconut Chutney',
+    day: 'Monday',
+    category: 'Breakfast',
+    time: '07:30 AM - 09:30 AM',
+    items: 'Steamed Idli, Vegetable Sambar, Coconut Chutney, Banana, Tea/Coffee',
+    image: 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&q=80&w=600',
+    calories: 360,
+    protein: 9,
+    carbs: 68,
+    fats: 6,
+    ingredients: ['Rice Batter', 'Urad Dal', 'Sambar Dal', 'Vegetables', 'Coconut']
+  },
+  {
+    id: 'mon_l',
+    name: 'Rajma Masala & Steamed Rice',
+    day: 'Monday',
+    category: 'Lunch',
+    time: '12:30 PM - 02:30 PM',
+    items: 'Jammu Rajma, Steamed Rice, Tawa Roti, Mix Veg Raita, Green Salad',
+    image: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&q=80&w=600',
+    calories: 590,
+    protein: 22,
+    carbs: 86,
+    fats: 12,
+    ingredients: ['Kidney Beans', 'Rice', 'Wheat Flour', 'Curd', 'Spices']
+  },
+  {
+    id: 'mon_s',
+    name: 'Veg Sandwich & Hot Tea',
+    day: 'Monday',
+    category: 'Snacks',
+    time: '05:00 PM - 06:00 PM',
+    items: 'Grilled Veggie Sandwich, Green Mint Chutney, Adrak Chai',
+    image: 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?auto=format&fit=crop&q=80&w=600',
+    calories: 260,
+    protein: 7,
+    carbs: 38,
+    fats: 8,
+    ingredients: ['Brown/White Bread', 'Cucumber', 'Tomato', 'Butter', 'Tea']
+  },
+  {
+    id: 'mon_d',
+    name: 'Matar Paneer & Butter Roti',
+    day: 'Monday',
+    category: 'Dinner',
+    time: '07:30 PM - 09:30 PM',
+    items: 'Matar Paneer Gravy, Tawa Roti, Arhar Dal Tadka, Jeera Rice, Gulab Jamun',
+    image: 'https://images.unsplash.com/photo-1631452180519-c014fe946bc7?auto=format&fit=crop&q=80&w=600',
+    calories: 670,
+    protein: 25,
+    carbs: 82,
+    fats: 21,
+    ingredients: ['Fresh Paneer', 'Green Peas', 'Wheat Flour', 'Toor Dal', 'Rice']
+  },
+
+  // Tuesday
+  {
+    id: 'tue_b',
+    name: 'Methi Paratha & Fresh Curd',
+    day: 'Tuesday',
+    category: 'Breakfast',
+    time: '07:30 AM - 09:30 AM',
+    items: 'Methi Paratha (2 pcs), Fresh Curd, Pickle, Boiled Egg/Sprouts, Tea',
+    image: 'https://images.unsplash.com/photo-1626777552726-4a6b54c97e46?auto=format&fit=crop&q=80&w=600',
+    calories: 430,
+    protein: 13,
+    carbs: 64,
+    fats: 14,
+    ingredients: ['Fenugreek Leaves', 'Wheat Flour', 'Curd', 'Spices', 'Tea']
+  },
+  {
+    id: 'tue_l',
+    name: 'Kadhi Pakora & Jeera Rice',
+    day: 'Tuesday',
+    category: 'Lunch',
+    time: '12:30 PM - 02:30 PM',
+    items: 'Punjabi Kadhi Pakora, Jeera Rice, Phulka, Aloo Gobi Dry, Salad',
+    image: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&q=80&w=600',
+    calories: 580,
+    protein: 18,
+    carbs: 88,
+    fats: 15,
+    ingredients: ['Gram Flour', 'Sour Curd', 'Basmati Rice', 'Cauliflower', 'Wheat']
+  },
+  {
+    id: 'tue_s',
+    name: 'Bhel Puri & Lemon Tea',
+    day: 'Tuesday',
+    category: 'Snacks',
+    time: '05:00 PM - 06:00 PM',
+    items: 'Mumbai Style Bhel Puri, Roasted Peanuts, Lemon Tea',
+    image: 'https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&q=80&w=600',
+    calories: 220,
+    protein: 6,
+    carbs: 36,
+    fats: 5,
+    ingredients: ['Puffed Rice', 'Sev', 'Peanuts', 'Tamarind Chutney', 'Lemon']
+  },
+  {
+    id: 'tue_d',
+    name: 'Dal Makhani & Naan/Roti',
+    day: 'Tuesday',
+    category: 'Dinner',
+    time: '07:30 PM - 09:30 PM',
+    items: 'Slow Cooked Dal Makhani, Mix Veg, Tawa Roti, Steamed Rice, Ice Cream',
+    image: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&q=80&w=600',
+    calories: 660,
+    protein: 23,
+    carbs: 84,
+    fats: 19,
+    ingredients: ['Black Urad Dal', 'Butter', 'Cream', 'Wheat Flour', 'Rice']
+  },
+
+  // Wednesday
   {
     id: 'wed_b',
     name: 'Aloo Pyaz Paratha & Fresh Curd',
@@ -183,6 +300,7 @@ export const INITIAL_MEALS_DB = [
     fats: 22,
     ingredients: ['Fresh Paneer', 'Butter Gravy', 'Wheat Flour', 'Toor Dal', 'Rice']
   },
+
   // Thursday
   {
     id: 'thu_b',
@@ -200,17 +318,17 @@ export const INITIAL_MEALS_DB = [
   },
   {
     id: 'thu_l',
-    name: 'Rajma Masala & Steamed Rice',
+    name: 'Lauki Kofta & Steamed Rice',
     day: 'Thursday',
     category: 'Lunch',
     time: '12:30 PM - 02:30 PM',
-    items: 'Kashmiri Rajma, Long Grain Rice, Roti, Cucumber Salad, Curd',
+    items: 'Lauki Kofta Curry, Rice, Phulka, Moong Dal Tadka, Cucumber Salad',
     image: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&q=80&w=600',
-    calories: 590,
-    protein: 23,
-    carbs: 85,
-    fats: 12,
-    ingredients: ['Kidney Beans', 'Rice', 'Wheat Flour', 'Tomato Puree', 'Spices']
+    calories: 560,
+    protein: 17,
+    carbs: 82,
+    fats: 14,
+    ingredients: ['Bottle Gourd', 'Gram Flour', 'Moong Dal', 'Wheat', 'Rice']
   },
   {
     id: 'thu_s',
@@ -228,22 +346,23 @@ export const INITIAL_MEALS_DB = [
   },
   {
     id: 'thu_d',
-    name: 'Dal Makhani & Butter Roti',
+    name: 'Egg Curry / Malai Kofta & Roti',
     day: 'Thursday',
     category: 'Dinner',
     time: '07:30 PM - 09:30 PM',
-    items: 'Slow Cooked Dal Makhani, Mixed Vegetable Sabzi, Tawa Roti, Rice, Kheer',
+    items: 'Dhaba Egg Curry (or Paneer Malai Kofta), Tawa Roti, Veg Pulao, Kheer',
     image: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&q=80&w=600',
-    calories: 640,
-    protein: 22,
-    carbs: 84,
-    fats: 18,
-    ingredients: ['Black Urad Dal', 'Butter', 'Fresh Cream', 'Wheat Flour', 'Rice']
+    calories: 650,
+    protein: 28,
+    carbs: 76,
+    fats: 20,
+    ingredients: ['Boiled Eggs/Paneer', 'Rich Onion Gravy', 'Basmati Rice', 'Milk', 'Rice']
   },
+
   // Friday
   {
     id: 'fri_b',
-    name: 'Masala Dosa, Sambar & Coconut Chutney',
+    name: 'Masala Dosa, Sambar & Chutney',
     day: 'Friday',
     category: 'Breakfast',
     time: '07:30 AM - 09:30 AM',
@@ -296,6 +415,122 @@ export const INITIAL_MEALS_DB = [
     carbs: 80,
     fats: 20,
     ingredients: ['Paneer', 'Bell Peppers', 'Gram Flour', 'Wheat Flour', 'Chana Dal']
+  },
+
+  // Saturday
+  {
+    id: 'sat_b',
+    name: 'Pav Bhaji & Masala Butter',
+    day: 'Saturday',
+    category: 'Breakfast',
+    time: '07:30 AM - 09:30 AM',
+    items: 'Mumbai Pav Bhaji, Butter Toasted Pav (2 pcs), Chopped Onion Lemon, Tea',
+    image: 'https://images.unsplash.com/photo-1606491956689-2ea866880c84?auto=format&fit=crop&q=80&w=600',
+    calories: 450,
+    protein: 11,
+    carbs: 66,
+    fats: 16,
+    ingredients: ['Potatoes', 'Tomatoes', 'Butter', 'Pav Bread', 'Indian Masala']
+  },
+  {
+    id: 'sat_l',
+    name: 'Khichdi, Aloo Chokha & Papad',
+    day: 'Saturday',
+    category: 'Lunch',
+    time: '12:30 PM - 02:30 PM',
+    items: 'Comfort Moong Dal Khichdi, Desi Ghee, Aloo Chokha, Roasted Papad, Curd, Achar',
+    image: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&q=80&w=600',
+    calories: 520,
+    protein: 19,
+    carbs: 78,
+    fats: 12,
+    ingredients: ['Moong Dal', 'Rice', 'Desi Ghee', 'Potatoes', 'Curd']
+  },
+  {
+    id: 'sat_s',
+    name: 'Sweet Corn Chaat & Tea',
+    day: 'Saturday',
+    category: 'Snacks',
+    time: '05:00 PM - 06:00 PM',
+    items: 'Steamed Butter Sweet Corn, Lemon Chaat Masala, Hot Masala Chai',
+    image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&q=80&w=600',
+    calories: 210,
+    protein: 6,
+    carbs: 38,
+    fats: 4,
+    ingredients: ['Sweet Corn', 'Butter', 'Lemon', 'Chaat Masala', 'Tea']
+  },
+  {
+    id: 'sat_d',
+    name: 'Veg Biryani, Salan & Raita',
+    day: 'Saturday',
+    category: 'Dinner',
+    time: '07:30 PM - 09:30 PM',
+    items: 'Hyderabadi Veg Dum Biryani, Mirchi Ka Salan, Burani Raita, Gulab Jamun',
+    image: 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?auto=format&fit=crop&q=80&w=600',
+    calories: 680,
+    protein: 22,
+    carbs: 92,
+    fats: 18,
+    ingredients: ['Long Grain Basmati', 'Soy Chunks', 'Paneer', 'Fried Onions', 'Curd']
+  },
+
+  // Sunday
+  {
+    id: 'sun_b',
+    name: 'Puri Chole & Suji Halwa',
+    day: 'Sunday',
+    category: 'Breakfast',
+    time: '07:30 AM - 09:30 AM',
+    items: 'Special Sunday Chole, Bedmi Puri (3 pcs), Suji Halwa, Achar, Masala Tea',
+    image: 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&q=80&w=600',
+    calories: 540,
+    protein: 16,
+    carbs: 78,
+    fats: 20,
+    ingredients: ['White Chickpeas', 'Urad Flour', 'Semolina', 'Ghee', 'Tea']
+  },
+  {
+    id: 'sun_l',
+    name: 'Paneer Do Pyaza & Butter Naan',
+    day: 'Sunday',
+    category: 'Lunch',
+    time: '12:30 PM - 02:30 PM',
+    items: 'Paneer Do Pyaza, Butter Naan, Yellow Dal Tadka, Peas Pulao, Fruit Custard',
+    image: 'https://images.unsplash.com/photo-1631452180519-c014fe946bc7?auto=format&fit=crop&q=80&w=600',
+    calories: 720,
+    protein: 28,
+    carbs: 88,
+    fats: 24,
+    ingredients: ['Fresh Paneer', 'Onions', 'Wheat/Maida', 'Milk Custard', 'Rice']
+  },
+  {
+    id: 'sun_s',
+    name: 'Pasta & Cold Coffee/Chai',
+    day: 'Sunday',
+    category: 'Snacks',
+    time: '05:00 PM - 06:00 PM',
+    items: 'Creamy Red Sauce Veggie Pasta, Hot Masala Tea or Cold Coffee',
+    image: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&q=80&w=600',
+    calories: 290,
+    protein: 8,
+    carbs: 42,
+    fats: 9,
+    ingredients: ['Durum Wheat Pasta', 'Tomato Sauce', 'Bell Peppers', 'Cheese', 'Milk']
+  },
+  {
+    id: 'sun_d',
+    name: 'Special Feast Dinner & Rasmalai',
+    day: 'Sunday',
+    category: 'Dinner',
+    time: '07:30 PM - 09:30 PM',
+    items: 'Paneer Lababdar, Dal Makhani, Stuffed Kulcha, Jeera Rice, Chilled Rasmalai',
+    image: 'https://images.unsplash.com/photo-1631452180519-c014fe946bc7?auto=format&fit=crop&q=80&w=600',
+    calories: 740,
+    protein: 29,
+    carbs: 86,
+    fats: 24,
+    ingredients: ['Paneer', 'Black Dal', 'Wheat Kulcha', 'Rasmalai', 'Basmati Rice']
   }
 ];
 
