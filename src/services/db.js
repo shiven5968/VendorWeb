@@ -47,7 +47,7 @@ export const MESS_BLOCK_MAP = {
       Dinner: '07:40 PM - 09:00 PM',
     }
   },
-  'Kalpana Chawla (Girls)': {
+  'Block A (Girls)': {
     messName: 'ABES Girls Dining Hall 1',
     location: 'Girls Hostel Complex',
     timings: {
@@ -57,7 +57,7 @@ export const MESS_BLOCK_MAP = {
       Dinner: '07:40 PM - 09:00 PM',
     }
   },
-  'Sarojini Block (Girls)': {
+  'Block B (Girls)': {
     messName: 'ABES Girls Dining Hall 2',
     location: 'Girls Hostel Complex',
     timings: {
@@ -67,7 +67,7 @@ export const MESS_BLOCK_MAP = {
       Dinner: '07:40 PM - 09:00 PM',
     }
   },
-  'Kasturba Block (Girls)': {
+  'Block C (Girls)': {
     messName: 'ABES Girls Dining Hall 2',
     location: 'Girls Hostel Complex',
     timings: {

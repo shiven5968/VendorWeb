@@ -19,6 +19,87 @@ import {
 } from 'lucide-react';
 import { WeeklyMenuReviewSection } from '../components/WeeklyMenuReviewSection';
 
+const MEAL_IMAGES = {
+  // Breakfasts
+  idli_sambhar: "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=800&q=80",
+  matar_kulche: "https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=800&q=80",
+  aloo_paratha: "https://images.unsplash.com/photo-1626074353765-517a681e40be?auto=format&fit=crop&w=800&q=80",
+  pav_bhaji: "https://images.unsplash.com/photo-1606491956689-2ea866880c84?auto=format&fit=crop&w=800&q=80",
+  puri_aloo_jalebi: "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=800&q=80",
+  aloo_sandwich: "https://images.unsplash.com/photo-1528735602780-2552fd46c7af?auto=format&fit=crop&w=800&q=80",
+
+  // Lunches
+  rajma_rice: "https://images.unsplash.com/photo-1626777552726-4a6b54c97e46?auto=format&fit=crop&w=800&q=80",
+  tahri_pulao: "https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?auto=format&fit=crop&w=800&q=80",
+  chhole_rice: "https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=800&q=80",
+  kadhi_rice: "https://images.unsplash.com/photo-1626777552726-4a6b54c97e46?auto=format&fit=crop&w=800&q=80",
+  aloo_matar_dal: "https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=800&q=80",
+  mix_dal_taroi: "https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=800&q=80",
+  chole_bhature: "https://images.unsplash.com/photo-1626132647523-66f5bf380027?auto=format&fit=crop&w=800&q=80",
+
+  // Snacks
+  burger: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=800&q=80",
+  macaroni: "https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&w=800&q=80",
+  samosa: "https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=800&q=80",
+  pakoda: "https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=800&q=80",
+  chowmein: "https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&w=800&q=80",
+  bread_roll: "https://images.unsplash.com/photo-1509722747041-616f39b57569?auto=format&fit=crop&w=800&q=80",
+  off_snacks: "https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=800&q=80",
+
+  // Dinners
+  arhar_dal_thali: "https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=800&q=80",
+  kali_masoor_icecream: "https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=800&q=80",
+  butter_paneer_puri: "https://images.unsplash.com/photo-1631452180519-c014fe946bc7?auto=format&fit=crop&w=800&q=80",
+  dal_makhani_thali: "https://images.unsplash.com/photo-1626777552726-4a6b54c97e46?auto=format&fit=crop&w=800&q=80",
+  chhole_paratha: "https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=800&q=80",
+  lauki_kofta_kheer: "https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=800&q=80"
+};
+
+const FULL_WEEKLY_MENU = {
+  Monday: {
+    Breakfast: { title: "Veg Fried Idli / Plain Idli / Sambhar Bada", items: ["Sambhar", "Coconut Chutney", "Lal Chutney", "Tea", "Milk", "Banana"], image: MEAL_IMAGES.idli_sambhar, protein: "12g", calories: "380 kcal" },
+    Lunch: { title: "Mix Veg & Rajma Chawal", items: ["Rajma", "Roti", "Rice", "Mix Salad", "Boondi Raita", "Lemon 1/2"], image: MEAL_IMAGES.rajma_rice, protein: "18g", calories: "580 kcal" },
+    Snacks: { title: "Veg Burger & Roohafza", items: ["Burger", "Chilly & Tomato Sauce", "Roohafza"], image: MEAL_IMAGES.burger, protein: "7g", calories: "320 kcal" },
+    Dinner: { title: "Arhar Daal & Aloo Shimla Mirch", items: ["Rice", "Roti", "Suji Halwa", "Moong Dal Halwa (Monthly)", "Chhachh"], image: MEAL_IMAGES.arhar_dal_thali, protein: "16g", calories: "620 kcal" }
+  },
+  Tuesday: {
+    Breakfast: { title: "Matar Kulche & Watermelon", items: ["Matar Kulche", "Milk", "Tea", "Watermelon"], image: MEAL_IMAGES.matar_kulche, protein: "14g", calories: "410 kcal" },
+    Lunch: { title: "Tahri & Aaloo Tamatar Sabji", items: ["Roti", "Salad", "Curd", "Lemon 1/2", "Hari Chutney"], image: MEAL_IMAGES.tahri_pulao, protein: "11g", calories: "510 kcal" },
+    Snacks: { title: "Macaroni & Coffee", items: ["Macaroni", "Tomato & Chilly Sauce", "Coffee"], image: MEAL_IMAGES.macaroni, protein: "6g", calories: "290 kcal" },
+    Dinner: { title: "Kali Masoor Dal & Bhindi", items: ["Rice", "Roti", "Icecream (Mango/Butterscotch/Chocolate)", "Mix Salad", "Achar"], image: MEAL_IMAGES.kali_masoor_icecream, protein: "15g", calories: "600 kcal" }
+  },
+  Wednesday: {
+    Breakfast: { title: "Aaloo Paratha & Muskmelon", items: ["Pickle", "Curd", "Tea", "Muskmelon"], image: MEAL_IMAGES.aloo_paratha, protein: "10g", calories: "450 kcal" },
+    Lunch: { title: "Kaabli Chhole & Kashifal", items: ["Roti", "Jeera Rice", "Mix Salad", "Curd", "Lemon 1/2"], image: MEAL_IMAGES.chhole_rice, protein: "17g", calories: "560 kcal" },
+    Snacks: { title: "Samosa & Tea", items: ["Samosa", "Tomato & Chilly Sauce", "Tea"], image: MEAL_IMAGES.samosa, protein: "5g", calories: "310 kcal" },
+    Dinner: { title: "Butter Paneer Masala / Kadhai Paneer", items: ["Aaloo Jeera", "Puri", "Pulaw", "Mix Salad"], image: MEAL_IMAGES.butter_paneer_puri, protein: "22g", calories: "690 kcal" }
+  },
+  Thursday: {
+    Breakfast: { title: "Pav Bhaji & Papaya", items: ["Pav Bhaji", "Tea", "Milk", "Butter", "Papaya"], image: MEAL_IMAGES.pav_bhaji, protein: "9g", calories: "420 kcal" },
+    Lunch: { title: "Kadhi Pakoda & Aaloo Pyaj Sabji", items: ["Rice", "Roti", "Salad", "Papad Fried", "Lemon 1/2"], image: MEAL_IMAGES.kadhi_rice, protein: "13g", calories: "540 kcal" },
+    Snacks: { title: "Mix Pakodi / Bread Pakoda", items: ["Chilli & Tomato Sauce", "Tea"], image: MEAL_IMAGES.pakoda, protein: "6g", calories: "330 kcal" },
+    Dinner: { title: "Daal Makhani & Mix Veg", items: ["Roti", "Rice", "Gulab Jamun", "Chhachh", "Achar"], image: MEAL_IMAGES.dal_makhani_thali, protein: "18g", calories: "670 kcal" }
+  },
+  Friday: {
+    Breakfast: { title: "Aaloo Paratha & Curd", items: ["Pickle", "Tea", "Banana"], image: MEAL_IMAGES.aloo_paratha, protein: "10g", calories: "450 kcal" },
+    Lunch: { title: "Aaloo Matar Jeera & Arhar Daal", items: ["Roti", "Rice", "Mix Salad", "Boondi Raita", "Lemon 1/2"], image: MEAL_IMAGES.aloo_matar_dal, protein: "15g", calories: "550 kcal" },
+    Snacks: { title: "Chowmein & Shikanji", items: ["Chilly & Tomato Sauce", "Shikanji"], image: MEAL_IMAGES.chowmein, protein: "7g", calories: "340 kcal" },
+    Dinner: { title: "Chhole & Dam Aaloo", items: ["Rice", "Plain Paratha", "Custard", "Mix Salad", "Achar"], image: MEAL_IMAGES.chhole_paratha, protein: "19g", calories: "640 kcal" }
+  },
+  Saturday: {
+    Breakfast: { title: "Puri Aaloo & Jalebi", items: ["Aaloo Tamatar Sabji", "Puri", "Mirchi", "Tea", "Jalebi", "Curd", "Watermelon"], image: MEAL_IMAGES.puri_aloo_jalebi, protein: "8g", calories: "520 kcal" },
+    Lunch: { title: "Mix Dal & Taroi", items: ["Roti", "Rice", "Mix Salad", "Curd", "Lemon 1/2"], image: MEAL_IMAGES.mix_dal_taroi, protein: "14g", calories: "490 kcal" },
+    Snacks: { title: "Bread Roll & Tea", items: ["Chilly & Tomato Sauce", "Tea"], image: MEAL_IMAGES.bread_roll, protein: "6g", calories: "280 kcal" },
+    Dinner: { title: "Arhar Dal & Lauki", items: ["Rice", "Roti", "Mix Salad", "Chhachh"], image: MEAL_IMAGES.arhar_dal_thali, protein: "15g", calories: "510 kcal" }
+  },
+  Sunday: {
+    Breakfast: { title: "Aaloo Sandwich & Cornflakes", items: ["Tomato Sauce", "Milk", "Tea", "Mix Fruit", "Chat Masala"], image: MEAL_IMAGES.aloo_sandwich, protein: "11g", calories: "390 kcal" },
+    Lunch: { title: "Chhole Bhature (Big Kabuli)", items: ["Fry Mirch", "Sirka Pyaz", "Jeera Rice", "Cold Drink", "Pickle", "Veg Raita"], image: MEAL_IMAGES.chole_bhature, protein: "21g", calories: "750 kcal" },
+    Snacks: { title: "Snacks OFF", items: ["Mess Kitchen Closed for Evening Snacks"], image: MEAL_IMAGES.off_snacks, protein: "0g", calories: "0 kcal" },
+    Dinner: { title: "Lauki Kofta & Arabi", items: ["Rice", "Roti", "Chhachh", "Kheer / Sewai"], image: MEAL_IMAGES.lauki_kofta_kheer, protein: "14g", calories: "580 kcal" }
+  }
+};
+
 const getMealTiming = (mealType, selectedDay) => {
   const isWeekend = ['Saturday', 'Sunday'].includes(selectedDay);
   if (mealType === 'Breakfast') {
@@ -53,7 +134,8 @@ export const StudentDashboard = () => {
     currentTime,
     mealSlotInfo,
     getTimingStatus,
-    checkIsRatingAllowed
+    checkIsRatingAllowed,
+    allRatings
   } = useApp();
 
   const [selectedRatingMealId, setSelectedRatingMealId] = useState('');
@@ -80,10 +162,37 @@ export const StudentDashboard = () => {
   const remainingProtein = Math.max(0, proteinTarget - consumedProtein);
   const proteinPercent = Math.min(100, Math.round((consumedProtein / proteinTarget) * 100));
 
+  const getMealStatsLocal = (mealId) => {
+    const mealRatings = (allRatings || []).filter(r => r.mealId === mealId);
+    if (mealRatings.length === 0) {
+      return { rating: null, ratingDisplay: 'No ratings yet', ratingCount: 0 };
+    }
+    const sum = mealRatings.reduce((acc, curr) => acc + Number(curr.rating || 0), 0);
+    const avg = parseFloat((sum / mealRatings.length).toFixed(1));
+    return {
+      rating: avg,
+      ratingDisplay: `⭐ ${avg} (${mealRatings.length} reviews)`,
+      ratingCount: mealRatings.length
+    };
+  };
+
   const categoryOrder = { Breakfast: 1, Lunch: 2, Snacks: 3, Dinner: 4 };
-  const mealsList = todayMeals && todayMeals.length > 0
-    ? [...todayMeals].sort((a, b) => (categoryOrder[a.category] || 99) - (categoryOrder[b.category] || 99))
-    : [];
+  const rawMeals = todayMeals && todayMeals.length > 0 ? todayMeals : [];
+  const mealsList = ['Breakfast', 'Lunch', 'Snacks', 'Dinner'].map(cat => {
+    const dayMenu = FULL_WEEKLY_MENU[todayDay] || FULL_WEEKLY_MENU['Monday'];
+    const staticMeal = dayMenu[cat];
+    const matchingDbMeal = rawMeals.find(m => m.category === cat);
+    return {
+      id: matchingDbMeal?.id || `${todayDay.toLowerCase().substring(0, 3)}_${cat.toLowerCase().substring(0, 1)}`,
+      category: cat,
+      name: staticMeal.title,
+      items: staticMeal.items.join(', '),
+      image: staticMeal.image,
+      protein: staticMeal.protein.replace('g', ''),
+      calories: staticMeal.calories.replace(' kcal', ''),
+      ...(matchingDbMeal || {})
+    };
+  });
 
   // Active rating meal slot determination
   const activeRatingMeal = mealsList.find(m => checkIsRatingAllowed(m.category));
@@ -180,7 +289,7 @@ export const StudentDashboard = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {mealsList.map(meal => {
               const myRating = getUserRating(meal.id);
-              const stats = getMealStats ? getMealStats(meal.id) : { rating: null, ratingDisplay: 'No ratings yet', ratingCount: 0 };
+              const stats = getMealStatsLocal(meal.id);
               const timing = getTimingStatus(meal.category);
               const style = categoryStyles[meal.category] || categoryStyles.Lunch;
               const CategoryIcon = style.icon;
@@ -192,11 +301,11 @@ export const StudentDashboard = () => {
                   className="group glass-card rounded-3xl overflow-hidden flex flex-col justify-between border border-slate-200/80 dark:border-slate-800 hover:border-emerald-500/40 hover:shadow-xl transition-all cursor-pointer"
                 >
                   <div>
-                    <div className="relative h-44 w-full overflow-hidden">
+                    <div className="relative w-full overflow-hidden">
                       <img
                         src={meal.image}
                         alt={meal.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-500"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent"></div>
 
@@ -219,12 +328,9 @@ export const StudentDashboard = () => {
                       {/* Rating Stats */}
                       <div className="absolute bottom-3 right-3 bg-black/70 backdrop-blur-md text-white px-2.5 py-0.5 rounded-xl text-[10px] font-black flex items-center space-x-1 shadow-md">
                         {stats.rating ? (
-                          <>
-                            <Star className="w-3 h-3 text-amber-400 fill-current" />
-                            <span>{stats.rating} ({stats.ratingCount})</span>
-                          </>
+                          <span>⭐ {stats.rating} ({stats.ratingCount} reviews)</span>
                         ) : (
-                          <span className="text-slate-300">New</span>
+                          <span className="text-slate-300">No ratings yet</span>
                         )}
                       </div>
                     </div>
