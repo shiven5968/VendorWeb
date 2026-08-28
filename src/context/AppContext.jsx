@@ -65,10 +65,11 @@ export const AppProvider = ({ children }) => {
   const currentUser = authProfile || (authUser ? {
     uid: authUser.uid,
     id: authUser.uid,
-    name: authUser.displayName || 'Student',
-    email: authUser.email,
+    name: authUser.displayName || '',
+    email: authUser.email || '',
+    admissionNumber: '',
     role: authRole || 'student',
-    hostelBlock: 'DNB Block',
+    hostelBlock: '',
     proteinTarget: 120,
     rewardPoints: 0
   } : null);
@@ -317,15 +318,16 @@ export const AppProvider = ({ children }) => {
   };
 
   const updateUserProfile = async (updates) => {
-    // Only allow updating non-identity fields (hostelBlock, dietPreference, avatar, proteinTarget)
+    // Only allow updating non-identity preferences (dietPreference, avatar, proteinTarget)
     const sanitizedUpdates = { ...updates };
     delete sanitizedUpdates.role;
     delete sanitizedUpdates.email;
     delete sanitizedUpdates.admissionNumber;
     delete sanitizedUpdates.name;
+    delete sanitizedUpdates.hostelBlock; // Hostel block is strictly read-only for students
 
     await authUpdateProfile(sanitizedUpdates);
-    addNotification('Profile Updated', 'Your profile details have been saved.', 'success');
+    addNotification('Preferences Saved', 'Your dietary preferences have been saved.', 'success');
   };
 
   // 1. STATS CALCULATION
