@@ -12,9 +12,9 @@ export const FOUNDERS = [
     branch: 'AIML',
     college: 'ABES Engineering College',
     photo: '/founders/parth_sharma.jpg',
-    scale: 1.05,
-    transformOrigin: '50% 25%',
-    objectPosition: '50% 20%',
+    scale: 1.0,
+    transformOrigin: '50% 20%',
+    objectPosition: '50% 15%',
     linkedin: 'https://www.linkedin.com/in/parth-sharma101004',
     bio: 'Leading product architecture, user experience design, and college mess pilot execution.'
   },
@@ -26,8 +26,8 @@ export const FOUNDERS = [
     branch: 'CSE',
     college: 'ABES Engineering College',
     photo: '/founders/shivendra_pratap_singh.jpg',
-    scale: 1.05,
-    transformOrigin: '50% 25%',
+    scale: 1.0,
+    transformOrigin: '50% 20%',
     objectPosition: '50% 15%',
     linkedin: 'https://www.linkedin.com/in/shivendra-pratap-singh-7358b837',
     bio: 'Leading full-stack engineering, real-time database sync, and high-reliability systems.'
