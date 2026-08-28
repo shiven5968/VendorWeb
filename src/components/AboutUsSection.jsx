@@ -27,13 +27,17 @@ export const AboutUsSection = () => {
             key={founder.id}
             className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm hover:border-emerald-500/40 hover:shadow-xl transition-all flex flex-col items-center text-center space-y-4 relative group"
           >
-            {/* Founder Avatar with clean cropping */}
-            <div className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-3xl overflow-hidden shadow-lg border-2 border-emerald-500/20 group-hover:border-emerald-500 transition-all">
+            {/* Founder Avatar with clean cropping & balanced scale */}
+            <div className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-3xl overflow-hidden shadow-lg border-2 border-emerald-500/20 group-hover:border-emerald-500 transition-all bg-slate-100 dark:bg-slate-800">
               <img
                 src={founder.photo}
                 alt={founder.name}
-                style={{ objectPosition: founder.objectPosition || 'center center' }}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                style={{ 
+                  transform: `scale(${founder.scale || 1})`,
+                  transformOrigin: founder.transformOrigin || '50% 50%',
+                  objectPosition: founder.objectPosition || 'center center'
+                }}
+                className="w-full h-full object-cover group-hover:brightness-105 transition-all duration-300"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-slate-950/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
             </div>
