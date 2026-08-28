@@ -19,6 +19,23 @@ import {
 } from 'lucide-react';
 import { WeeklyMenuReviewSection } from '../components/WeeklyMenuReviewSection';
 
+const getMealTiming = (mealType, selectedDay) => {
+  const isWeekend = ['Saturday', 'Sunday'].includes(selectedDay);
+  if (mealType === 'Breakfast') {
+    return isWeekend ? '08:00 AM - 09:00 AM' : '07:30 AM - 08:30 AM';
+  }
+  if (mealType === 'Lunch') {
+    return isWeekend ? '12:30 PM - 02:00 PM' : '12:20 PM - 02:00 PM';
+  }
+  if (mealType === 'Snacks') {
+    return selectedDay === 'Sunday' ? 'OFF' : '05:00 PM - 06:00 PM';
+  }
+  if (mealType === 'Dinner') {
+    return '07:30 PM - 09:00 PM';
+  }
+  return '';
+};
+
 export const StudentDashboard = () => {
   const { 
     currentUser, 
@@ -63,7 +80,10 @@ export const StudentDashboard = () => {
   const remainingProtein = Math.max(0, proteinTarget - consumedProtein);
   const proteinPercent = Math.min(100, Math.round((consumedProtein / proteinTarget) * 100));
 
-  const mealsList = todayMeals && todayMeals.length > 0 ? todayMeals : [];
+  const categoryOrder = { Breakfast: 1, Lunch: 2, Snacks: 3, Dinner: 4 };
+  const mealsList = todayMeals && todayMeals.length > 0
+    ? [...todayMeals].sort((a, b) => (categoryOrder[a.category] || 99) - (categoryOrder[b.category] || 99))
+    : [];
 
   // Active rating meal slot determination
   const activeRatingMeal = mealsList.find(m => checkIsRatingAllowed(m.category));
@@ -95,6 +115,7 @@ export const StudentDashboard = () => {
       setSubmittingRating(false);
     }
   };
+
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 pb-24 md:pb-12">
@@ -192,7 +213,7 @@ export const StudentDashboard = () => {
 
                       {/* Official Service Timing */}
                       <span className="absolute bottom-3 left-3 px-2.5 py-0.5 rounded-full bg-black/60 backdrop-blur-md text-white text-[10px] font-semibold">
-                        {timing.label}
+                        {getMealTiming(meal.category, todayDay)}
                       </span>
 
                       {/* Rating Stats */}

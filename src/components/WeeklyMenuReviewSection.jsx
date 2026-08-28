@@ -75,7 +75,7 @@ export const WeeklyMenuReviewSection = () => {
 
   // 2. Local Ratings & Reviews Simulation State (complemented with LocalStorage)
   const [ratingsDb, setRatingsDb] = useState(() => {
-    const saved = localStorage.getItem('messmates_food_item_ratings');
+    const saved = localStorage.getItem('messmates_ratings');
     if (saved) return JSON.parse(saved);
     
     // Seed default baseline ratings for a realistic look
@@ -101,7 +101,7 @@ export const WeeklyMenuReviewSection = () => {
 
   // Save ratingsDb changes
   useEffect(() => {
-    localStorage.setItem('messmates_food_item_ratings', JSON.stringify(ratingsDb));
+    localStorage.setItem('messmates_ratings', JSON.stringify(ratingsDb));
   }, [ratingsDb]);
 
   // 3. Modal / Slide-over State
