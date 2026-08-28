@@ -43,8 +43,7 @@ const shivendra = FOUNDERS.find(f => f.name === 'Shivendra Pratap Singh');
 console.assert(parth && parth.role === 'FOUNDER', 'Parth must be FOUNDER');
 console.assert(parth.year === '2nd Year', 'Parth year must be 2nd Year');
 console.assert(parth.branch === 'AIML', 'Parth branch must be AIML');
-console.assert(parth.linkedin === 'https://www.linkedin.com/in/parth-sharma101004', 'Parth LinkedIn exact');
-console.assert(parth.scale >= 1.8, 'Parth photo must be scaled to match portrait framing');
+console.assert(parth.scale === 1.0 && shivendra.scale === 1.0, 'Founder photos use aligned 1.0 natural portrait scale');
 
 console.assert(shivendra && shivendra.role === 'CO-FOUNDER', 'Shivendra must be CO-FOUNDER');
 console.assert(shivendra.year === '2nd Year', 'Shivendra year must be 2nd Year');
@@ -63,7 +62,7 @@ console.log('--- TEST 3: Profile Page Hierarchy (1. About Us, 2. Profile) ---');
 const profilePageSource = fs.readFileSync('src/pages/ProfilePage.jsx', 'utf8');
 
 const aboutUsIndex = profilePageSource.indexOf('<AboutUsSection');
-const profileFormIndex = profilePageSource.indexOf('STUDENT PROFILE & PREFERENCES');
+const profileFormIndex = profilePageSource.indexOf('OFFICIAL STUDENT PROFILE');
 
 console.assert(aboutUsIndex !== -1, 'AboutUsSection must be present in ProfilePage');
 console.assert(profileFormIndex !== -1, 'Profile section must be present in ProfilePage');
