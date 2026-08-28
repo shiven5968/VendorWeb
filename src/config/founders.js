@@ -12,9 +12,9 @@ export const FOUNDERS = [
     branch: 'AIML',
     college: 'ABES Engineering College',
     photo: '/founders/parth_sharma.jpg',
-    scale: 2.1,
-    transformOrigin: '50% 48%',
-    objectPosition: '50% 48%',
+    scale: 1.05,
+    transformOrigin: '50% 25%',
+    objectPosition: '50% 20%',
     linkedin: 'https://www.linkedin.com/in/parth-sharma101004',
     bio: 'Leading product architecture, user experience design, and college mess pilot execution.'
   },
