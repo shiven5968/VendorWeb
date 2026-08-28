@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { 
   User, 
@@ -11,11 +11,11 @@ import {
   Save, 
   Check, 
   LogOut, 
-  Lock,
-  IdCard,
-  Sparkles,
-  Users,
-  UserCheck
+  Lock, 
+  IdCard, 
+  Sparkles, 
+  Users, 
+  UserCheck 
 } from 'lucide-react';
 import { AboutUsSection } from '../components/AboutUsSection';
 
@@ -32,19 +32,25 @@ export const ProfilePage = () => {
   const { currentUser, currentRole, updateUserProfile, logout, rewardPoints } = useApp();
 
   const [activeTab, setActiveTab] = useState('all'); // 'all' | 'about_us' | 'profile'
-  const [hostelBlock, setHostelBlock] = useState(currentUser?.hostelBlock || 'DNB Block');
-  const [dietPreference, setDietPreference] = useState(currentUser?.dietPreference || 'Vegetarian');
-  const [avatar, setAvatar] = useState(currentUser?.avatar || PRESET_AVATARS[0]);
+  const [dietPreference, setDietPreference] = useState('Vegetarian');
+  const [avatar, setAvatar] = useState(PRESET_AVATARS[0]);
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
   const [saving, setSaving] = useState(false);
   const [savedNotice, setSavedNotice] = useState(false);
+
+  // Sync preferences with authenticated user profile
+  useEffect(() => {
+    if (currentUser) {
+      if (currentUser.dietPreference) setDietPreference(currentUser.dietPreference);
+      if (currentUser.avatar) setAvatar(currentUser.avatar);
+    }
+  }, [currentUser]);
 
   const handleSave = async (e) => {
     e.preventDefault();
     try {
       setSaving(true);
       await updateUserProfile({
-        hostelBlock,
         dietPreference,
         avatar
       });
@@ -65,7 +71,7 @@ export const ProfilePage = () => {
         <div>
           <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">Account & Team</h1>
           <p className="text-xs text-slate-500 font-semibold">
-            About Us & Student Identity Management
+            About Us & Official Student Identity
           </p>
         </div>
 
@@ -127,7 +133,7 @@ export const ProfilePage = () => {
         <div className="border-t border-slate-200 dark:border-slate-800 pt-2">
           <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-xs font-black uppercase tracking-wider mb-2">
             <UserCheck className="w-3.5 h-3.5 text-emerald-500" />
-            <span>STUDENT PROFILE & PREFERENCES</span>
+            <span>OFFICIAL STUDENT PROFILE</span>
           </div>
         </div>
       )}
@@ -143,7 +149,7 @@ export const ProfilePage = () => {
             <div className="relative">
               <img
                 src={avatar}
-                alt={currentUser?.name}
+                alt={currentUser?.name || 'User Avatar'}
                 className="w-24 h-24 rounded-3xl object-cover ring-4 ring-emerald-500/20 shadow-md"
               />
               <button
@@ -158,12 +164,14 @@ export const ProfilePage = () => {
 
             <div className="space-y-1 text-center sm:text-left">
               <div className="flex items-center justify-center sm:justify-start space-x-2">
-                <h2 className="text-xl font-black text-slate-900 dark:text-white">{currentUser?.name || 'Student'}</h2>
+                <h2 className="text-xl font-black text-slate-900 dark:text-white">
+                  {currentUser?.name || 'Student'}
+                </h2>
                 <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase">
-                  {currentRole}
+                  {currentRole === 'mess_committee' ? 'Mess Committee' : currentRole}
                 </span>
               </div>
-              <p className="text-xs text-slate-500 font-semibold">{currentUser?.email}</p>
+              <p className="text-xs text-slate-500 font-semibold">{currentUser?.email || 'Not available'}</p>
               <div className="flex items-center justify-center sm:justify-start space-x-2 pt-1">
                 <span className="text-[11px] font-bold text-amber-500 flex items-center space-x-1">
                   <Award className="w-3.5 h-3.5" />
@@ -196,7 +204,7 @@ export const ProfilePage = () => {
             </div>
           )}
 
-          {/* FIXED / NON-EDITABLE OFFICIAL IDENTITY */}
+          {/* STRICTLY READ-ONLY OFFICIAL COLLEGE IDENTITY (Hostel Block is Read-Only) */}
           <div className="space-y-3 border-t border-slate-100 dark:border-slate-800 pt-6">
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-black uppercase tracking-wider text-slate-400 flex items-center space-x-1.5">
@@ -215,7 +223,7 @@ export const ProfilePage = () => {
                   <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
                 </div>
                 <p className="text-xs sm:text-sm font-black text-slate-900 dark:text-white">
-                  {currentUser?.name || 'Parth Sharma'}
+                  {currentUser?.name || 'Not available'}
                 </p>
               </div>
 
@@ -226,7 +234,7 @@ export const ProfilePage = () => {
                   <IdCard className="w-3.5 h-3.5 text-emerald-500" />
                 </div>
                 <p className="text-xs sm:text-sm font-black text-slate-900 dark:text-white">
-                  {currentUser?.admissionNumber || '2100320100001'}
+                  {currentUser?.admissionNumber || 'Not available'}
                 </p>
               </div>
 
@@ -237,11 +245,33 @@ export const ProfilePage = () => {
                   <Mail className="w-3.5 h-3.5 text-emerald-500" />
                 </div>
                 <p className="text-xs sm:text-sm font-black text-slate-900 dark:text-white">
-                  {currentUser?.email || 'student@abes.ac.in'}
+                  {currentUser?.email || 'Not available'}
                 </p>
               </div>
 
-              {/* User Role */}
+              {/* Hostel Residence Block (READ-ONLY) */}
+              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-800 space-y-1">
+                <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase">
+                  <span>Hostel Block</span>
+                  <Building2 className="w-3.5 h-3.5 text-emerald-500" />
+                </div>
+                <p className="text-xs sm:text-sm font-black text-slate-900 dark:text-white">
+                  {currentUser?.hostelBlock || 'Not available'}
+                </p>
+              </div>
+
+              {/* Gender */}
+              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-800 space-y-1">
+                <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase">
+                  <span>Gender</span>
+                  <User className="w-3.5 h-3.5 text-emerald-500" />
+                </div>
+                <p className="text-xs sm:text-sm font-black text-slate-900 dark:text-white">
+                  {currentUser?.gender || 'Not available'}
+                </p>
+              </div>
+
+              {/* System Role */}
               <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-800 space-y-1">
                 <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase">
                   <span>System Role</span>
@@ -255,51 +285,26 @@ export const ProfilePage = () => {
             </div>
           </div>
 
-          {/* EDITABLE PREFERENCES */}
+          {/* EDITABLE MESS PREFERENCES (Only Dietary Preferences and Profile Photo) */}
           <form onSubmit={handleSave} className="space-y-4 border-t border-slate-100 dark:border-slate-800 pt-6">
             <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">
-              Mess & Dietary Preferences
+              Dietary Preferences
             </h3>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              
-              {/* Hostel Block */}
-              <div className="space-y-1.5">
-                <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300">
-                  Hostel Residence Block
-                </label>
-                <select
-                  value={hostelBlock}
-                  onChange={e => setHostelBlock(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white outline-none"
-                >
-                  <option value="DNB Block">DNB Block (Boys)</option>
-                  <option value="VKB Block">VKB Block (Boys)</option>
-                  <option value="RKB Block">RKB Block (Boys)</option>
-                  <option value="ABB Block">ABB Block (Boys)</option>
-                  <option value="Block A (Girls)">Block A (Girls)</option>
-                  <option value="Block B (Girls)">Block B (Girls)</option>
-                  <option value="Block C (Girls)">Block C (Girls)</option>
-                </select>
-              </div>
-
-              {/* Diet Preference */}
-              <div className="space-y-1.5">
-                <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300">
-                  Dietary Preference
-                </label>
-                <select
-                  value={dietPreference}
-                  onChange={e => setDietPreference(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white outline-none"
-                >
-                  <option value="Vegetarian">Pure Vegetarian</option>
-                  <option value="High Protein / Eggetarian">High Protein / Eggetarian</option>
-                  <option value="Jain (No Onion/Garlic)">Jain (No Onion / Garlic)</option>
-                  <option value="Vegan">Vegan</option>
-                </select>
-              </div>
-
+            <div className="space-y-1.5">
+              <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                Dietary Preference
+              </label>
+              <select
+                value={dietPreference}
+                onChange={e => setDietPreference(e.target.value)}
+                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white outline-none"
+              >
+                <option value="Vegetarian">Pure Vegetarian</option>
+                <option value="High Protein / Eggetarian">High Protein / Eggetarian</option>
+                <option value="Jain (No Onion/Garlic)">Jain (No Onion / Garlic)</option>
+                <option value="Vegan">Vegan</option>
+              </select>
             </div>
 
             <div className="pt-3 flex items-center justify-between gap-3">
@@ -309,7 +314,7 @@ export const ProfilePage = () => {
                 className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black shadow-md flex items-center space-x-1.5 cursor-pointer"
               >
                 <Save className="w-4 h-4" />
-                <span>{saving ? 'Saving...' : 'Save Preferences'}</span>
+                <span>{saving ? 'Saving...' : 'Save Dietary Preferences'}</span>
               </button>
 
               <button
