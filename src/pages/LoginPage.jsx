@@ -76,9 +76,9 @@ export const LoginPage = ({ initialRole = 'student', onBackToRoles }) => {
     'VKB Block',
     'RKB Block',
     'ABB Block',
-    'Kalpana Chawla (Girls)',
-    'Sarojini Block (Girls)',
-    'Kasturba Block (Girls)'
+    'Block A (Girls)',
+    'Block B (Girls)',
+    'Block C (Girls)'
   ];
 
   // Cooldown countdown timer for OTP resend (30s)

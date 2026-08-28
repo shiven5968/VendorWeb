@@ -247,9 +247,9 @@ export const ProfilePage = () => {
                     <option value="VKB Block">VKB Block (Boys)</option>
                     <option value="RKB Block">RKB Block (Boys)</option>
                     <option value="ABB Block">ABB Block (Boys)</option>
-                    <option value="Kalpana Chawla (Girls)">Kalpana Chawla (Girls)</option>
-                    <option value="Sarojini Block (Girls)">Sarojini Block (Girls)</option>
-                    <option value="Kasturba Block (Girls)">Kasturba Block (Girls)</option>
+                    <option value="Block A (Girls)">Block A (Girls)</option>
+                    <option value="Block B (Girls)">Block B (Girls)</option>
+                    <option value="Block C (Girls)">Block C (Girls)</option>
                   </select>
                 </div>
 
