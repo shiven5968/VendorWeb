@@ -885,6 +885,27 @@ class LaunchDatabase {
 
   async createComplaint({ userId, userName, block, category, description }) {
     const complaints = this.getAllComplaints();
+    
+    // Enforce MAX 1 feedback per student per calendar week
+    const now = new Date();
+    const d = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+    const dayNum = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+    const currentWeekKey = `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
+
+    if (category === 'Feedback') {
+      const existingWeeklyFeedback = complaints.find(c => 
+        c.userId === userId && 
+        c.category === 'Feedback' && 
+        (c.weekKey === currentWeekKey || (c.timestamp && new Date(c.timestamp).getTime() > (Date.now() - 7 * 24 * 60 * 60 * 1000)))
+      );
+      if (existingWeeklyFeedback) {
+        throw new Error('Maximum 1 feedback submission allowed per calendar week. You have already submitted feedback for this week.');
+      }
+    }
+
     const id = 'cmp_' + Date.now();
     const newComplaint = {
       id,
@@ -894,6 +915,7 @@ class LaunchDatabase {
       category: category || 'Quality',
       description: description.trim(),
       status: 'PENDING',
+      weekKey: currentWeekKey,
       timestamp: new Date().toISOString()
     };
 

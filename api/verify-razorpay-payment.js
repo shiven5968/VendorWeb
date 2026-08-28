@@ -110,6 +110,26 @@ export default async function handler(req, res) {
       });
     }
 
+    // Check for existing subscription for idempotency
+    const adminFirestore = getFirebaseAdminDb();
+    if (adminFirestore) {
+      try {
+        const subDoc = await adminFirestore.collection('subscriptions').doc(userId).get();
+        if (subDoc.exists) {
+          const existing = subDoc.data();
+          if (existing.paymentId === razorpay_payment_id || existing.orderId === razorpay_order_id) {
+            return res.status(200).json({
+              verified: true,
+              message: `${existing.planName || 'Muscle Pass'} subscription already active (Idempotent).`,
+              subscription: existing
+            });
+          }
+        }
+      } catch (checkErr) {
+        console.warn('[Idempotent Check Notice]:', checkErr.message);
+      }
+    }
+
     // Resolve Plan & Duration
     const planConfig = SERVER_PLANS[planId] || SERVER_PLANS.MUSCLE_MONTHLY;
     const durationDays = planConfig.durationDays;
@@ -128,18 +148,19 @@ export default async function handler(req, res) {
       expiryDate,
       paymentId: razorpay_payment_id,
       orderId: razorpay_order_id,
-      status: 'ACTIVE'
+      status: 'ACTIVE',
+      updatedAt: startDate
     };
 
     // Persist Subscription to Firestore via Admin SDK
-    const adminFirestore = getFirebaseAdminDb();
     if (adminFirestore) {
       try {
-        await adminFirestore.collection('subscriptions').doc(userId).set(subscriptionData);
+        await adminFirestore.collection('subscriptions').doc(userId).set(subscriptionData, { merge: true });
         await adminFirestore.collection('users').doc(userId).update({
           musclePassActive: true,
           musclePassPlanId: planConfig.id,
-          musclePassExpiry: expiryDate
+          musclePassExpiry: expiryDate,
+          updatedAt: startDate
         });
       } catch (dbErr) {
         console.warn('[Firestore Subscription Save Notice]:', dbErr.message);

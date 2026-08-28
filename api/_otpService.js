@@ -187,7 +187,7 @@ export async function sendOtpEmail({ email, admissionNumber, name }) {
 
   // 3. Send email via Resend API
   const resendApiKey = process.env.RESEND_API_KEY;
-  const fromEmail = process.env.RESEND_FROM_EMAIL || 'MessMates <onboarding@resend.dev>';
+  const fromEmail = process.env.RESEND_FROM_EMAIL || 'MessMates <verify@messmates.jo3.org>';
 
   let resendMessageId = null;
 
