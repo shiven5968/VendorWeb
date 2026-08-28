@@ -1,0 +1,46 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Helper: Check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Helper: Check user role from Firestore /users/{uid}
+    function getUserRole() {
+      return firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role;
+    }
+
+    // Helper: Check if user is authorized staff (Mess Committee or Warden)
+    function isStaff() {
+      return isAuthenticated() && (
+        getUserRole() == 'warden' ||
+        getUserRole() == 'mess_committee' ||
+        getUserRole() == 'committee' ||
+        (request.auth.token.email != null && (
+          request.auth.token.email == 'warden@abes.ac.in' ||
+          request.auth.token.email == 'committee@abes.ac.in'
+        ))
+      );
+    }
+
+    // SECTION 1: MEAL IMAGES
+    // - Authenticated students can view/download meal images
+    // - ONLY Mess Committee & Warden can upload, replace, or delete meal images
+    // - Maximum file size: 5 MB
+    // - Allowed formats: JPG, JPEG, PNG, WEBP
+    match /meals/{allPaths=**} {
+      allow read: if isAuthenticated();
+      allow write: if isStaff()
+                   && request.resource.size <= 5 * 1024 * 1024
+                   && request.resource.contentType.matches('image/(jpeg|jpg|png|webp)');
+    }
+
+    // Default deny all other paths
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
