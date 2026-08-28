@@ -20,7 +20,8 @@ const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [authError, setAuthError] = useState('');
 
   // Normalize role string (supports both 'committee' and 'mess_committee')
@@ -58,7 +59,7 @@ export const AuthProvider = ({ children }) => {
                 updatedAt: new Date().toISOString()
               };
               try {
-                await setDoc(doc(firestoreDb, 'users', firebaseUser.uid), userProfile);
+                await setDoc(doc(firestoreDb, 'users', firebaseUser.uid), userProfile, { merge: true });
               } catch (writeErr) {
                 console.error('Error auto-creating Firestore profile:', writeErr);
               }
@@ -66,14 +67,14 @@ export const AuthProvider = ({ children }) => {
             setProfile(userProfile);
             localStorage.setItem('messmate_session_uid', firebaseUser.uid);
           } catch (e) {
-            console.error('Error fetching user profile:', e);
+            console.error('Error fetching user profile in auth state change:', e);
           }
         } else {
           setUser(null);
           setProfile(null);
           localStorage.removeItem('messmate_session_uid');
         }
-        setLoading(false);
+        setIsInitialLoading(false);
       });
 
       return () => unsubscribe();
@@ -91,23 +92,23 @@ export const AuthProvider = ({ children }) => {
       } catch (e) {
         console.error('Local session restoration error:', e);
       }
-      setLoading(false);
+      setIsInitialLoading(false);
     }
   }, []);
 
   // LOGIN METHOD (Admission Number + Password for Student, Email + Password for Staff)
   const login = async (identifier, password) => {
-    setLoading(true);
+    setIsAuthenticating(true);
     setAuthError('');
     try {
       const { user: authUser, profile: userProfile } = await signInUser(identifier, password);
       setUser(authUser);
       setProfile(userProfile);
       localStorage.setItem('messmate_session_uid', authUser.uid);
-      setLoading(false);
+      setIsAuthenticating(false);
       return { user: authUser, profile: userProfile };
     } catch (err) {
-      setLoading(false);
+      setIsAuthenticating(false);
       const msg = err.message || 'Login failed. Please check your credentials.';
       setAuthError(msg);
       throw new Error(msg);
@@ -140,7 +141,7 @@ export const AuthProvider = ({ children }) => {
 
   // REGISTER STUDENT METHOD (Executed ONLY after verified OTP)
   const register = async ({ name, admissionNumber, email, password, gender, hostelBlock, isOtpVerified = true }) => {
-    setLoading(true);
+    setIsAuthenticating(true);
     setAuthError('');
     try {
       const { user: authUser, profile: userProfile } = await signUpStudent({
@@ -155,10 +156,10 @@ export const AuthProvider = ({ children }) => {
       setUser(authUser);
       setProfile(userProfile);
       localStorage.setItem('messmate_session_uid', authUser.uid);
-      setLoading(false);
+      setIsAuthenticating(false);
       return { user: authUser, profile: userProfile };
     } catch (err) {
-      setLoading(false);
+      setIsAuthenticating(false);
       const msg = err.message || 'Registration failed.';
       setAuthError(msg);
       throw new Error(msg);
@@ -167,7 +168,7 @@ export const AuthProvider = ({ children }) => {
 
   // LOGOUT METHOD
   const logout = async () => {
-    setLoading(true);
+    setIsAuthenticating(true);
     try {
       await signOutUser();
       setUser(null);
@@ -176,7 +177,7 @@ export const AuthProvider = ({ children }) => {
     } catch (e) {
       console.error('Logout error:', e);
     } finally {
-      setLoading(false);
+      setIsAuthenticating(false);
     }
   };
 
@@ -209,7 +210,8 @@ export const AuthProvider = ({ children }) => {
         user,
         profile,
         role,
-        loading,
+        loading: isInitialLoading,
+        isAuthenticating,
         authError,
         login,
         register,
