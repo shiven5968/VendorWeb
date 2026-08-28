@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext';
-import { X, Utensils, Save, Sparkles, UploadCloud, CheckCircle2, AlertCircle, Loader2, Image as ImageIcon } from 'lucide-react';
+import { X, Utensils, Save, UploadCloud, CheckCircle2, AlertCircle, Loader2, Image as ImageIcon, RotateCcw } from 'lucide-react';
 import { uploadMealImage, validateMealImage } from '../services/storage';
 
 export const AddEditMealModal = () => {
   const { isAddMealModalOpen, setIsAddMealModalOpen, editingMeal, setEditingMeal, saveMeal, selectedDay } = useApp();
 
   const fileInputRef = useRef(null);
+  const previewBlobUrlRef = useRef(null);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -26,12 +27,22 @@ export const AddEditMealModal = () => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [imageUploadError, setImageUploadError] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
+  const [statusText, setStatusText] = useState('');
+
+  // Memory cleanup for object URLs
+  const cleanupPreviewUrl = () => {
+    if (previewBlobUrlRef.current) {
+      URL.revokeObjectURL(previewBlobUrlRef.current);
+      previewBlobUrlRef.current = null;
+    }
+  };
 
   useEffect(() => {
+    cleanupPreviewUrl();
     if (editingMeal) {
       setFormData({
         id: editingMeal.id,
@@ -48,7 +59,7 @@ export const AddEditMealModal = () => {
         gymRecommended: editingMeal.gymRecommended || false,
         description: editingMeal.description || '',
       });
-      setImagePreview(editingMeal.image || null);
+      setImagePreview(editingMeal.image || 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&q=80&w=800');
     } else {
       setFormData({
         name: '',
@@ -66,81 +77,130 @@ export const AddEditMealModal = () => {
       });
       setImagePreview('https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&q=80&w=800');
     }
+
     setSelectedFile(null);
     setIsUploadingImage(false);
+    setIsSaving(false);
     setUploadSuccess(false);
     setImageUploadError('');
-    setIsSaving(false);
     setSaveError('');
+    setStatusText('');
+
+    return () => cleanupPreviewUrl();
   }, [editingMeal, isAddMealModalOpen, selectedDay]);
 
   if (!isAddMealModalOpen) return null;
 
-  // Handle local file selection with preview & validation
-  const handleFileChange = async (e) => {
+  // Handle local file selection with immediate validation & local preview
+  const handleFileChange = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     setImageUploadError('');
+    setSaveError('');
     setUploadSuccess(false);
 
     try {
+      // Validate file type (JPG, PNG, WEBP) & max size (5 MB)
       validateMealImage(file);
       setSelectedFile(file);
 
+      // Clean up previous blob URL
+      cleanupPreviewUrl();
+
       // Create instant local blob preview
-      const previewUrl = URL.createObjectURL(file);
-      setImagePreview(previewUrl);
-
-      // Automatically initiate Firebase Storage upload
-      setIsUploadingImage(true);
-      const mealId = editingMeal?.id || `meal_${Date.now()}`;
-      const uploadResult = await uploadMealImage(file, mealId);
-
-      if (uploadResult?.downloadUrl) {
-        setFormData(prev => ({ ...prev, image: uploadResult.downloadUrl }));
-        setImagePreview(uploadResult.downloadUrl);
-        setUploadSuccess(true);
-      }
+      const localBlobUrl = URL.createObjectURL(file);
+      previewBlobUrlRef.current = localBlobUrl;
+      setImagePreview(localBlobUrl);
     } catch (err) {
-      console.error('[Image Upload Error]:', err);
-      setImageUploadError(err.message || 'Image upload failed.');
-      // Revert preview to previous image
-      setImagePreview(formData.image);
-    } finally {
-      setIsUploadingImage(false);
+      setSelectedFile(null);
+      setImageUploadError(err.message || 'Please choose a JPG, PNG, or WEBP image under 5 MB.');
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
+  const handleResetSelectedFile = () => {
+    cleanupPreviewUrl();
+    setSelectedFile(null);
+    setImagePreview(formData.image || 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&q=80&w=800');
+    setImageUploadError('');
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  // Form Submission with Strict Save Order:
+  // 1. Validate Form & File -> 2. Upload to Storage -> 3. Get Download URL -> 4. Update Firestore -> 5. Success
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (isUploadingImage || isSaving) return;
 
     setSaveError('');
+    setImageUploadError('');
+    setUploadSuccess(false);
+
+    let finalImageUrl = formData.image;
+    const mealId = editingMeal?.id || `meal_${Date.now()}`;
+
+    // STEP 1: If a real local image file is selected, upload to Firebase Storage first
+    if (selectedFile) {
+      setIsUploadingImage(true);
+      setStatusText('UPLOADING...');
+      try {
+        const uploadResult = await uploadMealImage(selectedFile, mealId);
+        if (!uploadResult || !uploadResult.downloadUrl) {
+          throw new Error('Image upload failed: No download URL received.');
+        }
+        finalImageUrl = uploadResult.downloadUrl;
+      } catch (uploadErr) {
+        setIsUploadingImage(false);
+        setStatusText('');
+        setImageUploadError(uploadErr.message || 'Image upload failed. Please check your connection and try again.');
+        return; // Halt: Do NOT update Firestore if Storage upload fails
+      }
+    }
+
+    // STEP 2: Save updated meal with download URL to Firestore
     setIsSaving(true);
+    setStatusText('SAVING...');
 
     try {
       const finalMeal = {
         ...formData,
+        id: mealId,
+        image: finalImageUrl,
         calories: Number(formData.calories) || 0,
         protein: Number(formData.protein) || 0,
         carbs: Number(formData.carbs) || 0,
         fats: Number(formData.fats) || 0,
-        ingredients: formData.ingredientsStr.split(',').map(s => s.trim()).filter(Boolean),
+        ingredients: typeof formData.ingredientsStr === 'string'
+          ? formData.ingredientsStr.split(',').map(s => s.trim()).filter(Boolean)
+          : (formData.ingredients || []),
       };
 
-      // Await database/Firestore write before closing modal or showing success
+      // Atomic write to Firestore
       await saveMeal(finalMeal, formData.targetDay);
-      
-      setIsAddMealModalOpen(false);
-      setEditingMeal(null);
-    } catch (err) {
-      console.error('[Meal Save Error]:', err);
-      setSaveError(err.message || 'Failed to save meal to database.');
+
+      setUploadSuccess(true);
+      setStatusText('');
+      cleanupPreviewUrl();
+
+      // Brief confirmation before closing
+      setTimeout(() => {
+        setIsAddMealModalOpen(false);
+        setEditingMeal(null);
+      }, 400);
+    } catch (dbErr) {
+      console.error('[Meal Save Error]:', dbErr);
+      setSaveError(selectedFile 
+        ? 'Image uploaded, but the meal update failed. Please try again.' 
+        : (dbErr.message || 'Failed to save meal to database. Please try again.')
+      );
     } finally {
+      setIsUploadingImage(false);
       setIsSaving(false);
     }
   };
+
+  const isBusy = isUploadingImage || isSaving;
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-md flex items-center justify-center p-4">
@@ -160,14 +220,16 @@ export const AddEditMealModal = () => {
             </div>
           </div>
           <button
+            type="button"
+            disabled={isBusy}
             onClick={() => { setIsAddMealModalOpen(false); setEditingMeal(null); }}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 disabled:opacity-40 cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Error Banners */}
+        {/* Global Save Error Banner */}
         {saveError && (
           <div className="mx-6 mt-4 p-3 rounded-2xl bg-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-bold flex items-center space-x-2 border border-rose-500/30">
             <AlertCircle className="w-4 h-4 shrink-0" />
@@ -182,9 +244,10 @@ export const AddEditMealModal = () => {
             <div>
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Target Day</label>
               <select
+                disabled={isBusy}
                 value={formData.targetDay}
                 onChange={e => setFormData({ ...formData, targetDay: e.target.value })}
-                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold outline-none"
+                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold outline-none disabled:opacity-50"
               >
                 {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(d => (
                   <option key={d} value={d}>{d}</option>
@@ -197,19 +260,21 @@ export const AddEditMealModal = () => {
               <input
                 type="text"
                 required
+                disabled={isBusy}
                 value={formData.name}
                 onChange={e => setFormData({ ...formData, name: e.target.value })}
                 placeholder="e.g. Matar Paneer"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs outline-none font-semibold"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs outline-none font-semibold disabled:opacity-50"
               />
             </div>
 
             <div>
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Category</label>
               <select
+                disabled={isBusy}
                 value={formData.category}
                 onChange={e => setFormData({ ...formData, category: e.target.value })}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold outline-none"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold outline-none disabled:opacity-50"
               >
                 <option value="Breakfast">Breakfast</option>
                 <option value="Lunch">Lunch</option>
@@ -224,10 +289,11 @@ export const AddEditMealModal = () => {
             <input
               type="text"
               required
+              disabled={isBusy}
               value={formData.items}
               onChange={e => setFormData({ ...formData, items: e.target.value })}
               placeholder="e.g. Aloo Paratha + Tea + Curd + Fruit + Achar"
-              className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs outline-none font-semibold"
+              className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs outline-none font-semibold disabled:opacity-50"
             />
           </div>
 
@@ -237,41 +303,45 @@ export const AddEditMealModal = () => {
               <label className="block text-[10px] font-semibold text-slate-500 uppercase">Calories</label>
               <input
                 type="number"
+                disabled={isBusy}
                 value={formData.calories}
                 onChange={e => setFormData({ ...formData, calories: e.target.value })}
-                className="w-full px-2.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold"
+                className="w-full px-2.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold disabled:opacity-50"
               />
             </div>
             <div>
               <label className="block text-[10px] font-semibold text-emerald-500 uppercase">Protein (g)</label>
               <input
                 type="number"
+                disabled={isBusy}
                 value={formData.protein}
                 onChange={e => setFormData({ ...formData, protein: e.target.value })}
-                className="w-full px-2.5 py-2 rounded-xl border border-emerald-500/40 bg-emerald-50/50 dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 text-xs font-bold"
+                className="w-full px-2.5 py-2 rounded-xl border border-emerald-500/40 bg-emerald-50/50 dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 text-xs font-bold disabled:opacity-50"
               />
             </div>
             <div>
               <label className="block text-[10px] font-semibold text-slate-500 uppercase">Carbs (g)</label>
               <input
                 type="number"
+                disabled={isBusy}
                 value={formData.carbs}
                 onChange={e => setFormData({ ...formData, carbs: e.target.value })}
-                className="w-full px-2.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold"
+                className="w-full px-2.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold disabled:opacity-50"
               />
             </div>
             <div>
               <label className="block text-[10px] font-semibold text-slate-500 uppercase">Fats (g)</label>
               <input
                 type="number"
+                disabled={isBusy}
                 value={formData.fats}
                 onChange={e => setFormData({ ...formData, fats: e.target.value })}
-                className="w-full px-2.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold"
+                className="w-full px-2.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold disabled:opacity-50"
               />
             </div>
           </div>
 
-          {/* REAL IMAGE UPLOAD & PREVIEW SECTION */}
+          {/* REAL MEAL IMAGE UPLOAD & PREVIEW SECTION */}
           <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 space-y-3">
             <div className="flex items-center justify-between">
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
@@ -282,23 +352,28 @@ export const AddEditMealModal = () => {
               </span>
             </div>
 
-            {/* Hidden File Input */}
+            {/* Hidden File Input triggering native file manager */}
             <input
               type="file"
               ref={fileInputRef}
               accept="image/jpeg,image/jpg,image/png,image/webp"
               onChange={handleFileChange}
+              disabled={isBusy}
               className="hidden"
             />
 
             {/* Image Preview & Upload Triggers */}
             <div className="flex flex-col sm:flex-row items-center gap-4">
-              <div className="relative w-28 h-24 rounded-2xl overflow-hidden bg-slate-200 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 shrink-0 shadow-sm">
+              <div className="relative w-32 h-24 rounded-2xl overflow-hidden bg-slate-200 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 shrink-0 shadow-sm">
                 {imagePreview ? (
                   <img
                     src={imagePreview}
-                    alt="Preview"
+                    alt="Meal Preview"
                     className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&q=80&w=800';
+                    }}
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-slate-400">
@@ -307,35 +382,56 @@ export const AddEditMealModal = () => {
                 )}
 
                 {isUploadingImage && (
-                  <div className="absolute inset-0 bg-slate-900/70 backdrop-blur-sm flex flex-col items-center justify-center text-white space-y-1">
-                    <Loader2 className="w-5 h-5 animate-spin text-emerald-400" />
-                    <span className="text-[9px] font-bold">Uploading...</span>
+                  <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-sm flex flex-col items-center justify-center text-white space-y-1">
+                    <Loader2 className="w-6 h-6 animate-spin text-emerald-400" />
+                    <span className="text-[10px] font-black uppercase tracking-wider">Uploading...</span>
                   </div>
                 )}
               </div>
 
               <div className="flex-1 space-y-2 w-full">
-                <button
-                  type="button"
-                  disabled={isUploadingImage}
-                  onClick={() => fileInputRef.current?.click()}
-                  className="w-full py-2.5 px-4 rounded-xl bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 font-bold text-xs border border-slate-300 dark:border-slate-600 flex items-center justify-center space-x-2 shadow-sm transition-all cursor-pointer"
-                >
-                  <UploadCloud className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                  <span>{selectedFile ? 'Replace Photo' : 'Upload Real Dish Photo'}</span>
-                </button>
+                <div className="flex items-center space-x-2">
+                  <button
+                    type="button"
+                    disabled={isBusy}
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex-1 py-2.5 px-4 rounded-xl bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 font-bold text-xs border border-slate-300 dark:border-slate-600 flex items-center justify-center space-x-2 shadow-sm transition-all cursor-pointer disabled:opacity-50"
+                  >
+                    <UploadCloud className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                    <span>{selectedFile ? 'Change Photo' : 'Choose Photo'}</span>
+                  </button>
 
-                {uploadSuccess && (
-                  <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center space-x-1">
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    <span>Photo uploaded to Firebase Storage successfully!</span>
-                  </p>
+                  {selectedFile && !isBusy && (
+                    <button
+                      type="button"
+                      onClick={handleResetSelectedFile}
+                      title="Reset selected photo"
+                      className="p-2.5 rounded-xl border border-slate-300 dark:border-slate-600 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 bg-white dark:bg-slate-900"
+                    >
+                      <RotateCcw className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Selected File Details */}
+                {selectedFile && (
+                  <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-[11px] text-emerald-700 dark:text-emerald-300 font-medium">
+                    <span className="font-bold block truncate">Selected: {selectedFile.name}</span>
+                    <span className="text-[10px] opacity-80">{(selectedFile.size / (1024 * 1024)).toFixed(2)} MB • Ready to upload on save</span>
+                  </div>
                 )}
 
                 {imageUploadError && (
                   <p className="text-[11px] text-rose-500 font-bold flex items-center space-x-1">
-                    <AlertCircle className="w-3.5 h-3.5" />
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                     <span>{imageUploadError}</span>
+                  </p>
+                )}
+
+                {uploadSuccess && (
+                  <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center space-x-1">
+                    <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                    <span>Meal image updated successfully.</span>
                   </p>
                 )}
               </div>
@@ -346,12 +442,13 @@ export const AddEditMealModal = () => {
               <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Image URL</label>
               <input
                 type="text"
+                disabled={isBusy}
                 value={formData.image}
                 onChange={e => {
                   setFormData({ ...formData, image: e.target.value });
-                  setImagePreview(e.target.value);
+                  if (!selectedFile) setImagePreview(e.target.value);
                 }}
-                className="w-full px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs outline-none font-mono"
+                className="w-full px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs outline-none font-mono disabled:opacity-50"
               />
             </div>
           </div>
@@ -360,30 +457,31 @@ export const AddEditMealModal = () => {
             <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Ingredients (comma separated)</label>
             <input
               type="text"
+              disabled={isBusy}
               value={formData.ingredientsStr}
               onChange={e => setFormData({ ...formData, ingredientsStr: e.target.value })}
-              className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs outline-none"
+              className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs outline-none disabled:opacity-50"
             />
           </div>
 
           <div className="pt-4 flex items-center justify-end space-x-3 shrink-0">
             <button
               type="button"
-              disabled={isSaving || isUploadingImage}
+              disabled={isBusy}
               onClick={() => { setIsAddMealModalOpen(false); setEditingMeal(null); }}
-              className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+              className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 disabled:opacity-50 cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={isSaving || isUploadingImage}
+              disabled={isBusy}
               className="px-6 py-2.5 rounded-xl text-xs font-black bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg flex items-center space-x-1.5 transition-all cursor-pointer disabled:opacity-50"
             >
-              {isSaving ? (
+              {isBusy ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Saving to Firestore...</span>
+                  <span>{statusText || 'SAVING...'}</span>
                 </>
               ) : (
                 <>
