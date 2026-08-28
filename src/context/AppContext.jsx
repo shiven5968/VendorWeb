@@ -18,7 +18,8 @@ import {
   getMealTimingStatus,
   isRatingAllowedForMeal,
   getActiveAndNextMealSlot,
-  formatHourMinute
+  formatHourMinute,
+  sortMealsByOfficialOrder
 } from '../services/mealTiming';
 
 const AppContext = createContext();
@@ -341,7 +342,7 @@ export const AppProvider = ({ children }) => {
   // 2. MEALS QUERY & ACTIONS
   const getEnrichedMeals = (day) => {
     const rawMeals = (allMeals || []).filter(m => (m.day || '').toLowerCase() === (day || '').toLowerCase());
-    return rawMeals.map(m => {
+    const enriched = rawMeals.map(m => {
       const stats = getMealStats(m.id);
       return {
         ...m,
@@ -350,27 +351,43 @@ export const AppProvider = ({ children }) => {
         ratingCount: stats.ratingCount
       };
     });
+    // Strictly sort all meals in official order: BREAKFAST -> LUNCH -> SNACKS -> DINNER
+    return sortMealsByOfficialOrder(enriched);
   };
 
   const dayMeals = getEnrichedMeals(selectedDay);
   const todayMeals = getEnrichedMeals(todayDay);
 
   const saveMeal = async (mealData, targetDay) => {
-    const updatedMeals = await db.saveMeal({ ...mealData, day: targetDay || mealData.day || selectedDay });
-    if (!isFirebaseConfigured) {
-      setAllMeals(updatedMeals);
+    try {
+      const updatedMeals = await db.saveMeal({ ...mealData, day: targetDay || mealData.day || selectedDay });
+      if (!isFirebaseConfigured) {
+        setAllMeals(updatedMeals);
+      }
+      setMealsVersion(v => v + 1);
+      addNotification('Meal Saved', `${mealData.name} updated in menu.`, 'success');
+      return { success: true, meal: updatedMeals };
+    } catch (err) {
+      console.error('[Error saving meal to Firestore]:', err);
+      addNotification('Save Failed', err.message || 'Could not update meal in database.', 'error');
+      throw err;
     }
-    setMealsVersion(v => v + 1);
-    addNotification('Meal Saved', `${mealData.name} updated in menu.`, 'success');
   };
 
   const deleteMeal = async (mealId) => {
-    const updatedMeals = await db.deleteMeal(mealId);
-    if (!isFirebaseConfigured) {
-      setAllMeals(updatedMeals);
+    try {
+      const updatedMeals = await db.deleteMeal(mealId);
+      if (!isFirebaseConfigured) {
+        setAllMeals(updatedMeals);
+      }
+      setMealsVersion(v => v + 1);
+      addNotification('Meal Deleted', 'Dish removed from menu schedule.', 'warning');
+      return { success: true };
+    } catch (err) {
+      console.error('[Error deleting meal]:', err);
+      addNotification('Delete Failed', err.message || 'Could not delete meal.', 'error');
+      throw err;
     }
-    setMealsVersion(v => v + 1);
-    addNotification('Meal Deleted', 'Dish removed from menu schedule.', 'warning');
   };
 
   // 3. TIME-AWARE RATINGS & FEEDBACK (Enforces Official Mess Rating Window)

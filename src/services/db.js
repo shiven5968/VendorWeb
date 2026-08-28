@@ -759,7 +759,7 @@ class LaunchDatabase {
     return meals.find(m => m.id === id) || null;
   }
 
-  saveMeal(mealData) {
+  async saveMeal(mealData) {
     const meals = this.getAllMeals();
     let id = mealData.id;
     let targetMeal = null;
@@ -783,24 +783,17 @@ class LaunchDatabase {
     }
 
     if (isFirebaseConfigured) {
-      try {
-        setDoc(doc(firestoreDb, 'meals', id), targetMeal, { merge: true });
-      } catch (e) {
-        console.error('Error saving meal to Firestore:', e);
-      }
+      // Must await the Firestore write to ensure transactional integrity
+      await setDoc(doc(firestoreDb, 'meals', id), targetMeal, { merge: true });
     }
 
     this.setItem('meals', meals);
     return targetMeal;
   }
 
-  deleteMeal(mealId) {
+  async deleteMeal(mealId) {
     if (isFirebaseConfigured) {
-      try {
-        deleteDoc(doc(firestoreDb, 'meals', mealId));
-      } catch (e) {
-        console.error('Error deleting meal from Firestore:', e);
-      }
+      await deleteDoc(doc(firestoreDb, 'meals', mealId));
     }
     const meals = this.getAllMeals();
     const filtered = meals.filter(m => m.id !== mealId);
@@ -1176,9 +1169,13 @@ export const seedFirestoreData = async () => {
   if (!isFirebaseConfigured) return;
 
   try {
-    console.log('Seeding/updating menu meals in Firestore...');
-    for (const meal of INITIAL_MEALS_DB) {
-      await setDoc(doc(firestoreDb, 'meals', meal.id), meal, { merge: true });
+    const mealsRef = collection(firestoreDb, 'meals');
+    const mealsSnap = await getDocs(mealsRef);
+    if (mealsSnap.empty) {
+      console.log('Seeding initial baseline meals in Firestore...');
+      for (const meal of INITIAL_MEALS_DB) {
+        await setDoc(doc(firestoreDb, 'meals', meal.id), meal);
+      }
     }
 
     const rewardsRef = collection(firestoreDb, 'rewards_catalog');
@@ -1189,7 +1186,6 @@ export const seedFirestoreData = async () => {
         await setDoc(doc(firestoreDb, 'rewards_catalog', reward.id), reward);
       }
     }
-
   } catch (e) {
     console.error('Error seeding Firestore data:', e);
   }

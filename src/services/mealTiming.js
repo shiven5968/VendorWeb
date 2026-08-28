@@ -69,6 +69,35 @@ export const OFFICIAL_MEAL_TIMINGS = {
 
 export const MEAL_ORDER = ['Breakfast', 'Lunch', 'Snacks', 'Dinner'];
 
+export const MEAL_ORDER_MAP = {
+  'breakfast': 1,
+  'lunch': 2,
+  'snacks': 3,
+  'snack': 3,
+  'dinner': 4
+};
+
+/**
+ * Get numerical index (1 to 4) for consistent meal category sorting.
+ */
+export const getMealOrderIndex = (category) => {
+  const normalized = (category || '').toLowerCase().trim();
+  return MEAL_ORDER_MAP[normalized] || 99;
+};
+
+/**
+ * Centrally sorts any meal list in strict official order:
+ * 1. BREAKFAST -> 2. LUNCH -> 3. SNACKS -> 4. DINNER
+ */
+export const sortMealsByOfficialOrder = (mealsList = []) => {
+  if (!Array.isArray(mealsList)) return [];
+  return [...mealsList].sort((a, b) => {
+    const orderA = getMealOrderIndex(a.category);
+    const orderB = getMealOrderIndex(b.category);
+    return orderA - orderB;
+  });
+};
+
 /**
  * Convert hours and minutes to minutes from midnight
  */
