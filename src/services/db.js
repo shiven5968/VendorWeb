@@ -791,6 +791,29 @@ class LaunchDatabase {
     return targetMeal;
   }
 
+  async updateMealImage(mealId, imageUrl) {
+    if (!mealId || !imageUrl) {
+      throw new Error('Meal ID and Image URL are required.');
+    }
+
+    if (isFirebaseConfigured) {
+      await updateDoc(doc(firestoreDb, 'meals', mealId), {
+        image: imageUrl,
+        updatedAt: new Date().toISOString()
+      });
+    }
+
+    const meals = this.getAllMeals();
+    const idx = meals.findIndex(m => m.id === mealId);
+    if (idx !== -1) {
+      meals[idx].image = imageUrl;
+      meals[idx].updatedAt = new Date().toISOString();
+      this.setItem('meals', meals);
+      return meals[idx];
+    }
+    return null;
+  }
+
   async deleteMeal(mealId) {
     if (isFirebaseConfigured) {
       await deleteDoc(doc(firestoreDb, 'meals', mealId));
@@ -1212,3 +1235,6 @@ export const seedFirestoreData = async () => {
     console.error('Error seeding Firestore data:', e);
   }
 };
+
+export default db;
+

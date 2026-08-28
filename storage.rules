@@ -21,21 +21,32 @@ service firebase.storage {
         getUserRole() == 'committee' ||
         (request.auth.token.email != null && (
           request.auth.token.email == 'warden@abes.ac.in' ||
-          request.auth.token.email == 'committee@abes.ac.in'
+          request.auth.token.email == 'committee@abes.ac.in' ||
+          request.auth.token.email.matches('^warden.*@abes\\.ac\\.in$') ||
+          request.auth.token.email.matches('^committee.*@abes\\.ac\\.in$')
         ))
       );
     }
 
-    // SECTION 1: MEAL IMAGES
-    // - Authenticated students can view/download meal images
-    // - ONLY Mess Committee & Warden can upload, replace, or delete meal images
-    // - Maximum file size: 5 MB
-    // - Allowed formats: JPG, JPEG, PNG, WEBP
-    match /meals/{allPaths=**} {
-      allow read: if isAuthenticated();
-      allow write: if isStaff()
+    // SECTION 1: MEAL IMAGES (/meal-images/{allPaths=**} and /meals/{allPaths=**})
+    // - Public/Student read access for displaying menu cards
+    // - ONLY authorized Mess Committee & Chief Warden can upload or replace meal images
+    // - Maximum file size: 5 MB (5 * 1024 * 1024 bytes)
+    // - Allowed MIME formats: JPG, JPEG, PNG, WEBP
+    match /meal-images/{allPaths=**} {
+      allow read: if true;
+      allow create, update: if isStaff()
                    && request.resource.size <= 5 * 1024 * 1024
                    && request.resource.contentType.matches('image/(jpeg|jpg|png|webp)');
+      allow delete: if isStaff();
+    }
+
+    match /meals/{allPaths=**} {
+      allow read: if true;
+      allow create, update: if isStaff()
+                   && request.resource.size <= 5 * 1024 * 1024
+                   && request.resource.contentType.matches('image/(jpeg|jpg|png|webp)');
+      allow delete: if isStaff();
     }
 
     // Default deny all other paths
