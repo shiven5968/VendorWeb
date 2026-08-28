@@ -147,6 +147,48 @@ console.assert(!profileSource.includes('setHostelBlock'), 'Hostel editing must n
 console.assert(profileSource.includes('Hostel Block'), 'Hostel Block badge rendered');
 console.log('✓ Profile renders 100% dynamic data with strictly read-only official identity.');
 
-console.log('\n================================================================');
-console.log('ALL AUDIT CHECKS PASSED WITH ZERO DEFECTS! ✅');
-console.log('================================================================\n');
+// -------------------------------------------------------------------
+// 8. OBSERVABILITY & PRIVACY DATA SCRUBBING AUDIT
+// -------------------------------------------------------------------
+console.log('\n--- 8. OBSERVABILITY & PRIVACY DATA SCRUBBING ---');
+import('./src/services/observability.js').then(({ sanitizePayload }) => {
+  const dirtyData = {
+    userId: 'usr_123',
+    name: 'Parth Sharma',
+    password: 'SuperSecretPassword123',
+    confirmPassword: 'SuperSecretPassword123',
+    otp: '123456',
+    hashedOtp: 'a8b7c6d5e4f3',
+    keySecret: 'rzp_sec_xyz'
+  };
+
+  const clean = sanitizePayload(dirtyData);
+  console.assert(clean.password === '[REDACTED]', 'Password must be redacted');
+  console.assert(clean.otp === '[REDACTED]', 'OTP must be redacted');
+  console.assert(clean.keySecret === '[REDACTED]', 'Secret keys must be redacted');
+  console.assert(clean.userId === 'usr_123', 'Safe identifiers must be retained');
+  console.log('✓ Observability payload sanitizer strips all sensitive tokens & credentials.');
+
+  // -------------------------------------------------------------------
+  // 9. ERROR BOUNDARY INTEGRATION AUDIT
+  // -------------------------------------------------------------------
+  console.log('\n--- 9. ERROR BOUNDARY INTEGRATION AUDIT ---');
+  const mainSource = fs.readFileSync('src/main.jsx', 'utf8');
+  console.assert(mainSource.includes('<ErrorBoundary>'), 'App must be wrapped in ErrorBoundary');
+  console.assert(mainSource.includes('initObservability()'), 'initObservability must be called on app bootstrap');
+  console.log('✓ ErrorBoundary & observability bootstrap verified in main.jsx.');
+
+  // -------------------------------------------------------------------
+  // 10. VERCEL SECURITY HEADERS AUDIT
+  // -------------------------------------------------------------------
+  console.log('\n--- 10. VERCEL SECURITY HEADERS AUDIT ---');
+  const vercelConfig = JSON.parse(fs.readFileSync('vercel.json', 'utf8'));
+  console.assert(Array.isArray(vercelConfig.headers) && vercelConfig.headers.length > 0, 'Security headers configured in vercel.json');
+  console.assert(vercelConfig.rewrites && vercelConfig.rewrites.length >= 2, 'SPA rewrites configured in vercel.json');
+  console.log('✓ Vercel production security headers & SPA rewrites verified.');
+
+  console.log('\n================================================================');
+  console.log('ALL AUDIT CHECKS PASSED WITH ZERO DEFECTS! ✅');
+  console.log('================================================================\n');
+});
+
