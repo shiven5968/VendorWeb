@@ -254,122 +254,132 @@ export const MusclePassPage = () => {
       )}
 
       {/* MUSCLE PASS TRACKER (PROTEIN METRICS & GOALS) */}
-      <div className="space-y-6">
-        
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm sm:text-base font-black text-slate-900 dark:text-white uppercase tracking-tight">
-            Daily Protein Metrics
-          </h2>
+      {isMusclePassActive ? (
+        <div className="space-y-6">
+          
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm sm:text-base font-black text-slate-900 dark:text-white uppercase tracking-tight">
+              Daily Protein Metrics
+            </h2>
 
-          <button
-            onClick={() => setShowEditTarget(!showEditTarget)}
-            className="px-3.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-200"
-          >
-            {showEditTarget ? 'Close' : 'Set Goal'}
-          </button>
-        </div>
-
-        {showEditTarget && (
-          <form onSubmit={handleSaveTarget} className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center space-x-3 shadow-md">
-            <div className="flex-1">
-              <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Daily Protein Goal (g)</label>
-              <input
-                type="number"
-                value={targetInput}
-                onChange={e => setTargetInput(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-black outline-none"
-              />
-            </div>
             <button
-              type="submit"
-              className="mt-4 px-5 py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-bold shadow-md flex items-center space-x-1"
+              onClick={() => setShowEditTarget(!showEditTarget)}
+              className="px-3.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-200"
             >
-              <Save className="w-4 h-4" />
-              <span>Save</span>
+              {showEditTarget ? 'Close' : 'Set Goal'}
             </button>
-          </form>
-        )}
-
-        {savedSuccess && (
-          <div className="p-3 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-bold text-center flex items-center justify-center space-x-1">
-            <Check className="w-4 h-4" />
-            <span>Protein target updated.</span>
-          </div>
-        )}
-
-        {/* Metric Cards */}
-        <div className="grid grid-cols-3 gap-3">
-          <div className="glass-card p-4 rounded-3xl border border-slate-200/80 dark:border-slate-800 text-center">
-            <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Protein Goal</span>
-            <p className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">{proteinTarget}g</p>
           </div>
 
-          <div className="glass-card p-4 rounded-3xl border border-slate-200/80 dark:border-slate-800 text-center">
-            <span className="text-[10px] font-bold text-emerald-500 uppercase block mb-1">Consumed</span>
-            <p className="text-xl sm:text-2xl font-black text-emerald-600 dark:text-emerald-400">{consumedProtein}g</p>
-          </div>
+          {showEditTarget && (
+            <form onSubmit={handleSaveTarget} className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center space-x-3 shadow-md">
+              <div className="flex-1">
+                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Daily Protein Goal (g)</label>
+                <input
+                  type="number"
+                  value={targetInput}
+                  onChange={e => setTargetInput(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-black outline-none"
+                />
+              </div>
+              <button
+                type="submit"
+                className="mt-4 px-5 py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-bold shadow-md flex items-center space-x-1"
+              >
+                <Save className="w-4 h-4" />
+                <span>Save</span>
+              </button>
+            </form>
+          )}
 
-          <div className="glass-card p-4 rounded-3xl border border-slate-200/80 dark:border-slate-800 text-center">
-            <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Remaining</span>
-            <p className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">{remainingProtein}g</p>
-          </div>
-        </div>
-
-        {/* Progress Bar */}
-        <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 space-y-2">
-          <div className="flex justify-between text-xs font-bold">
-            <span className="text-slate-500">Daily Target Progress</span>
-            <span className="text-emerald-600 dark:text-emerald-400">{proteinPercent}%</span>
-          </div>
-          <div className="w-full h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-emerald-500 rounded-full transition-all duration-500"
-              style={{ width: `${proteinPercent}%` }}
-            ></div>
-          </div>
-        </div>
-
-        {/* Recommended Dishes from Today's Menu */}
-        <div className="space-y-3">
-          <h3 className="text-sm sm:text-base font-black text-slate-900 dark:text-white uppercase tracking-tight">
-            High-Protein Items in Today's Menu
-          </h3>
-
-          {recommendedToday.length === 0 ? (
-            <div className="p-6 text-center text-xs font-bold text-slate-400 bg-white dark:bg-slate-900 rounded-2xl border">
-              No high-protein recommendations found in today's menu.
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {recommendedToday.map((item, index) => (
-                <div
-                  key={index}
-                  className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between shadow-sm"
-                >
-                  <div>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase block">{item.category}</span>
-                    <h4 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white">{item.name}</h4>
-                  </div>
-
-                  <div className="flex items-center space-x-2">
-                    <span className="px-2.5 py-1 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 text-xs font-black">
-                      +{item.protein}g
-                    </span>
-                    <button
-                      onClick={() => logProtein(item.name, item.protein)}
-                      className="p-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white transition-colors cursor-pointer"
-                      title="Log to today's protein"
-                    >
-                      <Plus className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              ))}
+          {savedSuccess && (
+            <div className="p-3 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-bold text-center flex items-center justify-center space-x-1">
+              <Check className="w-4 h-4" />
+              <span>Protein target updated.</span>
             </div>
           )}
-        </div>
 
-      </div>
+          {/* Metric Cards */}
+          <div className="grid grid-cols-3 gap-3">
+            <div className="glass-card p-4 rounded-3xl border border-slate-200/80 dark:border-slate-800 text-center">
+              <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Protein Goal</span>
+              <p className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">{proteinTarget}g</p>
+            </div>
+
+            <div className="glass-card p-4 rounded-3xl border border-slate-200/80 dark:border-slate-800 text-center">
+              <span className="text-[10px] font-bold text-emerald-500 uppercase block mb-1">Consumed</span>
+              <p className="text-xl sm:text-2xl font-black text-emerald-600 dark:text-emerald-400">{consumedProtein}g</p>
+            </div>
+
+            <div className="glass-card p-4 rounded-3xl border border-slate-200/80 dark:border-slate-800 text-center">
+              <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Remaining</span>
+              <p className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">{remainingProtein}g</p>
+            </div>
+          </div>
+
+          {/* Progress Bar */}
+          <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 space-y-2">
+            <div className="flex justify-between text-xs font-bold">
+              <span className="text-slate-500">Daily Target Progress</span>
+              <span className="text-emerald-600 dark:text-emerald-400">{proteinPercent}%</span>
+            </div>
+            <div className="w-full h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-emerald-500 rounded-full transition-all duration-500"
+                style={{ width: `${proteinPercent}%` }}
+              ></div>
+            </div>
+          </div>
+
+          {/* Recommended Dishes from Today's Menu */}
+          <div className="space-y-3">
+            <h3 className="text-sm sm:text-base font-black text-slate-900 dark:text-white uppercase tracking-tight">
+              High-Protein Items in Today's Menu
+            </h3>
+
+            {recommendedToday.length === 0 ? (
+              <div className="p-6 text-center text-xs font-bold text-slate-400 bg-white dark:bg-slate-900 rounded-2xl border">
+                No high-protein recommendations found in today's menu.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {recommendedToday.map((item, index) => (
+                  <div
+                    key={index}
+                    className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between shadow-sm"
+                  >
+                    <div>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase block">{item.category}</span>
+                      <h4 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white">{item.name}</h4>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <span className="px-2.5 py-1 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 text-xs font-black">
+                        +{item.protein}g
+                      </span>
+                      <button
+                        onClick={() => logProtein(item.name, item.protein)}
+                        className="p-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white transition-colors cursor-pointer"
+                        title="Log to today's protein"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+        </div>
+      ) : (
+        <div className="p-8 rounded-3xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 text-center flex flex-col items-center justify-center space-y-2.5 py-12">
+          <Lock className="w-8 h-8 text-amber-500" />
+          <h3 className="text-sm font-black text-slate-800 dark:text-slate-200 uppercase tracking-tight">Protein Tracker Locked</h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold max-w-sm">
+            Please choose a plan and subscribe to the **Muscle Pass** above to unlock personalized daily targets, one-tap meal logging, and high-protein food tracking.
+          </p>
+        </div>
+      )}
 
     </div>
   );
