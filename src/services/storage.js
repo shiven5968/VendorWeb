@@ -1,9 +1,10 @@
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { storage, isFirebaseConfigured } from './firebase.js';
 import { trackEvent, captureException } from './observability.js';
 
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
+const UPLOAD_TIMEOUT_MS = 15000; // 15-second watchdog to prevent hanging
 
 /**
  * Validates meal image file type and size.
@@ -31,11 +32,43 @@ export const validateMealImage = (file) => {
 };
 
 /**
- * Uploads a real meal image file to Firebase Storage.
+ * Translates Firebase Storage errors into clear, actionable user messages.
+ */
+export const formatStorageError = (err) => {
+  if (!err) return 'Image upload failed. Please try again.';
+
+  const code = err.code || '';
+  const msg = (err.message || '').toLowerCase();
+
+  if (code === 'storage/unauthorized' || msg.includes('permission') || msg.includes('unauthorized')) {
+    return 'You do not have permission to upload meal images. Please verify your staff login.';
+  }
+
+  if (code === 'storage/canceled' || msg.includes('canceled') || msg.includes('timeout') || msg.includes('too long')) {
+    return 'Image upload is taking too long. Please check your connection and try again.';
+  }
+
+  if (code === 'storage/retry-limit-exceeded' || code === 'storage/network-request-failed' || msg.includes('network')) {
+    return 'Network connection failed. Please check your internet connection and try again.';
+  }
+
+  if (code === 'storage/quota-exceeded' || msg.includes('quota')) {
+    return 'Firebase Storage quota exceeded. Please contact the system administrator.';
+  }
+
+  if (code === 'storage/unknown' || msg.includes('404') || msg.includes('not found') || msg.includes('bucket')) {
+    return 'Firebase Storage service is unreachable or unprovisioned. Please verify Storage is enabled in Firebase Console.';
+  }
+
+  return err.message || 'Image upload failed. Please check your connection and try again.';
+};
+
+/**
+ * Uploads a real meal image file to Firebase Storage with timeout protection.
  * Generates unique path under meal-images/{mealId}/{timestamp}_{safeFileName}
  * Returns the public HTTPS download URL to be stored in Firestore meals/{mealId}.image.
  * 
- * @param {File} file - Browser File object selected by Mess Committee or Warden
+ * @param {File|Blob|Uint8Array} file - Browser File object selected by Mess Committee or Warden
  * @param {string} mealId - ID of the meal document
  * @returns {Promise<{ success: boolean, downloadUrl: string, path: string }>}
  */
@@ -64,20 +97,46 @@ export const uploadMealImage = async (file, mealId = 'dish') => {
     fileType: file.type || `image/${cleanExt}`
   });
 
+  const storageRef = ref(storage, storagePath);
+
+  const metadata = {
+    contentType: file.type || `image/${cleanExt}`,
+    customMetadata: {
+      mealId: sanitizedMealId,
+      originalName: file.name || 'image',
+      uploadedAt: new Date().toISOString()
+    }
+  };
+
+  // 2. Upload with uploadBytesResumable and a 15-second watchdog
+  let uploadTask = null;
+  let timeoutTimer = null;
+
   try {
-    const storageRef = ref(storage, storagePath);
+    uploadTask = uploadBytesResumable(storageRef, file, metadata);
 
-    // 2. Upload file with content type metadata
-    const metadata = {
-      contentType: file.type || `image/${cleanExt}`,
-      customMetadata: {
-        mealId: sanitizedMealId,
-        originalName: file.name || 'image',
-        uploadedAt: new Date().toISOString()
-      }
-    };
+    const uploadPromise = new Promise((resolve, reject) => {
+      uploadTask.on(
+        'state_changed',
+        () => {}, // progress listener
+        (error) => reject(error),
+        () => resolve(uploadTask.snapshot)
+      );
+    });
 
-    const snapshot = await uploadBytes(storageRef, file, metadata);
+    const timeoutPromise = new Promise((_, reject) => {
+      timeoutTimer = setTimeout(() => {
+        try {
+          if (uploadTask && typeof uploadTask.cancel === 'function') {
+            uploadTask.cancel();
+          }
+        } catch (e) {}
+        reject(new Error('Image upload is taking too long. Please check your connection and try again.'));
+      }, UPLOAD_TIMEOUT_MS);
+    });
+
+    const snapshot = await Promise.race([uploadPromise, timeoutPromise]);
+    clearTimeout(timeoutTimer);
 
     // 3. Retrieve permanent HTTPS download URL
     const downloadUrl = await getDownloadURL(snapshot.ref);
@@ -93,24 +152,23 @@ export const uploadMealImage = async (file, mealId = 'dish') => {
       path: storagePath
     };
   } catch (err) {
+    if (timeoutTimer) clearTimeout(timeoutTimer);
+
     console.error('[Firebase Storage Upload Error]:', err);
     
     captureException(err, {
       operation: 'uploadMealImage',
       mealId: sanitizedMealId,
-      storagePath
+      storagePath,
+      code: err.code || 'UNKNOWN'
     });
 
     trackEvent('meal_image_upload_failed', {
       mealId: sanitizedMealId,
+      errorCode: err.code || 'UNKNOWN',
       errorMessage: err.message
     });
 
-    const isPermission = (err.code === 'storage/unauthorized' || (err.message && err.message.toLowerCase().includes('permission')));
-    if (isPermission) {
-      throw new Error('You do not have permission to upload meal images. Please verify your staff credentials.');
-    }
-
-    throw new Error(err.message || 'Image upload failed. Please check your connection and try again.');
+    throw new Error(formatStorageError(err));
   }
 };

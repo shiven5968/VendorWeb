@@ -36,7 +36,9 @@ export const AddEditMealModal = () => {
   // Memory cleanup for object URLs
   const cleanupPreviewUrl = () => {
     if (previewBlobUrlRef.current) {
-      URL.revokeObjectURL(previewBlobUrlRef.current);
+      try {
+        URL.revokeObjectURL(previewBlobUrlRef.current);
+      } catch (e) {}
       previewBlobUrlRef.current = null;
     }
   };
@@ -127,8 +129,8 @@ export const AddEditMealModal = () => {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  // Form Submission with Strict Save Order:
-  // 1. Validate Form & File -> 2. Upload to Storage -> 3. Get Download URL -> 4. Update Firestore -> 5. Success
+  // Form Submission with Strict State Transitions & Timeout Protection:
+  // idle -> uploading (if file) -> saving -> success | error
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (isUploadingImage || isSaving) return;
@@ -140,29 +142,25 @@ export const AddEditMealModal = () => {
     let finalImageUrl = formData.image;
     const mealId = editingMeal?.id || `meal_${Date.now()}`;
 
-    // STEP 1: If a real local image file is selected, upload to Firebase Storage first
-    if (selectedFile) {
-      setIsUploadingImage(true);
-      setStatusText('UPLOADING...');
-      try {
+    try {
+      // STEP 1: If a real local image file is selected, upload to Firebase Storage
+      if (selectedFile) {
+        setIsUploadingImage(true);
+        setStatusText('UPLOADING...');
+        
         const uploadResult = await uploadMealImage(selectedFile, mealId);
         if (!uploadResult || !uploadResult.downloadUrl) {
           throw new Error('Image upload failed: No download URL received.');
         }
         finalImageUrl = uploadResult.downloadUrl;
-      } catch (uploadErr) {
-        setIsUploadingImage(false);
-        setStatusText('');
-        setImageUploadError(uploadErr.message || 'Image upload failed. Please check your connection and try again.');
-        return; // Halt: Do NOT update Firestore if Storage upload fails
+        setFormData(prev => ({ ...prev, image: finalImageUrl }));
       }
-    }
 
-    // STEP 2: Save updated meal with download URL to Firestore
-    setIsSaving(true);
-    setStatusText('SAVING...');
+      // STEP 2: Save updated meal with download URL to Firestore
+      setIsUploadingImage(false);
+      setIsSaving(true);
+      setStatusText('SAVING...');
 
-    try {
       const finalMeal = {
         ...formData,
         id: mealId,
@@ -188,15 +186,15 @@ export const AddEditMealModal = () => {
         setIsAddMealModalOpen(false);
         setEditingMeal(null);
       }, 400);
-    } catch (dbErr) {
-      console.error('[Meal Save Error]:', dbErr);
-      setSaveError(selectedFile 
-        ? 'Image uploaded, but the meal update failed. Please try again.' 
-        : (dbErr.message || 'Failed to save meal to database. Please try again.')
-      );
+    } catch (err) {
+      console.error('[Meal Form Error]:', err);
+      const errMsg = err.message || 'Operation failed. Please check your connection and try again.';
+      setSaveError(errMsg);
+      setImageUploadError(errMsg);
     } finally {
       setIsUploadingImage(false);
       setIsSaving(false);
+      setStatusText('');
     }
   };
 
@@ -406,7 +404,7 @@ export const AddEditMealModal = () => {
                       type="button"
                       onClick={handleResetSelectedFile}
                       title="Reset selected photo"
-                      className="p-2.5 rounded-xl border border-slate-300 dark:border-slate-600 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 bg-white dark:bg-slate-900"
+                      className="p-2.5 rounded-xl border border-slate-300 dark:border-slate-600 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 bg-white dark:bg-slate-900 cursor-pointer"
                     >
                       <RotateCcw className="w-4 h-4" />
                     </button>
@@ -437,7 +435,7 @@ export const AddEditMealModal = () => {
               </div>
             </div>
 
-            {/* Direct Image URL input for advanced use */}
+            {/* Direct Image URL input */}
             <div className="pt-2 border-t border-slate-200/60 dark:border-slate-700/60">
               <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Image URL</label>
               <input

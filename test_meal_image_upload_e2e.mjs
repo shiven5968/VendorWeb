@@ -129,6 +129,23 @@ try {
   
   console.log('✓ Meal image updated atomically while preserving all nutritional, combo, and day fields.\n');
 
+  // -------------------------------------------------------------
+  // TEST 5: Storage Error Formatting & Watchdog Translations
+  // -------------------------------------------------------------
+  console.log('--- TEST 5: Storage Error Formatting & Timeout Translations ---');
+  const { formatStorageError } = await import('./src/services/storage.js');
+
+  const timeoutErr = formatStorageError({ code: 'storage/canceled', message: 'User canceled or timeout' });
+  console.assert(timeoutErr.includes('taking too long'), 'Timeout error mapped');
+
+  const unauthErr = formatStorageError({ code: 'storage/unauthorized', message: 'Permission denied' });
+  console.assert(unauthErr.includes('permission'), 'Permission error mapped');
+
+  const unprovisionedErr = formatStorageError({ code: 'storage/unknown', message: '404 Not Found' });
+  console.assert(unprovisionedErr.includes('Storage') && unprovisionedErr.includes('Firebase Console'), 'Unprovisioned bucket error mapped');
+
+  console.log('✓ Storage error messages translated to clear, user-friendly diagnostics.\n');
+
   console.log('================================================================');
   console.log('ALL MEAL IMAGE UPLOAD TESTS PASSED SUCCESSFULLY! ✅');
   console.log('================================================================\n');
