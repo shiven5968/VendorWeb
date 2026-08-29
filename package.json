@@ -8,7 +8,8 @@
     "build": "vite build",
     "lint": "vite build",
     "preview": "vite preview",
-    "test:auth100": "node scripts/test-auth-100.mjs"
+    "test:auth100": "node scripts/test-auth-100.mjs",
+    "reconcile:prod": "node scripts/production-reconcile-auth.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.0",
