@@ -35,7 +35,8 @@ export const LoginPage = ({ initialRole = 'student', onBackToRoles }) => {
     sendOTP, 
     verifyOTP, 
     resetPassword, 
-    loading: authLoading 
+    isLoginSubmitting,
+    isRegisterSubmitting
   } = useAuth();
   const { setCurrentPage } = useApp();
 
@@ -43,7 +44,14 @@ export const LoginPage = ({ initialRole = 'student', onBackToRoles }) => {
   const [activeTab, setActiveTab] = useState('login'); // 'login' | 'register' | 'forgot'
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Granular UI loading states (not tied to AuthContext loading — pure local UI)
+  const [isOtpSending, setIsOtpSending] = useState(false);
+  const [isOtpVerifying, setIsOtpVerifying] = useState(false);
+  const [isForgotSubmitting, setIsForgotSubmitting] = useState(false);
+
+  // Derived convenience flag: any operation in progress
+  const isAnySubmitting = isLoginSubmitting || isRegisterSubmitting || isOtpSending || isOtpVerifying || isForgotSubmitting;
 
   // Student Normal Login State
   const [loginData, setLoginData] = useState({
@@ -115,14 +123,11 @@ export const LoginPage = ({ initialRole = 'student', onBackToRoles }) => {
       return;
     }
 
-    setIsSubmitting(true);
     try {
       await login(loginData.identifier.trim(), loginData.password);
       setCurrentPage('dashboard');
     } catch (err) {
       setErrorMessage(err.message || 'Login failed. Please check your credentials.');
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -161,9 +166,8 @@ export const LoginPage = ({ initialRole = 'student', onBackToRoles }) => {
       return;
     }
 
-    setIsSubmitting(true);
+    setIsOtpSending(true);
     try {
-      // Must call server API POST /api/send-otp
       const res = await sendOTP({
         email: cleanEmail,
         admissionNumber: cleanAdmission,
@@ -179,19 +183,18 @@ export const LoginPage = ({ initialRole = 'student', onBackToRoles }) => {
       setResendCooldown(30);
       setSuccessMessage(`We sent a 6-digit verification code to ${cleanEmail}`);
     } catch (err) {
-      // If send OTP fails: Stay on registration form and display error
       setErrorMessage(err.message || 'Unable to send verification code. Please try again.');
     } finally {
-      setIsSubmitting(false);
+      setIsOtpSending(false);
     }
   };
 
   // 3. STEP 2: RESEND CODE HANDLER
   const handleResendOTP = async () => {
-    if (resendCooldown > 0 || isSubmitting) return;
+    if (resendCooldown > 0 || isAnySubmitting) return;
     setErrorMessage('');
     setSuccessMessage('');
-    setIsSubmitting(true);
+    setIsOtpSending(true);
     try {
       const res = await sendOTP({
         email: regData.email.trim().toLowerCase(),
@@ -206,11 +209,11 @@ export const LoginPage = ({ initialRole = 'student', onBackToRoles }) => {
     } catch (err) {
       setErrorMessage(err.message || 'Unable to send verification code. Please try again.');
     } finally {
-      setIsSubmitting(false);
+      setIsOtpSending(false);
     }
   };
 
-  // 4. STEP 2 -> STEP 3: VERIFY OTP & CREATE ACCOUNT (POST /api/verify-otp)
+  // 4. STEP 2 → STEP 3: VERIFY OTP & CREATE ACCOUNT (POST /api/verify-otp)
   const handleVerifyAndRegister = async (e) => {
     e.preventDefault();
     setErrorMessage('');
@@ -222,7 +225,7 @@ export const LoginPage = ({ initialRole = 'student', onBackToRoles }) => {
       return;
     }
 
-    setIsSubmitting(true);
+    setIsOtpVerifying(true);
     try {
       // Step A: Call POST /api/verify-otp
       await verifyOTP({
@@ -232,10 +235,6 @@ export const LoginPage = ({ initialRole = 'student', onBackToRoles }) => {
       });
 
       // Step B: ONLY if server returns successful verification:
-      // -> create Firebase Auth account
-      // -> create Firestore /users/{uid}
-      // -> create /admission_map/{admissionNumber}
-      // -> set emailVerified = true
       await register({
         name: regData.name.trim(),
         admissionNumber: regData.admissionNumber.trim(),
@@ -260,7 +259,7 @@ export const LoginPage = ({ initialRole = 'student', onBackToRoles }) => {
         setErrorMessage(msg || 'Invalid verification code. Please try again.');
       }
     } finally {
-      setIsSubmitting(false);
+      setIsOtpVerifying(false);
     }
   };
 
@@ -276,14 +275,14 @@ export const LoginPage = ({ initialRole = 'student', onBackToRoles }) => {
       return;
     }
 
-    setIsSubmitting(true);
+    setIsForgotSubmitting(true);
     try {
       const res = await resetPassword(clean);
       setSuccessMessage(`Password reset link sent to registered email: ${res.email}`);
     } catch (err) {
       setErrorMessage(err.message || 'Failed to send reset link.');
     } finally {
-      setIsSubmitting(false);
+      setIsForgotSubmitting(false);
     }
   };
 
@@ -456,10 +455,10 @@ export const LoginPage = ({ initialRole = 'student', onBackToRoles }) => {
 
             <button
               type="submit"
-              disabled={isSubmitting || authLoading}
+              disabled={isLoginSubmitting}
               className="w-full py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs shadow-md transition-colors flex items-center justify-center space-x-1.5 mt-2 disabled:opacity-50"
             >
-              {isSubmitting ? (
+              {isLoginSubmitting ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
                   <span>Signing In...</span>
@@ -589,10 +588,10 @@ export const LoginPage = ({ initialRole = 'student', onBackToRoles }) => {
 
                 <button
                   type="submit"
-                  disabled={isSubmitting}
+                  disabled={isOtpSending}
                   className="w-full py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs shadow-md transition-colors flex items-center justify-center space-x-1.5 mt-2 disabled:opacity-50 uppercase tracking-wider"
                 >
-                  {isSubmitting ? (
+                  {isOtpSending ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
                       <span>Sending OTP...</span>
@@ -652,7 +651,7 @@ export const LoginPage = ({ initialRole = 'student', onBackToRoles }) => {
 
                   <button
                     type="button"
-                    disabled={resendCooldown > 0 || isSubmitting}
+                    disabled={resendCooldown > 0 || isAnySubmitting}
                     onClick={handleResendOTP}
                     className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline disabled:opacity-40 disabled:no-underline flex items-center space-x-1"
                   >
@@ -663,13 +662,13 @@ export const LoginPage = ({ initialRole = 'student', onBackToRoles }) => {
 
                 <button
                   type="submit"
-                  disabled={isSubmitting || enteredOtp.length !== 6}
+                  disabled={isOtpVerifying || isRegisterSubmitting || enteredOtp.length !== 6}
                   className="w-full py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs shadow-md transition-colors flex items-center justify-center space-x-1.5 disabled:opacity-50 uppercase tracking-wider"
                 >
-                  {isSubmitting ? (
+                  {isOtpVerifying || isRegisterSubmitting ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Verifying...</span>
+                      <span>{isOtpVerifying ? 'Verifying...' : 'Creating Account...'}</span>
                     </>
                   ) : (
                     <>
@@ -763,10 +762,10 @@ export const LoginPage = ({ initialRole = 'student', onBackToRoles }) => {
               </button>
               <button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={isForgotSubmitting}
                 className="flex-1 py-2.5 rounded-xl bg-emerald-600 text-white font-bold text-xs shadow-md flex items-center justify-center space-x-1"
               >
-                {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <span>Send Reset Link</span>}
+                {isForgotSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <span>Send Reset Link</span>}
               </button>
             </div>
           </form>

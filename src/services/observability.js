@@ -1,148 +1,211 @@
 /**
- * Production Observability, Sentry Error Tracking & PostHog Analytics
- * 
- * Provides centralized, privacy-safe observability:
- * - Sentry for exception reporting & error boundaries
- * - PostHog for product lifecycle & usage analytics
- * - Automatic scrubbing of sensitive tokens, passwords, and raw OTPs
- * - Graceful fallback: 100% resilient if services are unconfigured or offline
+ * MessMates — Observability Service
+ * Sentry (error tracking) + PostHog (product analytics)
+ *
+ * Entry point: initObservability() — called from main.jsx on app startup.
+ *
+ * SECURITY RULES:
+ * - Never send: password, OTP, auth tokens, API keys, private keys
+ * - Never send: raw Firebase error objects
+ * - Analytics failure must NEVER break authentication
  */
 
-const metaEnv = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env : {};
+// ─────────────────────────────────────────────────────────────────────────────
+// SENTRY
+// ─────────────────────────────────────────────────────────────────────────────
 
-const SENTRY_DSN = metaEnv.VITE_SENTRY_DSN || '';
-const POSTHOG_KEY = metaEnv.VITE_POSTHOG_KEY || '';
-const POSTHOG_HOST = metaEnv.VITE_POSTHOG_HOST || 'https://app.posthog.com';
+let sentryInitialized = false;
+let SentryInstance = null;
 
-let isSentryInitialized = false;
-let isPostHogInitialized = false;
-
-/**
- * Strips sensitive data (passwords, OTPs, private keys, auth tokens)
- */
-export const sanitizePayload = (obj) => {
-  if (!obj || typeof obj !== 'object') return obj;
-  const sanitized = Array.isArray(obj) ? [] : {};
-  const sensitiveKeys = [
-    'password', 'confirmPassword', 'otp', 'hashedOtp', 
-    'token', 'secret', 'keySecret', 'privateKey', 
-    'razorpay_signature', 'serviceAccount'
-  ];
-
-  for (const [key, val] of Object.entries(obj)) {
-    if (sensitiveKeys.some(k => key.toLowerCase().includes(k.toLowerCase()))) {
-      sanitized[key] = '[REDACTED]';
-    } else if (typeof val === 'object' && val !== null) {
-      sanitized[key] = sanitizePayload(val);
-    } else {
-      sanitized[key] = val;
-    }
+export async function initSentry() {
+  const dsn = import.meta.env.VITE_SENTRY_DSN;
+  if (!dsn) {
+    console.info('[Observability] Sentry DSN not configured — skipping init.');
+    return;
   }
-  return sanitized;
-};
+
+  try {
+    const Sentry = await import('@sentry/react');
+    Sentry.init({
+      dsn,
+      environment: import.meta.env.MODE || 'production',
+      release: import.meta.env.VITE_APP_VERSION || '1.0.0',
+      tracesSampleRate: 0.1,
+      // Scrub sensitive fields before sending to Sentry
+      beforeSend(event) {
+        // Strip request body to prevent OTP/password leakage
+        if (event.request) {
+          delete event.request.data;
+          delete event.request.cookies;
+        }
+        return event;
+      },
+      ignoreErrors: [
+        // Ignore benign Firebase network blips
+        'auth/network-request-failed',
+        // Ignore ResizeObserver loop errors (browser quirk)
+        'ResizeObserver loop limit exceeded',
+      ]
+    });
+    SentryInstance = Sentry;
+    sentryInitialized = true;
+    console.info('[Observability] Sentry initialized.');
+  } catch (e) {
+    console.warn('[Observability] Sentry init failed (non-fatal):', e.message);
+  }
+}
 
 /**
- * Initialize Sentry & PostHog if environment configuration is present
+ * Capture an auth error to Sentry with safe scrubbing.
+ * Never logs password, OTP, tokens, or API keys.
  */
-export const initObservability = () => {
-  // 1. Sentry Initialization
-  if (SENTRY_DSN && typeof window !== 'undefined' && !isSentryInitialized) {
-    try {
-      if (window.Sentry) {
-        window.Sentry.init({
-          dsn: SENTRY_DSN,
-          environment: metaEnv.MODE || 'production',
-          beforeSend(event) {
-            if (event.request && event.request.data) {
-              event.request.data = sanitizePayload(event.request.data);
-            }
-            return event;
-          }
-        });
-        isSentryInitialized = true;
+export function captureAuthError(error, context = {}) {
+  if (!sentryInitialized || !SentryInstance) return;
+  try {
+    // Strip sensitive keys from context
+    const safeContext = { ...context };
+    delete safeContext.password;
+    delete safeContext.otp;
+    delete safeContext.token;
+    delete safeContext.apiKey;
+    delete safeContext.sessionToken;
+    delete safeContext.verificationProofToken;
+
+    SentryInstance.withScope((scope) => {
+      if (safeContext.requestId) scope.setTag('request_id', safeContext.requestId);
+      if (safeContext.event) scope.setTag('auth_event', safeContext.event);
+      scope.setExtras(safeContext);
+      SentryInstance.captureException(
+        error instanceof Error ? error : new Error(String(error))
+      );
+    });
+  } catch (e) {
+    // Never let observability failures reach the user
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// POSTHOG
+// ─────────────────────────────────────────────────────────────────────────────
+
+let posthogInitialized = false;
+let posthogInstance = null;
+
+export async function initPostHog() {
+  const key = import.meta.env.VITE_POSTHOG_KEY;
+  const host = import.meta.env.VITE_POSTHOG_HOST || 'https://app.posthog.com';
+
+  if (!key) {
+    console.info('[Observability] PostHog key not configured — skipping init.');
+    return;
+  }
+
+  try {
+    const posthog = (await import('posthog-js')).default;
+    posthog.init(key, {
+      api_host: host,
+      capture_pageview: false,     // Manual control
+      capture_pageleave: false,
+      autocapture: false,          // No automatic capture — privacy-first
+      persistence: 'memory',       // Don't persist user tracking across sessions
+      disable_session_recording: true,
+    });
+    posthogInstance = posthog;
+    posthogInitialized = true;
+    console.info('[Observability] PostHog initialized.');
+  } catch (e) {
+    console.warn('[Observability] PostHog init failed (non-fatal):', e.message);
+  }
+}
+
+/**
+ * Track a safe auth event to PostHog.
+ * Never sends: password, OTP, auth tokens, secrets.
+ */
+export function trackAuthEvent(event, properties = {}) {
+  if (!posthogInitialized || !posthogInstance) return;
+
+  try {
+    // Whitelist safe properties only
+    const SAFE_KEYS = [
+      'requestId', 'role', 'method', 'errorCode', 'success',
+      'hostelBlock', 'gender', 'attemptNumber', 'source'
+    ];
+
+    const safeProps = {};
+    for (const key of SAFE_KEYS) {
+      if (properties[key] !== undefined) {
+        safeProps[key] = properties[key];
       }
-    } catch (err) {
-      console.warn('[Observability Sentry Init Notice]:', err.message);
     }
-  }
 
-  // 2. PostHog Initialization
-  if (POSTHOG_KEY && typeof window !== 'undefined' && !isPostHogInitialized) {
-    try {
-      if (window.posthog) {
-        window.posthog.init(POSTHOG_KEY, {
-          api_host: POSTHOG_HOST,
-          autocapture: false,
-          capture_pageview: true,
-          sanitize_properties: (properties) => sanitizePayload(properties)
-        });
-        isPostHogInitialized = true;
-      }
-    } catch (err) {
-      console.warn('[Observability PostHog Init Notice]:', err.message);
-    }
+    posthogInstance.capture(event, safeProps);
+  } catch (e) {
+    // Never let observability failures reach the user
   }
-};
+}
 
 /**
- * Safely capture an exception to Sentry
+ * Identify a user in PostHog (safe — no PII beyond role).
+ * Only called after successful login with non-sensitive identifiers.
  */
-export const captureException = (error, context = {}) => {
-  const safeContext = sanitizePayload(context);
-  
-  if (typeof window !== 'undefined' && window.Sentry && isSentryInitialized) {
-    try {
-      window.Sentry.captureException(error, { extra: safeContext });
-      return;
-    } catch (e) {}
-  }
-
-  // Safe developer diagnostics in development
-  if (metaEnv.DEV) {
-    console.error('[Error Captured]:', error, safeContext);
-  }
-};
+export function identifyUser(uid, role) {
+  if (!posthogInitialized || !posthogInstance) return;
+  try {
+    posthogInstance.identify(uid, { role });
+  } catch (e) {}
+}
 
 /**
- * Track user-safe product analytics event in PostHog
+ * Reset PostHog session on logout.
  */
-export const trackEvent = (eventName, properties = {}) => {
-  const safeProps = sanitizePayload(properties);
+export function resetAnalyticsSession() {
+  if (!posthogInitialized || !posthogInstance) return;
+  try {
+    posthogInstance.reset();
+  } catch (e) {}
+}
 
-  if (typeof window !== 'undefined' && window.posthog && isPostHogInitialized) {
-    try {
-      window.posthog.capture(eventName, safeProps);
-      return;
-    } catch (e) {}
-  }
-
-  // Developer diagnostics in development
-  if (metaEnv.DEV) {
-    console.log(`[Analytics: ${eventName}]:`, safeProps);
-  }
-};
+// ─────────────────────────────────────────────────────────────────────────────
+// CORRELATION ID
+// ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Identify authenticated user in PostHog safely (using user UID)
+ * Generate a short safe correlation ID for request tracing.
+ * Format: MM-<8 hex chars>
  */
-export const identifyUser = (uid, safeTraits = {}) => {
-  if (!uid) return;
-  const traits = sanitizePayload(safeTraits);
-
-  if (typeof window !== 'undefined' && window.posthog && isPostHogInitialized) {
-    try {
-      window.posthog.identify(uid, traits);
-    } catch (e) {}
+export function generateRequestId() {
+  try {
+    const array = new Uint8Array(4);
+    crypto.getRandomValues(array);
+    return 'MM-' + Array.from(array).map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
+  } catch (e) {
+    return 'MM-' + Math.random().toString(36).slice(2, 10).toUpperCase();
   }
-};
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// COMBINED INIT (called from main.jsx)
+// ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Reset analytics session on logout
+ * Initialize all observability services.
+ * Called once on app startup. Failures are non-fatal.
  */
-export const resetUserSession = () => {
-  if (typeof window !== 'undefined' && window.posthog && isPostHogInitialized) {
-    try {
-      window.posthog.reset();
-    } catch (e) {}
-  }
-};
+export function initObservability() {
+  // Use async init but do not block app startup
+  Promise.all([initSentry(), initPostHog()]).catch(() => {
+    // Observability failures must never break the app
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BACKWARD-COMPATIBLE ALIASES
+// (storage.js and other callers use the old function names)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Alias for captureAuthError — generic error capture */
+export const captureException = (error, context) => captureAuthError(error, context);
+
+/** Alias for trackAuthEvent — generic event tracking */
+export const trackEvent = (event, properties) => trackAuthEvent(event, properties);
