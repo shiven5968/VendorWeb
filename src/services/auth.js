@@ -10,8 +10,7 @@ import {
   doc,
   setDoc,
   getDoc,
-  updateDoc,
-  serverTimestamp
+  updateDoc
 } from 'firebase/firestore';
 import { auth, db, isFirebaseConfigured } from './firebase.js';
 import { db as localDb } from './db.js';
@@ -20,6 +19,14 @@ import {
   sendRegistrationOTP,
   verifyRegistrationOTP
 } from './otp.js';
+import {
+  captureAuthError,
+  trackAuthEvent,
+  identifyUser,
+  resetAnalyticsSession,
+  generateRequestId
+} from './observability.js';
+
 
 // ─────────────────────────────────────────────
 // CANONICAL NORMALIZATION
@@ -344,6 +351,13 @@ export const signUpStudent = async ({
     localDb.registerUser({ ...userProfile, id: authUser.uid });
   } catch (e) { /* non-critical */ }
 
+  // Track registration completion (safe — no PII)
+  trackAuthEvent('registration_completed', {
+    role: 'student',
+    hostelBlock: hostelBlock || 'DNB Block',
+    gender: gender || 'Male'
+  });
+
   return { user: authUser, profile: userProfile };
 };
 
@@ -544,6 +558,10 @@ export const signInUser = async (emailOrAdmission, password) => {
     }
   }
 
+  // Track successful login (safe — role only, no admission/email)
+  trackAuthEvent('login_success', { role: profile.role, method: isEmailLogin ? 'email' : 'admission' });
+  identifyUser(firebaseUser.uid, profile.role);
+
   return { user: firebaseUser, profile };
 };
 
@@ -561,6 +579,8 @@ export const signOutUser = async () => {
   }
   // Clear local session cache on sign-out
   try { localStorage.removeItem('messmate_session_uid'); } catch (e) {}
+  // Reset analytics session to prevent user identity bleed-over
+  resetAnalyticsSession();
 };
 
 // ─────────────────────────────────────────────
