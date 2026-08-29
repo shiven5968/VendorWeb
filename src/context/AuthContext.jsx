@@ -1,30 +1,45 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
-import { auth, db as firestoreDb, isFirebaseConfigured } from '../services/firebase';
-import { doc, setDoc } from 'firebase/firestore';
-import { 
-  signUpStudent, 
-  signInUser, 
-  signOutUser, 
-  sendPasswordResetForIdentifier, 
-  getUserProfile, 
+import { auth, isFirebaseConfigured } from '../services/firebase';
+import {
+  signUpStudent,
+  signInUser,
+  signOutUser,
+  sendPasswordResetForIdentifier,
+  getUserProfile,
   updateUserProfileDoc,
   sendRegistrationOTP,
-  verifyRegistrationOTP,
-  formatAuthError 
+  verifyRegistrationOTP
 } from '../services/auth';
 import { db as localDb } from '../services/db';
 
 const AuthContext = createContext();
 
-export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [profile, setProfile] = useState(null);
-  const [isInitialLoading, setIsInitialLoading] = useState(true);
-  const [isAuthenticating, setIsAuthenticating] = useState(false);
-  const [authError, setAuthError] = useState('');
+// ─────────────────────────────────────────────────────────────────────────────
+// Separate loading states (never collapse into one global "loading"):
+//   isInitialAuthLoading  → Firebase onAuthStateChanged has not yet fired
+//   isProfileLoading      → profile document fetch in progress after auth
+//   isLoginSubmitting     → login form submission in progress
+//   isRegisterSubmitting  → registration form submission in progress
+//   isLogoutLoading       → logout in progress
+// ─────────────────────────────────────────────────────────────────────────────
 
-  // Normalize role string (supports both 'committee' and 'mess_committee')
+export const AuthProvider = ({ children }) => {
+  const [user, setUser]                         = useState(null);
+  const [profile, setProfile]                   = useState(null);
+
+  // Granular loading states
+  const [isInitialAuthLoading, setIsInitialAuthLoading] = useState(true);
+  const [isProfileLoading, setIsProfileLoading]         = useState(false);
+  const [isLoginSubmitting, setIsLoginSubmitting]       = useState(false);
+  const [isRegisterSubmitting, setIsRegisterSubmitting] = useState(false);
+  const [isLogoutLoading, setIsLogoutLoading]           = useState(false);
+
+  // Auth errors (cleared on every new attempt)
+  const [authError, setAuthError] = useState('');
+  const [profileError, setProfileError] = useState('');
+
+  // ── Role normalization ──────────────────────────────────────────────────
   const normalizeRole = (rawRole) => {
     if (!rawRole) return 'student';
     const lower = rawRole.toLowerCase();
@@ -33,53 +48,12 @@ export const AuthProvider = ({ children }) => {
     return 'student';
   };
 
-  // Listen to Firebase Auth State changes for true cloud session persistence
+  // ── Firebase Auth State Listener ────────────────────────────────────────
+  // This is the ONLY place we determine the initial auth state.
+  // We do NOT interpret Firestore/network errors as "user logged out."
   useEffect(() => {
-    if (isFirebaseConfigured) {
-      const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-        if (firebaseUser) {
-          setUser(firebaseUser);
-          try {
-            let userProfile = await getUserProfile(firebaseUser.uid);
-            if (!userProfile) {
-              const email = firebaseUser.email || '';
-              const role = email.includes('warden') ? 'warden' : email.includes('committee') ? 'mess_committee' : 'student';
-              userProfile = {
-                uid: firebaseUser.uid,
-                name: firebaseUser.displayName || email.split('@')[0] || 'Student',
-                email: email,
-                role: role,
-                gender: 'Male',
-                hostelBlock: 'DNB Block',
-                dietPreference: 'High Protein / Eggetarian',
-                proteinTarget: 120,
-                rewardPoints: 0,
-                emailVerified: true,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString()
-              };
-              try {
-                await setDoc(doc(firestoreDb, 'users', firebaseUser.uid), userProfile, { merge: true });
-              } catch (writeErr) {
-                console.error('Error auto-creating Firestore profile:', writeErr);
-              }
-            }
-            setProfile(userProfile);
-            localStorage.setItem('messmate_session_uid', firebaseUser.uid);
-          } catch (e) {
-            console.error('Error fetching user profile in auth state change:', e);
-          }
-        } else {
-          setUser(null);
-          setProfile(null);
-          localStorage.removeItem('messmate_session_uid');
-        }
-        setIsInitialLoading(false);
-      });
-
-      return () => unsubscribe();
-    } else {
-      // Local session restoration fallback
+    if (!isFirebaseConfigured) {
+      // Local-first session restoration fallback
       try {
         const sessionUid = localStorage.getItem('messmate_session_uid');
         if (sessionUid) {
@@ -90,45 +64,112 @@ export const AuthProvider = ({ children }) => {
           }
         }
       } catch (e) {
-        console.error('Local session restoration error:', e);
+        console.error('[AuthContext] Local session restore error:', e);
       }
-      setIsInitialLoading(false);
+      setIsInitialAuthLoading(false);
+      return;
     }
+
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        setUser(firebaseUser);
+        setIsProfileLoading(true);
+        setProfileError('');
+
+        try {
+          const userProfile = await getUserProfile(firebaseUser.uid);
+
+          if (userProfile) {
+            setProfile(userProfile);
+          } else {
+            // Auth user exists but Firestore profile is missing.
+            // This can happen for staff accounts or partial registrations.
+            // We build a minimal profile WITHOUT silently logging them out.
+            const email = firebaseUser.email || '';
+            const role = email.includes('warden')
+              ? 'warden'
+              : email.includes('committee')
+              ? 'mess_committee'
+              : 'student';
+
+            const fallbackProfile = {
+              uid: firebaseUser.uid,
+              name: firebaseUser.displayName || email.split('@')[0] || 'Student',
+              email,
+              role,
+              hostelBlock: 'DNB Block',
+              emailVerified: true,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString()
+            };
+            setProfile(fallbackProfile);
+          }
+        } catch (e) {
+          // Network / Firestore error — user IS authenticated, we just can't load profile yet.
+          // DO NOT set user to null. Show profile error instead.
+          console.error('[AuthContext] Profile fetch error:', e);
+          setProfileError(
+            'Your profile could not be loaded. Please check your internet connection and refresh.'
+          );
+          // Keep a minimal profile so the app doesn't crash
+          setProfile({
+            uid: firebaseUser.uid,
+            name: firebaseUser.displayName || '',
+            email: firebaseUser.email || '',
+            role: 'student',
+            _profileLoadFailed: true
+          });
+        } finally {
+          setIsProfileLoading(false);
+        }
+      } else {
+        // Genuinely signed out
+        setUser(null);
+        setProfile(null);
+        setProfileError('');
+        try { localStorage.removeItem('messmate_session_uid'); } catch (e) {}
+      }
+
+      setIsInitialAuthLoading(false);
+    });
+
+    return () => unsubscribe();
   }, []);
 
-  // LOGIN METHOD (Admission Number + Password for Student, Email + Password for Staff)
-  const login = async (identifier, password) => {
-    setIsAuthenticating(true);
+  // ── LOGIN ──────────────────────────────────────────────────────────────
+  const login = useCallback(async (identifier, password) => {
+    setIsLoginSubmitting(true);
     setAuthError('');
+
     try {
       const { user: authUser, profile: userProfile } = await signInUser(identifier, password);
       setUser(authUser);
       setProfile(userProfile);
-      localStorage.setItem('messmate_session_uid', authUser.uid);
-      setIsAuthenticating(false);
+      try { localStorage.setItem('messmate_session_uid', authUser.uid); } catch (e) {}
       return { user: authUser, profile: userProfile };
     } catch (err) {
-      setIsAuthenticating(false);
       const msg = err.message || 'Login failed. Please check your credentials.';
       setAuthError(msg);
       throw new Error(msg);
+    } finally {
+      setIsLoginSubmitting(false);
     }
-  };
+  }, []);
 
-  // SEND OTP METHOD
-  const sendOTP = async (details) => {
+  // ── SEND OTP ───────────────────────────────────────────────────────────
+  const sendOTP = useCallback(async (details) => {
     setAuthError('');
     try {
       return await sendRegistrationOTP(details);
     } catch (err) {
-      const msg = err.message || 'Failed to dispatch verification code.';
+      const msg = err.message || 'Failed to send verification code.';
       setAuthError(msg);
       throw new Error(msg);
     }
-  };
+  }, []);
 
-  // VERIFY OTP METHOD
-  const verifyOTP = async (details) => {
+  // ── VERIFY OTP ─────────────────────────────────────────────────────────
+  const verifyOTP = useCallback(async (details) => {
     setAuthError('');
     try {
       return await verifyRegistrationOTP(details);
@@ -137,12 +178,15 @@ export const AuthProvider = ({ children }) => {
       setAuthError(msg);
       throw new Error(msg);
     }
-  };
+  }, []);
 
-  // REGISTER STUDENT METHOD (Executed ONLY after verified OTP)
-  const register = async ({ name, admissionNumber, email, password, gender, hostelBlock, isOtpVerified = true }) => {
-    setIsAuthenticating(true);
+  // ── REGISTER ───────────────────────────────────────────────────────────
+  const register = useCallback(async ({
+    name, admissionNumber, email, password, gender, hostelBlock, isOtpVerified = true
+  }) => {
+    setIsRegisterSubmitting(true);
     setAuthError('');
+
     try {
       const { user: authUser, profile: userProfile } = await signUpStudent({
         name,
@@ -155,52 +199,61 @@ export const AuthProvider = ({ children }) => {
       });
       setUser(authUser);
       setProfile(userProfile);
-      localStorage.setItem('messmate_session_uid', authUser.uid);
-      setIsAuthenticating(false);
+      try { localStorage.setItem('messmate_session_uid', authUser.uid); } catch (e) {}
       return { user: authUser, profile: userProfile };
     } catch (err) {
-      setIsAuthenticating(false);
       const msg = err.message || 'Registration failed.';
       setAuthError(msg);
       throw new Error(msg);
+    } finally {
+      setIsRegisterSubmitting(false);
     }
-  };
+  }, []);
 
-  // LOGOUT METHOD
-  const logout = async () => {
-    setIsAuthenticating(true);
+  // ── LOGOUT ─────────────────────────────────────────────────────────────
+  const logout = useCallback(async () => {
+    setIsLogoutLoading(true);
+    setAuthError('');
+    setProfileError('');
+
     try {
       await signOutUser();
+      // Explicitly clear all user-scoped state
       setUser(null);
       setProfile(null);
-      localStorage.removeItem('messmate_session_uid');
     } catch (e) {
-      console.error('Logout error:', e);
+      console.error('[AuthContext] Logout error:', e);
     } finally {
-      setIsAuthenticating(false);
+      setIsLogoutLoading(false);
     }
-  };
+  }, []);
 
-  // PASSWORD RESET METHOD (Supports Admission Number or Email)
-  const resetPassword = async (identifier) => {
+  // ── PASSWORD RESET ─────────────────────────────────────────────────────
+  const resetPassword = useCallback(async (identifier) => {
     try {
       return await sendPasswordResetForIdentifier(identifier);
     } catch (err) {
       throw new Error(err.message || 'Failed to send password reset email.');
     }
-  };
+  }, []);
 
-  // UPDATE PROFILE METHOD
-  const updateProfile = async (updates) => {
+  // ── UPDATE PROFILE ─────────────────────────────────────────────────────
+  const updateProfile = useCallback(async (updates) => {
     if (!profile?.uid) return;
     try {
-      const updated = await updateUserProfileDoc(profile.uid, updates);
-      setProfile(prev => ({ ...prev, ...updates }));
-      return updated;
+      await updateUserProfileDoc(profile.uid, updates);
+      // Apply update locally (optimistic — keep role/uid from existing profile)
+      setProfile(prev => ({
+        ...prev,
+        ...updates,
+        role: prev.role,           // never allow client to change role via this path
+        uid: prev.uid
+      }));
     } catch (e) {
-      console.error('Error updating profile:', e);
+      console.error('[AuthContext] updateProfile error:', e);
+      throw new Error('Profile update failed. Please try again.');
     }
-  };
+  }, [profile]);
 
   const role = normalizeRole(profile?.role);
 
@@ -210,9 +263,21 @@ export const AuthProvider = ({ children }) => {
         user,
         profile,
         role,
-        loading: isInitialLoading,
-        isAuthenticating,
+
+        // Granular loading states
+        loading: isInitialAuthLoading,            // kept for backward compat
+        isInitialAuthLoading,
+        isProfileLoading,
+        isLoginSubmitting,
+        isRegisterSubmitting,
+        isLogoutLoading,
+        isAuthenticating: isLoginSubmitting || isRegisterSubmitting,
+
+        // Errors
         authError,
+        profileError,
+
+        // Auth actions
         login,
         register,
         sendOTP,
@@ -220,7 +285,8 @@ export const AuthProvider = ({ children }) => {
         logout,
         resetPassword,
         updateProfile,
-        isAuthenticated: Boolean(user && profile)
+
+        isAuthenticated: Boolean(user && profile && !profile._profileLoadFailed)
       }}
     >
       {children}

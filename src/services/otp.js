@@ -62,16 +62,27 @@ export const checkRegistrationEligibility = async (admissionNumber, email) => {
 };
 
 /**
- * Request a 6-digit verification code to the student's ABES college email
- * Calls the secure serverless backend endpoint (/api/send-otp) which communicates with Resend API
+ * Request a 6-digit verification code to the student's ABES college email.
+ * Calls the secure serverless backend endpoint (/api/send-otp).
+ *
+ * NOTE: We do NOT call checkRegistrationEligibility here.
+ * That check would block partial-registration recovery (a student who previously
+ * got as far as creating the admission_map entry but failed on Firestore profile
+ * would be permanently locked out). Uniqueness is enforced atomically inside
+ * signUpStudent instead.
  */
 export const sendRegistrationOTP = async ({ email, admissionNumber, name }) => {
   const cleanEmail = (email || '').trim().toLowerCase();
   const cleanAdmission = (admissionNumber || '').trim();
   const cleanName = (name || 'Student').trim();
 
-  // Validate before sending
-  await checkRegistrationEligibility(cleanAdmission, cleanEmail);
+  // Basic validation only
+  if (!cleanEmail || !isValidAbesEmail(cleanEmail)) {
+    throw new Error('Please enter a valid ABES college email (@abes.ac.in).');
+  }
+  if (!cleanAdmission) {
+    throw new Error('Admission Number is required.');
+  }
 
   const metaEnv = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env : (typeof process !== 'undefined' && process.env ? process.env : {});
   const sendApiUrl = metaEnv.VITE_OTP_API_URL || '/api/send-otp';
