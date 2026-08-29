@@ -80,28 +80,35 @@ export const MealDetailModal = () => {
         </div>
 
         {/* Food Image */}
-        <div className="relative h-52 w-full overflow-hidden">
-          <img src={meal.image} alt={meal.name} className="w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-transparent to-transparent"></div>
-          
-          <div className="absolute bottom-3 left-4 right-4 text-white flex items-end justify-between">
-            <div>
-              <h2 className="text-lg sm:text-xl font-black">{meal.name}</h2>
-              <span className="text-xs text-slate-300 font-semibold">{meal.time}</span>
-            </div>
+        {meal.image ? (
+          <div className="relative h-52 w-full overflow-hidden">
+            <img src={meal.image} alt={meal.name} className="w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-transparent to-transparent"></div>
+            
+            <div className="absolute bottom-3 left-4 right-4 text-white flex items-end justify-between">
+              <div>
+                <h2 className="text-lg sm:text-xl font-black">{meal.name}</h2>
+                <span className="text-xs text-slate-300 font-semibold">{meal.time}</span>
+              </div>
 
-            <div className="bg-black/70 backdrop-blur-md text-white px-3 py-1 rounded-xl text-xs font-black flex items-center space-x-1 shadow-md">
-              {liveStats.rating ? (
-                <>
-                  <Star className="w-3.5 h-3.5 text-amber-400 fill-current" />
-                  <span>{liveStats.rating} ★ ({liveStats.ratingCount})</span>
-                </>
-              ) : (
-                <span className="text-slate-300 text-[11px]">No ratings yet</span>
-              )}
+              <div className="bg-black/70 backdrop-blur-md text-white px-3 py-1 rounded-xl text-xs font-black flex items-center space-x-1 shadow-md">
+                {liveStats.rating ? (
+                  <>
+                    <Star className="w-3.5 h-3.5 text-amber-400 fill-current" />
+                    <span>{liveStats.rating} ★ ({liveStats.ratingCount})</span>
+                  </>
+                ) : (
+                  <span className="text-slate-300 text-[11px]">No ratings yet</span>
+                )}
+              </div>
             </div>
           </div>
-        </div>
+        ) : (
+          <div className="p-6 bg-gradient-to-br from-slate-800 to-slate-900 text-white text-center">
+            <h2 className="text-lg sm:text-xl font-black">{meal.name}</h2>
+            <span className="text-xs text-slate-300 font-semibold">{meal.time}</span>
+          </div>
+        )}
 
         {/* Content */}
         <div className="p-5 space-y-4 max-h-[60vh] overflow-y-auto">

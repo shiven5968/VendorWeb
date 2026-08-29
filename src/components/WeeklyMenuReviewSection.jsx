@@ -29,19 +29,19 @@ const MENU_DATA = {
     Dinner: ["Daal Makhani", "Mix Veg", "Roti", "Rice", "Gulab Jamun", "Chhachh", "Achar"]
   },
   Friday: {
-    Breakfast: ["Aaloo Paratha", "Pickle", "Tea", "Curd", "Banana"],
-    Lunch: ["Aaloo Matar Jeera", "Arhar Daal", "Roti", "Rice", "Mix Salad", "Boondi Raita", "Lemon 1/2"],
-    Snacks: ["Chowmein", "Chilly & Tomato Sauce", "Shikanji"],
-    Dinner: ["Chhole", "Dam Aaloo", "Rice", "Plain Paratha", "Custard", "Mix Salad", "Achar"]
+    Breakfast: ["Aaloo Tamatar Sabji", "Puri", "Jalebi", "Curd", "Tea"],
+    Lunch: ["Mix Daal", "Tarohi", "Roti", "Rice", "Mix Salad", "Curd", "Lemon 1/2"],
+    Snacks: ["Bread Roll", "Chilly & Tomato Sauce", "Tea"],
+    Dinner: ["Arhar Daal", "Lauki", "Rice", "Roti", "Coconut Laddoo", "Mix Salad", "Achar"]
   },
   Saturday: {
     Breakfast: ["Aaloo Tamatar Sabji", "Puri", "Mirchi", "Tea", "Jalebi", "Curd", "Watermelon"],
-    Lunch: ["Mix Dal", "Taroi", "Roti", "Rice", "Mix Salad", "Curd", "Lemon 1/2"],
-    Snacks: ["Bread Roll", "Chilly & Tomato Sauce", "Tea"],
+    Lunch: ["Chhole Kabuli (Big)", "Bhature", "Fry Mirch", "Sirka Pyaz", "Jeera Rice", "Cold Drink", "Pickle", "Veg Raita"],
+    Snacks: ["Chowmein", "Chilly & Tomato Sauce", "Hot Tea"],
     Dinner: ["Arhar Dal", "Lauki", "Rice", "Roti", "Mix Salad", "Chhachh"]
   },
   Sunday: {
-    Breakfast: ["Aaloo Sandwich", "Tomato Sauce", "Cornflakes", "Milk", "Tea", "Mix Fruit", "Chat Masala"],
+    Breakfast: ["Veg Sandwich", "Tomato Sauce", "Cornflakes", "Milk", "Tea", "Mix Fruit", "Chat Masala"],
     Lunch: ["Chhole Kabuli (Big)", "Bhature", "Fry Mirch", "Sirka Pyaz", "Jeera Rice", "Cold Drink", "Pickle", "Veg Raita"],
     Snacks: ["OFF"],
     Dinner: ["Lauki Kofta", "Arabi", "Rice", "Roti", "Chhachh", "Kheer / Sewai"]

@@ -21,36 +21,36 @@ import { WeeklyMenuReviewSection } from '../components/WeeklyMenuReviewSection';
 
 const MEAL_IMAGES = {
   // Breakfasts
-  idli_sambhar: "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=800&q=80",
-  matar_kulche: "https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=800&q=80",
-  aloo_paratha: "https://images.unsplash.com/photo-1626074353765-517a681e40be?auto=format&fit=crop&w=800&q=80",
-  pav_bhaji: "https://images.unsplash.com/photo-1606491956689-2ea866880c84?auto=format&fit=crop&w=800&q=80",
-  puri_aloo_jalebi: "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=800&q=80",
-  aloo_sandwich: "https://images.unsplash.com/photo-1528735602780-2552fd46c7af?auto=format&fit=crop&w=800&q=80",
+  idli_sambhar: "/meal-images/idli-sambhar.jpg",
+  matar_kulche: "/meal-images/matar-kulche.jpg",
+  aloo_paratha: "/meal-images/aloo-paratha.jpg",
+  pav_bhaji: "/meal-images/pav-bhaji.jpg",
+  puri_aloo_jalebi: "/meal-images/puri-aloo.jpg",
+  aloo_sandwich: "/meal-images/veg-sandwich.jpg",
 
   // Lunches
-  rajma_rice: "https://images.unsplash.com/photo-1626777552726-4a6b54c97e46?auto=format&fit=crop&w=800&q=80",
-  tahri_pulao: "https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?auto=format&fit=crop&w=800&q=80",
-  chhole_rice: "https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=800&q=80",
-  kadhi_rice: "https://images.unsplash.com/photo-1626777552726-4a6b54c97e46?auto=format&fit=crop&w=800&q=80",
+  rajma_rice: "https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=800&q=80",
+  tahri_pulao: "https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=800&q=80",
+  chhole_rice: "/meal-images/kaabli-chhole.jpg",
+  kadhi_rice: "https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=800&q=80",
   aloo_matar_dal: "https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=800&q=80",
   mix_dal_taroi: "https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=800&q=80",
-  chole_bhature: "https://images.unsplash.com/photo-1626132647523-66f5bf380027?auto=format&fit=crop&w=800&q=80",
+  chole_bhature: "/meal-images/chhole-bhature.jpg",
 
   // Snacks
-  burger: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=800&q=80",
-  macaroni: "https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&w=800&q=80",
+  burger: "/meal-images/burger.jpg",
+  macaroni: "/meal-images/macaroni.jpg",
   samosa: "https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=800&q=80",
-  pakoda: "https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=800&q=80",
-  chowmein: "https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&w=800&q=80",
-  bread_roll: "https://images.unsplash.com/photo-1509722747041-616f39b57569?auto=format&fit=crop&w=800&q=80",
-  off_snacks: "https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=800&q=80",
+  pakoda: "/meal-images/bread-pakoda.jpg",
+  chowmein: "/meal-images/chowmein.jpg",
+  bread_roll: "/meal-images/bread-roll.jpg",
+  off_snacks: "",
 
   // Dinners
   arhar_dal_thali: "https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=800&q=80",
-  kali_masoor_icecream: "https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=800&q=80",
-  butter_paneer_puri: "https://images.unsplash.com/photo-1631452180519-c014fe946bc7?auto=format&fit=crop&w=800&q=80",
-  dal_makhani_thali: "https://images.unsplash.com/photo-1626777552726-4a6b54c97e46?auto=format&fit=crop&w=800&q=80",
+  kali_masoor_icecream: "https://images.unsplash.com/photo-1585937421612-70a008356fbe?auto=format&fit=crop&w=800&q=80",
+  butter_paneer_puri: "/meal-images/butter-paneer.jpg",
+  dal_makhani_thali: "https://images.unsplash.com/photo-1585937421612-70a008356fbe?auto=format&fit=crop&w=800&q=80",
   chhole_paratha: "https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=800&q=80",
   lauki_kofta_kheer: "https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=800&q=80"
 };
@@ -69,7 +69,7 @@ const FULL_WEEKLY_MENU = {
     Dinner: { title: "Kali Masoor Dal & Bhindi", items: ["Rice", "Roti", "Icecream (Mango/Butterscotch/Chocolate)", "Mix Salad", "Achar"], image: MEAL_IMAGES.kali_masoor_icecream, protein: "15g", calories: "600 kcal" }
   },
   Wednesday: {
-    Breakfast: { title: "Aaloo Paratha & Muskmelon", items: ["Pickle", "Curd", "Tea", "Muskmelon"], image: MEAL_IMAGES.aloo_paratha, protein: "10g", calories: "450 kcal" },
+    Breakfast: { title: "Aloo Paratha & Muskmelon", items: ["Pickle", "Curd", "Tea", "Muskmelon"], image: MEAL_IMAGES.aloo_paratha, protein: "10g", calories: "450 kcal" },
     Lunch: { title: "Kaabli Chhole & Kashifal", items: ["Roti", "Jeera Rice", "Mix Salad", "Curd", "Lemon 1/2"], image: MEAL_IMAGES.chhole_rice, protein: "17g", calories: "560 kcal" },
     Snacks: { title: "Samosa & Tea", items: ["Samosa", "Tomato & Chilly Sauce", "Tea"], image: MEAL_IMAGES.samosa, protein: "5g", calories: "310 kcal" },
     Dinner: { title: "Butter Paneer Masala / Kadhai Paneer", items: ["Aaloo Jeera", "Puri", "Pulaw", "Mix Salad"], image: MEAL_IMAGES.butter_paneer_puri, protein: "22g", calories: "690 kcal" }
@@ -77,26 +77,26 @@ const FULL_WEEKLY_MENU = {
   Thursday: {
     Breakfast: { title: "Pav Bhaji & Papaya", items: ["Pav Bhaji", "Tea", "Milk", "Butter", "Papaya"], image: MEAL_IMAGES.pav_bhaji, protein: "9g", calories: "420 kcal" },
     Lunch: { title: "Kadhi Pakoda & Aaloo Pyaj Sabji", items: ["Rice", "Roti", "Salad", "Papad Fried", "Lemon 1/2"], image: MEAL_IMAGES.kadhi_rice, protein: "13g", calories: "540 kcal" },
-    Snacks: { title: "Mix Pakodi / Bread Pakoda", items: ["Chilli & Tomato Sauce", "Tea"], image: MEAL_IMAGES.pakoda, protein: "6g", calories: "330 kcal" },
+    Snacks: { title: "Bread Pakoda & Tea", items: ["Bread Pakoda", "Chilli & Tomato Sauce", "Tea"], image: MEAL_IMAGES.pakoda, protein: "8g", calories: "370 kcal" },
     Dinner: { title: "Daal Makhani & Mix Veg", items: ["Roti", "Rice", "Gulab Jamun", "Chhachh", "Achar"], image: MEAL_IMAGES.dal_makhani_thali, protein: "18g", calories: "670 kcal" }
   },
   Friday: {
-    Breakfast: { title: "Aaloo Paratha & Curd", items: ["Pickle", "Tea", "Banana"], image: MEAL_IMAGES.aloo_paratha, protein: "10g", calories: "450 kcal" },
-    Lunch: { title: "Aaloo Matar Jeera & Arhar Daal", items: ["Roti", "Rice", "Mix Salad", "Boondi Raita", "Lemon 1/2"], image: MEAL_IMAGES.aloo_matar_dal, protein: "15g", calories: "550 kcal" },
-    Snacks: { title: "Chowmein & Shikanji", items: ["Chilly & Tomato Sauce", "Shikanji"], image: MEAL_IMAGES.chowmein, protein: "7g", calories: "340 kcal" },
-    Dinner: { title: "Chhole & Dam Aaloo", items: ["Rice", "Plain Paratha", "Custard", "Mix Salad", "Achar"], image: MEAL_IMAGES.chhole_paratha, protein: "19g", calories: "640 kcal" }
+    Breakfast: { title: "Aloo Tamatar Sabji & Puri", items: ["Puri", "Aaloo Tamatar Sabji", "Mirchi", "Tea", "Jalebi", "Curd"], image: MEAL_IMAGES.puri_aloo_jalebi, protein: "12g", calories: "640 kcal" },
+    Lunch: { title: "Mix Daal, Tarohi & Roti", items: ["Chana Dal", "Shimla Soyabean", "Roti", "Rice", "Mix Salad", "Curd", "Lemon 1/2"], image: MEAL_IMAGES.mix_dal_taroi, protein: "31g", calories: "880 kcal" },
+    Snacks: { title: "Bread Roll & Tea", items: ["Bread Roll", "Chilly & Tomato Sauce", "Tea"], image: MEAL_IMAGES.bread_roll, protein: "6g", calories: "360 kcal" },
+    Dinner: { title: "Arhar Daal & Lauki", items: ["Rice", "Roti", "Coconut Laddoo", "Mix Salad", "Achar"], image: MEAL_IMAGES.arhar_dal_thali, protein: "24g", calories: "910 kcal" }
   },
   Saturday: {
-    Breakfast: { title: "Puri Aaloo & Jalebi", items: ["Aaloo Tamatar Sabji", "Puri", "Mirchi", "Tea", "Jalebi", "Curd", "Watermelon"], image: MEAL_IMAGES.puri_aloo_jalebi, protein: "8g", calories: "520 kcal" },
-    Lunch: { title: "Mix Dal & Taroi", items: ["Roti", "Rice", "Mix Salad", "Curd", "Lemon 1/2"], image: MEAL_IMAGES.mix_dal_taroi, protein: "14g", calories: "490 kcal" },
-    Snacks: { title: "Bread Roll & Tea", items: ["Chilly & Tomato Sauce", "Tea"], image: MEAL_IMAGES.bread_roll, protein: "6g", calories: "280 kcal" },
-    Dinner: { title: "Arhar Dal & Lauki", items: ["Rice", "Roti", "Mix Salad", "Chhachh"], image: MEAL_IMAGES.arhar_dal_thali, protein: "15g", calories: "510 kcal" }
+    Breakfast: { title: "Aloo Tamatar Sabji & Puri", items: ["Aaloo Tamatar Sabji", "Puri", "Mirchi", "Tea", "Jalebi", "Curd", "Watermelon"], image: MEAL_IMAGES.puri_aloo_jalebi, protein: "12g", calories: "640 kcal" },
+    Lunch: { title: "Chhole Bhature & Cold Drink", items: ["Chhole Kabuli (Big)", "Bhature", "Fry Mirch", "Sirka Pyaz", "Jeera Rice", "Cold Drink", "Pickle", "Veg Raita"], image: MEAL_IMAGES.chole_bhature, protein: "21g", calories: "810 kcal" },
+    Snacks: { title: "Chowmein & Shikanji", items: ["Chowmein", "Chilly & Tomato Sauce", "Hot Tea"], image: MEAL_IMAGES.chowmein, protein: "7g", calories: "310 kcal" },
+    Dinner: { title: "Arhar Dal & Lauki", items: ["Rice", "Roti", "Mix Salad", "Chhachh"], image: MEAL_IMAGES.arhar_dal_thali, protein: "24g", calories: "910 kcal" }
   },
   Sunday: {
-    Breakfast: { title: "Aaloo Sandwich & Cornflakes", items: ["Tomato Sauce", "Milk", "Tea", "Mix Fruit", "Chat Masala"], image: MEAL_IMAGES.aloo_sandwich, protein: "11g", calories: "390 kcal" },
-    Lunch: { title: "Chhole Bhature (Big Kabuli)", items: ["Fry Mirch", "Sirka Pyaz", "Jeera Rice", "Cold Drink", "Pickle", "Veg Raita"], image: MEAL_IMAGES.chole_bhature, protein: "21g", calories: "750 kcal" },
-    Snacks: { title: "Snacks OFF", items: ["Mess Kitchen Closed for Evening Snacks"], image: MEAL_IMAGES.off_snacks, protein: "0g", calories: "0 kcal" },
-    Dinner: { title: "Lauki Kofta & Arabi", items: ["Rice", "Roti", "Chhachh", "Kheer / Sewai"], image: MEAL_IMAGES.lauki_kofta_kheer, protein: "14g", calories: "580 kcal" }
+    Breakfast: { title: "Veg Sandwich & Cornflakes", items: ["Veg Sandwich", "Tomato Sauce", "Cornflakes", "Milk", "Tea", "Mix Fruit", "Chat Masala"], image: MEAL_IMAGES.aloo_sandwich, protein: "12g", calories: "420 kcal" },
+    Lunch: { title: "Chhole Bhature (Big Kabuli)", items: ["Fry Mirch", "Sirka Pyaz", "Jeera Rice", "Cold Drink", "Pickle", "Veg Raita"], image: MEAL_IMAGES.chole_bhature, protein: "21g", calories: "810 kcal" },
+    Snacks: { title: "Holiday Off", items: ["No snacks served on Sunday evening"], image: "", protein: "0g", calories: "0 kcal" },
+    Dinner: { title: "Lauki Kofta & Arabi", items: ["Rice", "Roti", "Chhachh", "Kheer / Sewai"], image: MEAL_IMAGES.lauki_kofta_kheer, protein: "26g", calories: "1040 kcal" }
   }
 };
 
@@ -302,12 +302,20 @@ export const StudentDashboard = () => {
                 >
                   <div>
                     <div className="relative w-full overflow-hidden">
-                      <img
-                        src={meal.image}
-                        alt={meal.name}
-                        className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-500"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent"></div>
+                      {meal.image ? (
+                        <img
+                          src={meal.image}
+                          alt={meal.name}
+                          className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                      ) : (
+                        <div className="w-full h-48 bg-gradient-to-br from-slate-800 to-slate-900 flex flex-col items-center justify-center p-4 text-center">
+                          <Coffee className="w-10 h-10 text-orange-400 mb-2 opacity-80" />
+                          <span className="text-sm font-black text-white">HOLIDAY OFF</span>
+                          <span className="text-[11px] text-slate-400 font-medium mt-0.5">Mess closed for evening snacks</span>
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent pointer-events-none"></div>
 
                       {/* Category Tag */}
                       <span className={`absolute top-3 left-3 px-2.5 py-0.5 rounded-full ${style.bg} text-white text-[10px] font-black flex items-center space-x-1 shadow-md`}>
