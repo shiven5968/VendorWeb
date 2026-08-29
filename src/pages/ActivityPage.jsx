@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { MessageSquare, Plus, Send, CheckCircle2, Clock, AlertCircle, Star } from 'lucide-react';
+import { MessageSquare, Plus, Send, CheckCircle2, Clock, AlertCircle, Star, PhoneCall } from 'lucide-react';
+import { OfficialContactSection } from '../components/OfficialContactSection';
 
 export const ActivityPage = () => {
   const { 
@@ -72,9 +73,9 @@ export const ActivityPage = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">Activity & Complaints</h1>
+          <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">Activity & Support</h1>
           <p className="text-xs text-slate-500 font-semibold">
-            {currentRole === 'student' ? 'My reported mess issues & meal feedback' : 'Hostel Issues & Ratings Log'}
+            {currentRole === 'student' ? 'Report mess grievances, track feedback & reach campus officials' : 'Hostel Issues & Ratings Log'}
           </p>
         </div>
 
@@ -174,6 +175,17 @@ export const ActivityPage = () => {
             My Ratings ({myRatings.length})
           </button>
         )}
+
+        <button
+          onClick={() => setActiveTab('contacts')}
+          className={`flex-1 py-2 rounded-xl text-xs font-black transition-all ${
+            activeTab === 'contacts'
+              ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm'
+              : 'text-slate-500'
+          }`}
+        >
+          Official Contacts
+        </button>
       </div>
 
       {/* Complaints List */}
@@ -181,7 +193,7 @@ export const ActivityPage = () => {
         <div className="space-y-3">
           {displayedComplaints.length === 0 ? (
             <div className="p-8 text-center text-xs font-bold text-slate-400 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800">
-              No complaints yet.
+              No complaints filed yet.
             </div>
           ) : (
             displayedComplaints.map(c => (
@@ -253,6 +265,18 @@ export const ActivityPage = () => {
               </div>
             ))
           )}
+        </div>
+      )}
+
+      {/* Official Contacts Section */}
+      {activeTab === 'contacts' && (
+        <OfficialContactSection />
+      )}
+
+      {/* Persistent Contacts Quick Strip at Bottom of Activity Page */}
+      {activeTab !== 'contacts' && (
+        <div className="pt-4 border-t border-slate-200 dark:border-slate-800">
+          <OfficialContactSection />
         </div>
       )}
 

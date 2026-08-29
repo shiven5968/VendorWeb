@@ -26,12 +26,69 @@ import { ReportsPage } from './pages/ReportsPage';
 import { Loader2 } from 'lucide-react';
 
 const AppContent = () => {
-  const { user, profile, role, loading: authLoading } = useAuth();
-  const { currentPage, setCurrentPage } = useApp();
+  const { user, profile, role, isInitialAuthLoading } = useAuth();
+  const { 
+    currentPage, 
+    setCurrentPage, 
+    isAddMealModalOpen, 
+    setIsAddMealModalOpen, 
+    setEditingMeal, 
+    selectedMeal, 
+    setSelectedMeal, 
+    isSearchOpen, 
+    setIsSearchOpen, 
+    isNotificationsOpen, 
+    setIsNotificationsOpen 
+  } = useApp();
 
   // Role selection state for unauthenticated landing -> login flow
   const [selectedRole, setSelectedRole] = useState('student');
   const [isLoginFlow, setIsLoginFlow] = useState(false);
+
+  // Android Capacitor Hardware Back Button Navigation Handler
+  useEffect(() => {
+    let listener = null;
+    try {
+      import('@capacitor/app').then(({ App: CapApp }) => {
+        listener = CapApp.addListener('backButton', ({ canGoBack }) => {
+          if (isAddMealModalOpen) {
+            setIsAddMealModalOpen(false);
+            setEditingMeal(null);
+          } else if (selectedMeal) {
+            setSelectedMeal(null);
+          } else if (isSearchOpen) {
+            setIsSearchOpen(false);
+          } else if (isNotificationsOpen) {
+            setIsNotificationsOpen(false);
+          } else if (currentPage !== 'dashboard') {
+            setCurrentPage('dashboard');
+          } else if (canGoBack) {
+            window.history.back();
+          } else {
+            CapApp.exitApp();
+          }
+        });
+      }).catch(() => {});
+    } catch (e) {}
+
+    return () => {
+      if (listener && typeof listener.remove === 'function') {
+        listener.remove();
+      }
+    };
+  }, [
+    isAddMealModalOpen, 
+    selectedMeal, 
+    isSearchOpen, 
+    isNotificationsOpen, 
+    currentPage, 
+    setCurrentPage, 
+    setIsAddMealModalOpen, 
+    setEditingMeal, 
+    setSelectedMeal, 
+    setIsSearchOpen, 
+    setIsNotificationsOpen
+  ]);
 
   // URL Path Synchronization & Strict Role Guarding
   useEffect(() => {
@@ -73,8 +130,9 @@ const AppContent = () => {
     }
   }, [user, role, setCurrentPage]);
 
-  // Loading Screen
-  if (authLoading) {
+  // Loading Screen — only shown during initial Firebase auth resolution
+  // NOT shown during profile loading (to avoid unmounting LoginPage during login)
+  if (isInitialAuthLoading) {
     return (
       <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center space-y-3 text-white">
         <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />

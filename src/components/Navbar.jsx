@@ -17,7 +17,8 @@ import {
   Home,
   MessageSquare,
   Gift,
-  User
+  User,
+  Vote
 } from 'lucide-react';
 
 export const Navbar = () => {
@@ -41,15 +42,18 @@ export const Navbar = () => {
       return [
         { id: 'dashboard', label: 'Home', icon: Home },
         { id: 'menu', label: 'Menu', icon: UtensilsCrossed },
+        { id: 'voting', label: 'Voting', icon: Vote },
         { id: 'muscle-pass', label: 'Muscle Pass', icon: Dumbbell },
-        { id: 'activity', label: 'Activity', icon: MessageSquare },
         { id: 'rewards', label: 'Rewards', icon: Gift },
+        { id: 'activity', label: 'Activity', icon: MessageSquare },
+        { id: 'profile', label: 'Profile', icon: User },
       ];
     } else if (role === 'mess_committee') {
       return [
         { id: 'dashboard', label: 'Menu Studio', icon: UtensilsCrossed },
         { id: 'analytics', label: 'Analytics', icon: BarChart3 },
         { id: 'activity', label: 'Feedback', icon: MessageSquare },
+        { id: 'voting', label: 'Voting Polls', icon: Vote },
         { id: 'reports', label: 'Reports', icon: FileText },
       ];
     } else if (role === 'warden') {
@@ -57,6 +61,7 @@ export const Navbar = () => {
         { id: 'dashboard', label: 'Executive Overview', icon: ShieldAlert },
         { id: 'analytics', label: 'Analytics', icon: BarChart3 },
         { id: 'activity', label: 'Complaints', icon: MessageSquare },
+        { id: 'voting', label: 'Student Polls', icon: Vote },
         { id: 'reports', label: 'Governance', icon: FileText },
       ];
     }
@@ -94,7 +99,7 @@ export const Navbar = () => {
 
         {/* Desktop Navigation Links */}
         {user && (
-          <nav className="hidden md:flex items-center space-x-1 lg:space-x-2">
+          <nav className="hidden md:flex items-center space-x-1">
             {getNavItems().map(item => {
               const Icon = item.icon;
               const isActive = currentPage === item.id;
@@ -102,9 +107,9 @@ export const Navbar = () => {
                 <button
                   key={item.id}
                   onClick={() => handleNavClick(item.id)}
-                  className={`flex items-center space-x-1.5 px-3.5 py-2 rounded-xl text-xs font-black transition-all ${
+                  className={`flex items-center space-x-1 px-3 py-1.5 rounded-xl text-xs font-black transition-all ${
                     isActive
-                      ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 shadow-sm border border-emerald-500/20 scale-105'
+                      ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 shadow-sm border border-emerald-500/20'
                       : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60'
                   }`}
                 >
@@ -157,70 +162,27 @@ export const Navbar = () => {
 
           {/* User Profile & Logout */}
           {user && currentUser ? (
-            <div 
-              onClick={() => setCurrentPage('profile')}
-              className="flex items-center space-x-2 pl-2 border-l border-slate-200 dark:border-slate-800 cursor-pointer group"
-            >
+            <div className="flex items-center space-x-2">
               <img
                 src={currentUser.avatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=300"}
                 alt={currentUser.name}
-                className="w-8 h-8 rounded-full object-cover ring-2 ring-emerald-500/50 group-hover:scale-105 transition-transform"
+                onClick={() => setCurrentPage('profile')}
+                className="w-9 h-9 rounded-xl object-cover ring-2 ring-emerald-500/30 cursor-pointer hover:scale-105 transition-transform"
+                title={currentUser.name}
               />
-              <div className="hidden lg:block text-left text-xs">
-                <p className="font-bold text-slate-900 dark:text-slate-100 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
-                  {currentUser.name}
-                </p>
-                <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold capitalize">
-                  {role?.replace('_', ' ')}
-                </p>
-              </div>
               <button
-                onClick={(e) => { e.stopPropagation(); logout(); }}
-                title="Logout"
-                className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors ml-1"
+                onClick={logout}
+                className="hidden sm:flex items-center p-2 rounded-xl text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
+                title="Log Out"
               >
                 <LogOut className="w-4 h-4" />
               </button>
             </div>
           ) : null}
 
-          {/* Mobile Menu Toggle */}
-          {user && (
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
-            >
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <MenuIcon className="w-6 h-6" />}
-            </button>
-          )}
-
         </div>
+
       </div>
-
-      {/* Mobile Drawer Navigation */}
-      {user && mobileMenuOpen && (
-        <div className="md:hidden bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 py-3 space-y-2">
-          {getNavItems().map(item => {
-            const Icon = item.icon;
-            return (
-              <button
-                key={item.id}
-                onClick={() => handleNavClick(item.id)}
-                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-colors ${
-                  currentPage === item.id
-                    ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400'
-                    : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-                }`}
-              >
-                <div className="flex items-center space-x-2">
-                  {Icon && <Icon className="w-4 h-4" />}
-                  <span>{item.label}</span>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      )}
     </header>
   );
 };

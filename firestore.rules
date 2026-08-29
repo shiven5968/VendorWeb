@@ -228,12 +228,14 @@ service cloud.firestore {
       // Public read allowed for Admission Number login resolution and pre-registration uniqueness
       allow read: if true;
 
-      // Creation allowed during authenticated registration or by staff
-      allow create: if isAuthenticated() 
-                    && (request.resource.data.email == request.auth.token.email || isStaff());
+      // Creation and update allowed during authenticated registration or healing by account owner or staff
+      allow create, update: if isAuthenticated() 
+                            && (request.resource.data.uid == request.auth.uid 
+                                || request.resource.data.email == request.auth.token.email 
+                                || isStaff());
 
-      // Modification or deletion strictly reserved for Chief Warden
-      allow update, delete: if isWarden();
+      // Deletion strictly reserved for Chief Warden
+      allow delete: if isWarden();
     }
 
 
@@ -245,6 +247,17 @@ service cloud.firestore {
     // ===============================================================
     match /otp_sessions/{sessionKey} {
       allow read, write: if false;
+    }
+
+    // ===============================================================
+    // 12. MUSCLE PASS SUBSCRIPTIONS (/subscriptions/{userId})
+    // ===============================================================
+    match /subscriptions/{userId} {
+      // Students can read their own subscription state; Staff can audit
+      allow read: if isOwner(userId) || isStaff();
+
+      // Only serverless Admin SDK with verified Razorpay payment writes subscriptions
+      allow write: if false;
     }
   }
 }

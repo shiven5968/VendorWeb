@@ -11,70 +11,70 @@ export const MESS_BLOCK_MAP = {
     messName: 'ABES Boys Hostel Mess',
     location: 'Campus Dining Hall 1',
     timings: {
-      Breakfast: '07:30 AM - 09:30 AM',
-      Lunch: '12:30 PM - 02:30 PM',
+      Breakfast: '07:20 AM - 08:30 AM',
+      Lunch: '12:20 PM - 02:00 PM',
       Snacks: '05:00 PM - 06:00 PM',
-      Dinner: '07:30 PM - 09:30 PM',
+      Dinner: '07:40 PM - 09:00 PM',
     }
   },
   'VKB Block': {
     messName: 'ABES Boys Hostel Mess',
     location: 'Campus Dining Hall 1',
     timings: {
-      Breakfast: '07:30 AM - 09:30 AM',
-      Lunch: '12:30 PM - 02:30 PM',
+      Breakfast: '07:20 AM - 08:30 AM',
+      Lunch: '12:20 PM - 02:00 PM',
       Snacks: '05:00 PM - 06:00 PM',
-      Dinner: '07:30 PM - 09:30 PM',
+      Dinner: '07:40 PM - 09:00 PM',
     }
   },
   'RKB Block': {
     messName: 'ABES Boys Hostel Mess',
     location: 'Campus Dining Hall 1',
     timings: {
-      Breakfast: '07:30 AM - 09:30 AM',
-      Lunch: '12:30 PM - 02:30 PM',
+      Breakfast: '07:20 AM - 08:30 AM',
+      Lunch: '12:20 PM - 02:00 PM',
       Snacks: '05:00 PM - 06:00 PM',
-      Dinner: '07:30 PM - 09:30 PM',
+      Dinner: '07:40 PM - 09:00 PM',
     }
   },
   'ABB Block': {
     messName: 'ABES Boys Hostel Mess',
     location: 'Campus Dining Hall 1',
     timings: {
-      Breakfast: '07:30 AM - 09:30 AM',
-      Lunch: '12:30 PM - 02:30 PM',
+      Breakfast: '07:20 AM - 08:30 AM',
+      Lunch: '12:20 PM - 02:00 PM',
       Snacks: '05:00 PM - 06:00 PM',
-      Dinner: '07:30 PM - 09:30 PM',
+      Dinner: '07:40 PM - 09:00 PM',
     }
   },
-  'Kalpana Chawla (Girls)': {
+  'Block A (Girls)': {
     messName: 'ABES Girls Dining Hall 1',
     location: 'Girls Hostel Complex',
     timings: {
-      Breakfast: '07:30 AM - 09:30 AM',
-      Lunch: '12:30 PM - 02:30 PM',
+      Breakfast: '07:20 AM - 08:30 AM',
+      Lunch: '12:20 PM - 02:00 PM',
       Snacks: '05:00 PM - 06:00 PM',
-      Dinner: '07:30 PM - 09:30 PM',
+      Dinner: '07:40 PM - 09:00 PM',
     }
   },
-  'Sarojini Block (Girls)': {
+  'Block B (Girls)': {
     messName: 'ABES Girls Dining Hall 2',
     location: 'Girls Hostel Complex',
     timings: {
-      Breakfast: '07:30 AM - 09:30 AM',
-      Lunch: '12:30 PM - 02:30 PM',
+      Breakfast: '07:20 AM - 08:30 AM',
+      Lunch: '12:20 PM - 02:00 PM',
       Snacks: '05:00 PM - 06:00 PM',
-      Dinner: '07:30 PM - 09:30 PM',
+      Dinner: '07:40 PM - 09:00 PM',
     }
   },
-  'Kasturba Block (Girls)': {
+  'Block C (Girls)': {
     messName: 'ABES Girls Dining Hall 2',
     location: 'Girls Hostel Complex',
     timings: {
-      Breakfast: '07:30 AM - 09:30 AM',
-      Lunch: '12:30 PM - 02:30 PM',
+      Breakfast: '07:20 AM - 08:30 AM',
+      Lunch: '12:20 PM - 02:00 PM',
       Snacks: '05:00 PM - 06:00 PM',
-      Dinner: '07:30 PM - 09:30 PM',
+      Dinner: '07:40 PM - 09:00 PM',
     }
   }
 };
@@ -125,7 +125,7 @@ export const INITIAL_USERS = [
   }
 ];
 
-// Launch Menu Schedule (Full 7-Day College Mess Cycle: Mon-Sun)
+// // Launch Menu Schedule (Full 7-Day Source-of-Truth College Mess Cycle: Mon-Sun)
 export const INITIAL_MEALS_DB = [
   // Monday
   {
@@ -135,11 +135,14 @@ export const INITIAL_MEALS_DB = [
     category: 'Breakfast',
     time: '07:30 AM - 09:30 AM',
     items: 'Veg Fried Idli, Plain Idli, Sambhar, Coconut Chutney, Tea, Milk, Fruit',
-    image: 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&q=80&w=600',
-    calories: 380,
-    protein: 11,
-    carbs: 60,
-    fats: 8,
+    servingUsed: '150g Idli (3 pcs), 150g Sambhar, 50g Coconut Chutney, 5g frying oil',
+    image: 'https://themadrasdiaries.nl/wp-content/uploads/2024/03/Sambar-Idly-1024x512.webp',
+    imageSource: 'https://themadrasdiaries.nl/why-sambar-idli-is-a-south-indian-sensation/',
+    calories: 382,
+    protein: 10.8,
+    carbs: 61.2,
+    fats: 9.4,
+    fiber: 6.8,
     ingredients: ['Rice', 'Urad Dal', 'Sambhar Dal', 'Coconut', 'Milk', 'Tea', 'Fruits']
   },
   {
@@ -149,26 +152,32 @@ export const INITIAL_MEALS_DB = [
     category: 'Lunch',
     time: '12:30 PM - 02:30 PM',
     items: 'Mix Veg, Rajma, Roti, Rice, Mix Salad, Boondi Raita, Lemon',
-    image: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&q=80&w=600',
-    calories: 610,
-    protein: 22,
-    carbs: 82,
-    fats: 12,
+    servingUsed: '150g Rajma Masala, 150g Mix Veg, 200g Roti (4 pcs), 250g Steamed Rice, 50g Boondi Raita, 50g Salad',
+    image: 'https://www.spiceupthecurry.com/wp-content/uploads/2021/03/rajma-recipe-1-1.jpg',
+    imageSource: 'https://www.spiceupthecurry.com/red-kidney-beans-curry-punjabi-rajma/',
+    calories: 898,
+    protein: 28.4,
+    carbs: 153.2,
+    fats: 17.6,
+    fiber: 21.5,
     ingredients: ['Kidney Beans', 'Wheat Flour', 'Rice', 'Mix Vegetables', 'Curd', 'Lemon']
   },
   {
     id: 'mon_s',
-    name: 'Namkeen Bhujiya / Biscuits',
+    name: 'Burger',
     day: 'Monday',
     category: 'Snacks',
     time: '05:00 PM - 06:00 PM',
-    items: 'Namkeen Bhujiya, Biscuits, Hot Tea',
-    image: 'https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&q=80&w=600',
-    calories: 230,
-    protein: 5,
-    carbs: 34,
-    fats: 7,
-    ingredients: ['Gram Flour', 'Wheat Flour', 'Sugar', 'Chai']
+    items: 'Burger, Sauce and Roohafza',
+    servingUsed: '180g Veg Aloo Patty Burger, 20g Tomato/Chilli Sauce',
+    image: 'https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&q=80&w=800',
+    imageSource: 'https://unsplash.com/photos/ZuIDbio6Iv',
+    calories: 345,
+    protein: 7.8,
+    carbs: 52.4,
+    fats: 11.6,
+    fiber: 4.2,
+    ingredients: ['Burger Bun', 'Potato Veg Patty', 'Tomato Sauce', 'Chilly Sauce', 'Roohafza']
   },
   {
     id: 'mon_d',
@@ -177,11 +186,14 @@ export const INITIAL_MEALS_DB = [
     category: 'Dinner',
     time: '07:30 PM - 09:30 PM',
     items: 'Arhar Daal, Aloo Gobhi, Rice, Roti, Suji Halwa, Achar, Chhachh',
-    image: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&q=80&w=600',
-    calories: 640,
-    protein: 20,
-    carbs: 78,
-    fats: 16,
+    servingUsed: '150g Arhar Dal, 150g Aloo Gobhi, 200g Roti (4 pcs), 250g Steamed Rice, 50g Suji Halwa, 15g Achar',
+    image: 'https://kingofspices.co.nz/wp-content/uploads/2024/02/Aloo-Gobi.jpg',
+    imageSource: 'https://kingofspices.co.nz/product/aloo-gobi/',
+    calories: 992,
+    protein: 27.5,
+    carbs: 178.6,
+    fats: 18.5,
+    fiber: 19.8,
     ingredients: ['Toor Dal', 'Potatoes', 'Cauliflower', 'Rice', 'Wheat Flour', 'Semolina', 'Buttermilk']
   },
 
@@ -193,11 +205,14 @@ export const INITIAL_MEALS_DB = [
     category: 'Breakfast',
     time: '07:30 AM - 09:30 AM',
     items: 'Matar Kulche, Pickle, Milk, Tea, Fruit',
-    image: 'https://images.unsplash.com/photo-1606491956689-2ea866880c84?auto=format&fit=crop&q=80&w=600',
-    calories: 420,
-    protein: 14,
-    carbs: 64,
-    fats: 12,
+    servingUsed: '120g Kulcha (2 pcs), 150g Matar Chaat Gravy, 20g Garnish/Pickle',
+    image: 'https://www.sonibakers.com/uploaded_files/products/dsc_5929.JPG',
+    imageSource: 'https://www.sonibakers.com/matar-kulcha',
+    calories: 438,
+    protein: 14.6,
+    carbs: 76.2,
+    fats: 7.8,
+    fiber: 9.5,
     ingredients: ['White Peas', 'Maida/Wheat Flour', 'Milk', 'Tea', 'Pickle', 'Fruits']
   },
   {
@@ -206,27 +221,33 @@ export const INITIAL_MEALS_DB = [
     day: 'Tuesday',
     category: 'Lunch',
     time: '12:30 PM - 02:30 PM',
-    items: 'Tahri, Aaloo Tamatar Sabji, Roti, Salad, Curd, Lemon, Hari Chutney',
-    image: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&q=80&w=600',
-    calories: 590,
-    protein: 18,
-    carbs: 88,
-    fats: 15,
+    items: 'Tahri, Aloo Tamatar Sabji, Roti, Salad, Curd, Lemon, Hari Chutney',
+    servingUsed: '250g Vegetable Tahri, 150g Aloo Tamatar Sabji, 200g Roti (4 pcs), 50g Curd, 50g Salad & Chutney',
+    image: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&q=80&w=800',
+    imageSource: 'https://unsplash.com/photos/zW4',
+    calories: 884,
+    protein: 23.8,
+    carbs: 158.4,
+    fats: 16.2,
+    fiber: 18.4,
     ingredients: ['Rice', 'Potatoes', 'Tomatoes', 'Wheat Flour', 'Curd', 'Lemon', 'Coriander Chutney']
   },
   {
     id: 'tue_s',
-    name: 'Hakka Noodles',
+    name: 'Macaroni',
     day: 'Tuesday',
     category: 'Snacks',
     time: '05:00 PM - 06:00 PM',
-    items: 'Hakka Noodles, Tomato Sauce, Chilly Sauce, Hot Coffee',
-    image: 'https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&q=80&w=600',
-    calories: 280,
-    protein: 7,
-    carbs: 38,
-    fats: 9,
-    ingredients: ['Noodles', 'Vegetables', 'Tomato Sauce', 'Chilly Sauce', 'Coffee', 'Milk']
+    items: 'Macaroni, Tomato Sauce, Chilly Sauce, Hot Coffee',
+    servingUsed: '200g Cooked Masala Macaroni with Veggies, 20g Sauce',
+    image: 'https://images.unsplash.com/photo-1621996346565-e3d5d628169e?auto=format&fit=crop&q=80&w=800',
+    imageSource: 'https://unsplash.com/photos/KSp4',
+    calories: 295,
+    protein: 7.2,
+    carbs: 49.8,
+    fats: 7.6,
+    fiber: 3.4,
+    ingredients: ['Macaroni Pasta', 'Vegetables', 'Tomato Sauce', 'Chilly Sauce', 'Coffee']
   },
   {
     id: 'tue_d',
@@ -235,28 +256,34 @@ export const INITIAL_MEALS_DB = [
     category: 'Dinner',
     time: '07:30 PM - 09:30 PM',
     items: 'Kali Masoor Dal, Aloo Beans, Rice, Roti, Ice Cream, Mix Salad, Achar',
-    image: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&q=80&w=600',
-    calories: 630,
-    protein: 19,
-    carbs: 84,
-    fats: 14,
+    servingUsed: '150g Kali Masoor Dal, 150g Aloo Beans, 200g Roti (4 pcs), 250g Steamed Rice, 50g Vanilla Ice Cream',
+    image: 'https://images.unsplash.com/photo-1585937421612-70a008356fbe?auto=format&fit=crop&q=80&w=800',
+    imageSource: 'https://unsplash.com/photos/7kYQ',
+    calories: 924,
+    protein: 27.9,
+    carbs: 161.5,
+    fats: 17.8,
+    fiber: 20.6,
     ingredients: ['Black Lentils', 'Potatoes', 'French Beans', 'Rice', 'Wheat Flour', 'Milk/Ice Cream']
   },
 
   // Wednesday
   {
     id: 'wed_b',
-    name: 'Poha & Milk',
+    name: 'Aloo Paratha',
     day: 'Wednesday',
     category: 'Breakfast',
     time: '07:30 AM - 09:30 AM',
-    items: 'Poha, Milk, Tea, Fruit',
-    image: 'https://images.unsplash.com/photo-1606491956689-2ea866880c84?auto=format&fit=crop&q=80&w=600',
-    calories: 350,
-    protein: 10,
-    carbs: 58,
-    fats: 8,
-    ingredients: ['Flattened Rice', 'Peanuts', 'Milk', 'Tea', 'Fruits']
+    items: 'Aloo Paratha, Pickle, Tea, Fruit',
+    servingUsed: '200g Aloo Stuffed Paratha (2 pcs), 10g Tawa Oil, 20g Pickle',
+    image: 'https://images.unsplash.com/photo-1626074353765-517a681e40be?auto=format&fit=crop&q=80&w=800',
+    imageSource: 'https://unsplash.com/photos/m9',
+    calories: 462,
+    protein: 9.8,
+    carbs: 68.4,
+    fats: 16.8,
+    fiber: 7.2,
+    ingredients: ['Potatoes', 'Wheat Flour', 'Spices', 'Pickle', 'Tea', 'Fruits']
   },
   {
     id: 'wed_l',
@@ -265,26 +292,32 @@ export const INITIAL_MEALS_DB = [
     category: 'Lunch',
     time: '12:30 PM - 02:30 PM',
     items: 'Kaabli Chhole (Small), Kashifal, Roti, Jeera Rice, Mix Salad, Curd, Lemon',
-    image: 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&q=80&w=600',
-    calories: 580,
-    protein: 20,
-    carbs: 86,
-    fats: 12,
+    servingUsed: '150g Kaabli Chhole, 150g Kashifal (Kaddu), 200g Roti (4 pcs), 250g Jeera Rice, 50g Curd, 50g Salad',
+    image: 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&q=80&w=800',
+    imageSource: 'https://unsplash.com/photos/xP',
+    calories: 892,
+    protein: 28.6,
+    carbs: 155.8,
+    fats: 16.4,
+    fiber: 22.4,
     ingredients: ['Chickpeas', 'Pumpkin (Kashifal)', 'Wheat Flour', 'Basmati Rice', 'Curd', 'Lemon']
   },
   {
     id: 'wed_s',
-    name: 'Bhelpuri & Tea',
+    name: 'Samosa',
     day: 'Wednesday',
     category: 'Snacks',
     time: '05:00 PM - 06:00 PM',
-    items: 'Bhelpuri, Hot Tea',
-    image: 'https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&q=80&w=600',
-    calories: 210,
-    protein: 5,
-    carbs: 36,
-    fats: 5,
-    ingredients: ['Puffed Rice', 'Sev', 'Peanuts', 'Onions', 'Tomatoes', 'Tea']
+    items: 'Samosa, Hot Tea',
+    servingUsed: '110g Potato-Pea Samosa (2 pcs), 12g Absorbed Frying Oil',
+    image: 'https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&q=80&w=800',
+    imageSource: 'https://unsplash.com/photos/Y2',
+    calories: 312,
+    protein: 5.4,
+    carbs: 36.8,
+    fats: 16.2,
+    fiber: 3.2,
+    ingredients: ['Potatoes', 'Green Peas', 'Maida (Flour)', 'Spices', 'Tea']
   },
   {
     id: 'wed_d',
@@ -292,12 +325,15 @@ export const INITIAL_MEALS_DB = [
     day: 'Wednesday',
     category: 'Dinner',
     time: '07:30 PM - 09:30 PM',
-    items: 'Butter Paneer Masala or Kadhai Paneer, Aaloo Jeera, Roti or Puri, Pulao, Mix Salad, Achar',
-    image: 'https://images.unsplash.com/photo-1631452180519-c014fe946bc7?auto=format&fit=crop&q=80&w=600',
-    calories: 690,
-    protein: 26,
-    carbs: 82,
-    fats: 22,
+    items: 'Butter Paneer Masala OR Kadhai Paneer, Aloo Jeera, Roti/Puri, Pulao, Mix Salad, Achar',
+    servingUsed: '150g Butter Paneer Masala (50g paneer), 100g Aloo Jeera, 200g Roti (4 pcs), 250g Vegetable Pulao',
+    image: 'https://images.unsplash.com/photo-1631452180519-c014fe946bc7?auto=format&fit=crop&q=80&w=800',
+    imageSource: 'https://unsplash.com/photos/xP',
+    calories: 1035,
+    protein: 33.5,
+    carbs: 158.2,
+    fats: 30.8,
+    fiber: 17.8,
     ingredients: ['Fresh Paneer', 'Butter Gravy', 'Potatoes', 'Wheat Flour', 'Basmati Rice']
   },
 
@@ -309,11 +345,14 @@ export const INITIAL_MEALS_DB = [
     category: 'Breakfast',
     time: '07:30 AM - 09:30 AM',
     items: 'Pav Bhaji, Hot Tea, Milk, Butter, Fruit',
-    image: 'https://images.unsplash.com/photo-1606491956689-2ea866880c84?auto=format&fit=crop&q=80&w=600',
-    calories: 440,
-    protein: 12,
-    carbs: 62,
-    fats: 14,
+    servingUsed: '100g Pav Breads (2 pcs), 200g Mashed Veggie Bhaji, 10g Total Butter',
+    image: 'https://images.unsplash.com/photo-1606491956689-2ea866880c84?auto=format&fit=crop&q=80&w=800',
+    imageSource: 'https://unsplash.com/photos/oP',
+    calories: 468,
+    protein: 11.2,
+    carbs: 68.5,
+    fats: 16.5,
+    fiber: 7.8,
     ingredients: ['Potatoes', 'Mix Veggies', 'Butter', 'Pav Bread', 'Milk', 'Tea', 'Fruits']
   },
   {
@@ -322,27 +361,33 @@ export const INITIAL_MEALS_DB = [
     day: 'Thursday',
     category: 'Lunch',
     time: '12:30 PM - 02:30 PM',
-    items: 'Aaloo Pyaj Sabji, Kadhi, Rice, Roti, Salad, Papad Fried, Lemon',
-    image: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&q=80&w=600',
-    calories: 590,
-    protein: 17,
-    carbs: 82,
-    fats: 14,
+    items: 'Aloo Pyaj Sabji, Kadhi, Rice, Roti, Salad, Papad Fried, Lemon',
+    servingUsed: '150g Besan Kadhi with Pakodas, 150g Aloo Pyaj Sabji, 200g Roti (4 pcs), 250g Rice, 15g Fried Papad',
+    image: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&q=80&w=800',
+    imageSource: 'https://unsplash.com/photos/kL',
+    calories: 898,
+    protein: 23.4,
+    carbs: 156.2,
+    fats: 19.2,
+    fiber: 17.2,
     ingredients: ['Gram Flour', 'Sour Curd', 'Potatoes', 'Onions', 'Basmati Rice', 'Wheat Flour', 'Papad']
   },
   {
     id: 'thu_s',
-    name: 'Fan & Tea',
+    name: 'Bread Pakoda',
     day: 'Thursday',
     category: 'Snacks',
     time: '05:00 PM - 06:00 PM',
-    items: 'Fan Puff Pastry, Hot Tea',
-    image: 'https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&q=80&w=600',
-    calories: 190,
-    protein: 4,
-    carbs: 28,
-    fats: 7,
-    ingredients: ['Flour (Maida)', 'Butter', 'Chai']
+    items: 'Bread Pakoda, Hot Tea',
+    servingUsed: '150g Besan Bread Pakoda (2 pcs), 14g Absorbed Frying Oil',
+    image: 'https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&q=80&w=800',
+    imageSource: 'https://unsplash.com/photos/uR',
+    calories: 378,
+    protein: 8.4,
+    carbs: 44.2,
+    fats: 19.0,
+    fiber: 4.1,
+    ingredients: ['Bread', 'Gram Flour (Besan)', 'Potatoes', 'Spices', 'Tea']
   },
   {
     id: 'thu_d',
@@ -351,128 +396,155 @@ export const INITIAL_MEALS_DB = [
     category: 'Dinner',
     time: '07:30 PM - 09:30 PM',
     items: 'Daal Makhani, Mix Veg, Roti, Rice, Gulab Jamun, Chhachh, Achar',
-    image: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&q=80&w=600',
-    calories: 680,
-    protein: 22,
-    carbs: 80,
-    fats: 18,
+    servingUsed: '150g Dal Makhani, 150g Mix Veg, 200g Roti (4 pcs), 250g Steamed Rice, 45g Gulab Jamun (1 pc)',
+    image: 'https://images.unsplash.com/photo-1585937421612-70a008356fbe?auto=format&fit=crop&q=80&w=800',
+    imageSource: 'https://unsplash.com/photos/k8',
+    calories: 1025,
+    protein: 27.2,
+    carbs: 169.5,
+    fats: 26.8,
+    fiber: 20.2,
     ingredients: ['Black Urad Dal', 'Butter', 'Cream', 'Mix Vegetables', 'Wheat Flour', 'Rice', 'Gulab Jamun']
   },
 
   // Friday
   {
     id: 'fri_b',
-    name: 'Jawe & Milk',
+    name: 'Aloo Tamatar Sabji & Puri',
     day: 'Friday',
     category: 'Breakfast',
     time: '07:30 AM - 09:30 AM',
-    items: 'Jawe (Namkeen Vermicelli), Tea, Milk, Fruit',
-    image: 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&q=80&w=600',
-    calories: 340,
-    protein: 9,
-    carbs: 56,
-    fats: 8,
-    ingredients: ['Vermicelli (Jawe)', 'Veggies', 'Milk', 'Tea', 'Fruits']
+    items: 'Puri, Aloo Tamatar Sabji, Jalebi, Curd',
+    servingUsed: '120g Deep Fried Puri (4 pcs), 150g Aloo Tamatar Sabji, 40g Jalebi (2 pcs), 50g Curd',
+    image: 'https://images.unsplash.com/photo-1626074353765-517a681e40be?auto=format&fit=crop&q=80&w=800',
+    imageSource: 'https://unsplash.com/photos/lM',
+    calories: 642,
+    protein: 12.4,
+    carbs: 88.5,
+    fats: 26.8,
+    fiber: 6.8,
+    ingredients: ['Puri (Wheat/Maida)', 'Potatoes', 'Tomatoes', 'Jalebi', 'Curd']
   },
   {
     id: 'fri_l',
-    name: 'Aloo Baigan & Arhar Dal',
+    name: 'Mix Daal, Tarohi & Roti',
     day: 'Friday',
     category: 'Lunch',
     time: '12:30 PM - 02:30 PM',
-    items: 'Aaloo Baigan, Arhar Daal, Roti, Rice, Mix Salad, Boondi Raita, Lemon',
-    image: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&q=80&w=600',
-    calories: 580,
-    protein: 18,
-    carbs: 82,
-    fats: 11,
-    ingredients: ['Eggplant (Baigan)', 'Potatoes', 'Toor Dal', 'Wheat Flour', 'Rice', 'Curd', 'Lemon']
+    items: 'Chana Dal, Shimla Soyabean, Roti, Rice, Mix Salad, Curd, Lemon',
+    servingUsed: '150g Chana/Mix Dal, 150g Shimla Soyabean Sabzi, 200g Roti (4 pcs), 250g Rice, 50g Curd',
+    image: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&q=80&w=800',
+    imageSource: 'https://unsplash.com/photos/pQ',
+    calories: 886,
+    protein: 31.8,
+    carbs: 151.2,
+    fats: 15.8,
+    fiber: 21.8,
+    ingredients: ['Chana Dal', 'Soyabean Chunks', 'Capsicum', 'Wheat Flour', 'Rice', 'Curd', 'Lemon']
   },
   {
     id: 'fri_s',
-    name: 'Patties & Tea',
+    name: 'Kala Chana Masala',
     day: 'Friday',
     category: 'Snacks',
     time: '05:00 PM - 06:00 PM',
-    items: 'Aloo Patties, Tomato Sauce, Hot Tea',
-    image: 'https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&q=80&w=600',
-    calories: 290,
-    protein: 6,
-    carbs: 36,
-    fats: 12,
-    ingredients: ['Puff Pastry Sheet', 'Potatoes', 'Tomato Sauce', 'Tea']
+    items: 'Kala Chana Masala, Chat Masala, Hot Tea',
+    servingUsed: '150g Spiced Sautéed Black Gram with Onion & Tomato, 5g Tempering Oil',
+    image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&q=80&w=800',
+    imageSource: 'https://unsplash.com/photos/wR',
+    calories: 238,
+    protein: 11.6,
+    carbs: 33.4,
+    fats: 6.4,
+    fiber: 10.2,
+    ingredients: ['Black Gram (Chana)', 'Onions', 'Tomatoes', 'Chaat Masala', 'Tea']
   },
   {
     id: 'fri_d',
-    name: 'Chhole & Dam Aloo',
+    name: 'Arhar Daal, Lauki',
     day: 'Friday',
     category: 'Dinner',
     time: '07:30 PM - 09:30 PM',
-    items: 'Chhole, Dam Aaloo, Rice, Plain Paratha, Custard, Mix Salad, Achar',
-    image: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&q=80&w=600',
-    calories: 650,
-    protein: 21,
-    carbs: 76,
-    fats: 16,
-    ingredients: ['Chickpeas', 'Potatoes', 'Rice', 'Wheat Flour', 'Milk Custard']
+    items: 'Rice, Roti, Coconut Laddoo, Mix Salad, Achar',
+    servingUsed: '150g Arhar Dal, 150g Lauki Sabzi, 200g Roti (4 pcs), 250g Steamed Rice, 35g Coconut Laddoo',
+    image: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&q=80&w=800',
+    imageSource: 'https://unsplash.com/photos/zX',
+    calories: 914,
+    protein: 24.8,
+    carbs: 166.5,
+    fats: 15.8,
+    fiber: 18.6,
+    ingredients: ['Toor Dal', 'Bottle Gourd (Lauki)', 'Rice', 'Wheat Flour', 'Coconut Laddoo']
   },
 
   // Saturday
   {
     id: 'sat_b',
-    name: 'Upma / Bread Jam',
+    name: 'Veg Sandwich & Cornflakes',
     day: 'Saturday',
     category: 'Breakfast',
     time: '07:30 AM - 09:30 AM',
-    items: 'Upma or Bread Jam, Tea, Milk, Fruit',
-    image: 'https://images.unsplash.com/photo-1606491956689-2ea866880c84?auto=format&fit=crop&q=80&w=600',
-    calories: 360,
-    protein: 10,
-    carbs: 62,
-    fats: 8,
-    ingredients: ['Semolina (Suji)', 'Bread', 'Fruit Jam', 'Milk', 'Tea', 'Fruits']
+    items: 'Veg Sandwich, Tomato Sauce, Cornflakes, Milk, Tea, Mix Fruit, Chat Masala',
+    servingUsed: '160g Veg Sandwich, 40g Cornflakes, 150ml Toned Warm Milk, 15g Sauce',
+    image: 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?auto=format&fit=crop&q=80&w=800',
+    imageSource: 'https://unsplash.com/photos/mK',
+    calories: 428,
+    protein: 12.8,
+    carbs: 74.5,
+    fats: 8.6,
+    fiber: 5.8,
+    ingredients: ['Bread', 'Vegetables', 'Cornflakes', 'Milk', 'Tea', 'Fruits']
   },
   {
     id: 'sat_l',
-    name: 'Chana Dal & Shimla Soyabean',
+    name: 'Chhole Bhature & Cold Drink',
     day: 'Saturday',
     category: 'Lunch',
     time: '12:30 PM - 02:30 PM',
-    items: 'Chana Dal, Shimla Soyabean, Roti, Rice, Mix Salad, Curd, Lemon',
-    image: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&q=80&w=600',
-    calories: 570,
-    protein: 21,
-    carbs: 78,
-    fats: 10,
-    ingredients: ['Bengal Gram (Chana Dal)', 'Soya Chunks', 'Capsicum (Shimla)', 'Wheat Flour', 'Rice', 'Curd']
+    items: 'Chhole Kabuli (Big), Bhature, Fry Mirch, Sirka Pyaz, Jeera Rice, Cold Drink, Pickle, Veg Raita',
+    servingUsed: '140g Bhature (2 pcs), 150g Chhole Gravy, 100g Jeera Rice, 50g Veg Raita, 40g Pickled Onions',
+    image: 'https://images.unsplash.com/photo-1626074353765-517a681e40be?auto=format&fit=crop&q=80&w=800',
+    imageSource: 'https://unsplash.com/photos/vT',
+    calories: 812,
+    protein: 20.6,
+    carbs: 108.5,
+    fats: 32.8,
+    fiber: 12.5,
+    ingredients: ['Kabuli Chickpeas', 'Maida (Bhature)', 'Green Chillies', 'Vinegar Onions', 'Basmati Rice', 'Cold Drink']
   },
   {
     id: 'sat_s',
-    name: 'Kala Chana Masala',
+    name: 'Bread Roll',
     day: 'Saturday',
     category: 'Snacks',
     time: '05:00 PM - 06:00 PM',
-    items: 'Kala Chana Masala, Chat Masala, Hot Tea',
-    image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&q=80&w=600',
-    calories: 230,
-    protein: 8,
-    carbs: 38,
-    fats: 6,
-    ingredients: ['Black Gram (Chana)', 'Onions', 'Tomatoes', 'Chaat Masala', 'Tea']
+    items: 'Bread Roll',
+    servingUsed: '160g Potato Filled Bread Rolls (2 pcs), 14g Absorbed Frying Oil',
+    image: 'https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&q=80&w=800',
+    imageSource: 'https://unsplash.com/photos/pB',
+    calories: 365,
+    protein: 6.8,
+    carbs: 46.2,
+    fats: 17.5,
+    fiber: 3.6,
+    ingredients: ['Bread', 'Potatoes', 'Green Chillies', 'Cumin', 'Spices']
   },
   {
     id: 'sat_d',
-    name: 'Mix Dal & Aloo Patta Gobhi',
+    name: 'Arhar Daal, Lauki',
     day: 'Saturday',
     category: 'Dinner',
     time: '07:30 PM - 09:30 PM',
-    items: 'Mix Dal, Aaloo Patta Gobhi, Rice, Roti, Coconut Laddoo, Mix Salad, Achar',
-    image: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&q=80&w=600',
-    calories: 620,
-    protein: 19,
-    carbs: 82,
-    fats: 14,
-    ingredients: ['Mix Lentils', 'Cabbage (Patta Gobhi)', 'Potatoes', 'Rice', 'Wheat Flour', 'Coconut Laddoo']
+    items: 'Arhar Daal, Lauki, Rice, Roti, Coconut Laddoo, Mix Salad, Achar',
+    servingUsed: '150g Arhar Dal, 150g Lauki Sabzi, 200g Roti (4 pcs), 250g Steamed Rice, 35g Coconut Laddoo',
+    image: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&q=80&w=800',
+    imageSource: 'https://unsplash.com/photos/yU',
+    calories: 914,
+    protein: 24.8,
+    carbs: 166.5,
+    fats: 15.8,
+    fiber: 18.6,
+    ingredients: ['Toor Dal', 'Bottle Gourd (Lauki)', 'Rice', 'Wheat Flour', 'Coconut Laddoo']
   },
 
   // Sunday
@@ -483,11 +555,14 @@ export const INITIAL_MEALS_DB = [
     category: 'Breakfast',
     time: '07:30 AM - 09:30 AM',
     items: 'Veg. Sandwich, Tomato Sauce, Cornflakes, Milk, Tea, Mix Fruit, Chat Masala',
-    image: 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&q=80&w=600',
-    calories: 410,
-    protein: 12,
-    carbs: 58,
-    fats: 9,
+    servingUsed: '160g Veg Sandwich, 40g Cornflakes, 150ml Toned Warm Milk, 15g Sauce',
+    image: 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?auto=format&fit=crop&q=80&w=800',
+    imageSource: 'https://unsplash.com/photos/mK',
+    calories: 428,
+    protein: 12.8,
+    carbs: 74.5,
+    fats: 8.6,
+    fiber: 5.8,
     ingredients: ['Bread', 'Vegetables', 'Cornflakes', 'Milk', 'Tea', 'Fruits']
   },
   {
@@ -497,11 +572,14 @@ export const INITIAL_MEALS_DB = [
     category: 'Lunch',
     time: '12:30 PM - 02:30 PM',
     items: 'Chhole Kabuli (Big), Bhature, Fry Mirch, Sirka Pyaz, Jeera Rice, Cold Drink, Pickle, Veg Raita',
-    image: 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&q=80&w=600',
-    calories: 750,
-    protein: 22,
-    carbs: 88,
-    fats: 24,
+    servingUsed: '140g Bhature (2 pcs), 150g Chhole Gravy, 100g Jeera Rice, 50g Veg Raita, 40g Sirka Pyaz',
+    image: 'https://images.unsplash.com/photo-1626074353765-517a681e40be?auto=format&fit=crop&q=80&w=800',
+    imageSource: 'https://unsplash.com/photos/vT',
+    calories: 812,
+    protein: 20.6,
+    carbs: 108.5,
+    fats: 32.8,
+    fiber: 12.5,
     ingredients: ['Kabuli Chickpeas', 'Maida (Bhature)', 'Green Chillies', 'Vinegar Onions', 'Basmati Rice', 'Cold Drink']
   },
   {
@@ -511,26 +589,32 @@ export const INITIAL_MEALS_DB = [
     category: 'Snacks',
     time: '05:00 PM - 06:00 PM',
     items: 'No snacks served on Sunday evening',
-    image: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&q=80&w=600',
+    servingUsed: 'No snacks served on Sunday evening (0g)',
+    image: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&q=80&w=800',
+    imageSource: 'https://unsplash.com/photos/kQ',
     calories: 0,
-    protein: 0,
-    carbs: 0,
-    fats: 0,
+    protein: 0.0,
+    carbs: 0.0,
+    fats: 0.0,
+    fiber: 0.0,
     ingredients: []
   },
   {
     id: 'sun_d',
-    name: 'Arhar Dal & Lauki',
+    name: 'Lauki Kofta & Arabi',
     day: 'Sunday',
     category: 'Dinner',
     time: '07:30 PM - 09:30 PM',
-    items: 'Arhar Dal, Lauki (Bottle Gourd), Rice Kheer or Sewai, Roti, Chhachh, Achar',
-    image: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&q=80&w=600',
-    calories: 590,
-    protein: 18,
-    carbs: 76,
-    fats: 14,
-    ingredients: ['Toor Dal', 'Bottle Gourd', 'Milk', 'Rice Kheer/Sewai', 'Wheat Flour', 'Buttermilk']
+    items: 'Lauki Kofta, Arabi, Rice, Roti, Rice Kheer OR Sewai, Chhachh, Achar',
+    servingUsed: '150g Lauki Kofta (2 pcs), 150g Masala Arabi, 200g Roti (4 pcs), 250g Steamed Rice, 75g Rice Kheer',
+    image: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&q=80&w=800',
+    imageSource: 'https://unsplash.com/photos/jK',
+    calories: 1048,
+    protein: 26.4,
+    carbs: 182.4,
+    fats: 23.6,
+    fiber: 19.2,
+    ingredients: ['Lauki Kofta', 'Arabi', 'Rice', 'Roti', 'Rice Kheer OR Sewai', 'Buttermilk', 'Pickle']
   }
 ];
 
@@ -759,7 +843,7 @@ class LaunchDatabase {
     return meals.find(m => m.id === id) || null;
   }
 
-  saveMeal(mealData) {
+  async saveMeal(mealData) {
     const meals = this.getAllMeals();
     let id = mealData.id;
     let targetMeal = null;
@@ -783,24 +867,40 @@ class LaunchDatabase {
     }
 
     if (isFirebaseConfigured) {
-      try {
-        setDoc(doc(firestoreDb, 'meals', id), targetMeal, { merge: true });
-      } catch (e) {
-        console.error('Error saving meal to Firestore:', e);
-      }
+      // Must await the Firestore write to ensure transactional integrity
+      await setDoc(doc(firestoreDb, 'meals', id), targetMeal, { merge: true });
     }
 
     this.setItem('meals', meals);
     return targetMeal;
   }
 
-  deleteMeal(mealId) {
+  async updateMealImage(mealId, imageUrl) {
+    if (!mealId || !imageUrl) {
+      throw new Error('Meal ID and Image URL are required.');
+    }
+
     if (isFirebaseConfigured) {
-      try {
-        deleteDoc(doc(firestoreDb, 'meals', mealId));
-      } catch (e) {
-        console.error('Error deleting meal from Firestore:', e);
-      }
+      await updateDoc(doc(firestoreDb, 'meals', mealId), {
+        image: imageUrl,
+        updatedAt: new Date().toISOString()
+      });
+    }
+
+    const meals = this.getAllMeals();
+    const idx = meals.findIndex(m => m.id === mealId);
+    if (idx !== -1) {
+      meals[idx].image = imageUrl;
+      meals[idx].updatedAt = new Date().toISOString();
+      this.setItem('meals', meals);
+      return meals[idx];
+    }
+    return null;
+  }
+
+  async deleteMeal(mealId) {
+    if (isFirebaseConfigured) {
+      await deleteDoc(doc(firestoreDb, 'meals', mealId));
     }
     const meals = this.getAllMeals();
     const filtered = meals.filter(m => m.id !== mealId);
@@ -841,7 +941,11 @@ class LaunchDatabase {
     const ratings = this.getAllRatings();
     const existingIdx = ratings.findIndex(r => r.userId === userId && r.mealId === mealId);
 
-    const ratingId = existingIdx !== -1 ? ratings[existingIdx].id : 'rat_' + Date.now();
+    if (existingIdx !== -1) {
+      throw new Error('Rating already submitted for this meal. Repeated ratings or edits are not allowed.');
+    }
+
+    const ratingId = 'rat_' + Date.now();
     const ratingEntry = {
       id: ratingId,
       userId,
@@ -863,13 +967,9 @@ class LaunchDatabase {
       }
     }
 
-    if (existingIdx !== -1) {
-      ratings[existingIdx] = ratingEntry;
-    } else {
-      ratings.unshift(ratingEntry);
-      // Award 20 health points
-      await this.addRewardPoints(userId, 20);
-    }
+    ratings.unshift(ratingEntry);
+    // Award strictly +1 reward point for valid submitted meal rating
+    await this.addRewardPoints(userId, 1);
 
     this.setItem('ratings', ratings);
     return ratingEntry;
@@ -892,6 +992,27 @@ class LaunchDatabase {
 
   async createComplaint({ userId, userName, block, category, description }) {
     const complaints = this.getAllComplaints();
+    
+    // Enforce MAX 1 feedback per student per calendar week
+    const now = new Date();
+    const d = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+    const dayNum = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+    const currentWeekKey = `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
+
+    if (category === 'Feedback') {
+      const existingWeeklyFeedback = complaints.find(c => 
+        c.userId === userId && 
+        c.category === 'Feedback' && 
+        (c.weekKey === currentWeekKey || (c.timestamp && new Date(c.timestamp).getTime() > (Date.now() - 7 * 24 * 60 * 60 * 1000)))
+      );
+      if (existingWeeklyFeedback) {
+        throw new Error('Maximum 1 feedback submission allowed per calendar week. You have already submitted feedback for this week.');
+      }
+    }
+
     const id = 'cmp_' + Date.now();
     const newComplaint = {
       id,
@@ -901,6 +1022,7 @@ class LaunchDatabase {
       category: category || 'Quality',
       description: description.trim(),
       status: 'PENDING',
+      weekKey: currentWeekKey,
       timestamp: new Date().toISOString()
     };
 
@@ -999,11 +1121,11 @@ class LaunchDatabase {
     return newPoll;
   }
 
-  castVote({ pollId, userId, userName, optionId }) {
+  async castVote({ pollId, userId, userName, optionId }) {
     const votes = this.getItem('votes', []);
     const alreadyVoted = votes.some(v => v.pollId === pollId && v.userId === userId);
     if (alreadyVoted) {
-      throw new Error('You have already voted in this poll.');
+      throw new Error('You have already voted in this poll. Duplicate votes are not allowed.');
     }
 
     const voteId = 'vote_' + Date.now();
@@ -1018,16 +1140,50 @@ class LaunchDatabase {
 
     if (isFirebaseConfigured) {
       try {
-        setDoc(doc(firestoreDb, 'votes', voteId), newVote);
+        await setDoc(doc(firestoreDb, 'votes', voteId), newVote);
       } catch (e) {
         console.error('Error casting vote in Firestore:', e);
+        throw e;
       }
     }
 
     votes.push(newVote);
     this.setItem('votes', votes);
-    this.addRewardPoints(userId, 30);
+    // Award strictly +10 reward points for valid monthly poll vote
+    await this.addRewardPoints(userId, 10);
     return newVote;
+  }
+
+  async awardDailyLoginReward(userId) {
+    if (!userId) return { awarded: false, reason: 'NO_USER' };
+
+    const todayStr = new Date().toLocaleDateString('en-CA'); // Local 'YYYY-MM-DD'
+    const user = this.getUserById(userId);
+
+    if (user && user.lastLoginRewardDate === todayStr) {
+      return { awarded: false, reason: 'ALREADY_CLAIMED_TODAY' };
+    }
+
+    if (isFirebaseConfigured) {
+      try {
+        await updateDoc(doc(firestoreDb, 'users', userId), {
+          lastLoginRewardDate: todayStr,
+          rewardPoints: increment(2)
+        });
+      } catch (e) {
+        console.warn('Daily login reward Firestore update notice:', e.message);
+      }
+    }
+
+    const users = this.getUsers();
+    const idx = users.findIndex(u => u.id === userId || u.uid === userId);
+    if (idx !== -1) {
+      users[idx].lastLoginRewardDate = todayStr;
+      users[idx].rewardPoints = (users[idx].rewardPoints || 0) + 2;
+      this.setItem('users', users);
+    }
+
+    return { awarded: true, points: 2, date: todayStr };
   }
 
   hasUserVoted(pollId, userId) {
@@ -1142,9 +1298,13 @@ export const seedFirestoreData = async () => {
   if (!isFirebaseConfigured) return;
 
   try {
-    console.log('Seeding/updating menu meals in Firestore...');
-    for (const meal of INITIAL_MEALS_DB) {
-      await setDoc(doc(firestoreDb, 'meals', meal.id), meal, { merge: true });
+    const mealsRef = collection(firestoreDb, 'meals');
+    const mealsSnap = await getDocs(mealsRef);
+    if (mealsSnap.empty) {
+      console.log('Seeding initial baseline meals in Firestore...');
+      for (const meal of INITIAL_MEALS_DB) {
+        await setDoc(doc(firestoreDb, 'meals', meal.id), meal);
+      }
     }
 
     const rewardsRef = collection(firestoreDb, 'rewards_catalog');
@@ -1155,8 +1315,10 @@ export const seedFirestoreData = async () => {
         await setDoc(doc(firestoreDb, 'rewards_catalog', reward.id), reward);
       }
     }
-
   } catch (e) {
     console.error('Error seeding Firestore data:', e);
   }
 };
+
+export default db;
+
