@@ -29,15 +29,15 @@ const MENU_DATA = {
     Dinner: ["Daal Makhani", "Mix Veg", "Roti", "Rice", "Gulab Jamun", "Chhachh", "Achar"]
   },
   Friday: {
-    Breakfast: ["Aaloo Tamatar Sabji", "Puri", "Jalebi", "Curd", "Tea"],
+    Breakfast: ["Gobhi Paratha", "Pickle", "Curd", "Tea", "Banana"],
     Lunch: ["Mix Daal", "Tarohi", "Roti", "Rice", "Mix Salad", "Curd", "Lemon 1/2"],
-    Snacks: ["Bread Roll", "Chilly & Tomato Sauce", "Tea"],
+    Snacks: ["Chowmein", "Chilly & Tomato Sauce", "Hot Tea"],
     Dinner: ["Arhar Daal", "Lauki", "Rice", "Roti", "Coconut Laddoo", "Mix Salad", "Achar"]
   },
   Saturday: {
     Breakfast: ["Aaloo Tamatar Sabji", "Puri", "Mirchi", "Tea", "Jalebi", "Curd", "Watermelon"],
     Lunch: ["Chhole Kabuli (Big)", "Bhature", "Fry Mirch", "Sirka Pyaz", "Jeera Rice", "Cold Drink", "Pickle", "Veg Raita"],
-    Snacks: ["Chowmein", "Chilly & Tomato Sauce", "Hot Tea"],
+    Snacks: ["Bread Roll", "Chilly & Tomato Sauce", "Tea"],
     Dinner: ["Arhar Dal", "Lauki", "Rice", "Roti", "Mix Salad", "Chhachh"]
   },
   Sunday: {
