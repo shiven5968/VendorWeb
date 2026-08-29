@@ -436,8 +436,10 @@ export const AddEditMealModal = () => {
             </div>
 
             {/* Direct Image URL input */}
-            <div className="pt-2 border-t border-slate-200/60 dark:border-slate-700/60">
-              <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Image URL</label>
+            <div className="pt-2 border-t border-slate-200/60 dark:border-slate-700/60 space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="block text-[10px] font-bold text-slate-400 uppercase">Image URL or Quick Presets</label>
+              </div>
               <input
                 type="text"
                 disabled={isBusy}
@@ -448,6 +450,34 @@ export const AddEditMealModal = () => {
                 }}
                 className="w-full px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs outline-none font-mono disabled:opacity-50"
               />
+
+              {/* Quick Preset Buttons */}
+              <div className="flex items-center space-x-1.5 overflow-x-auto pb-1 scrollbar-none">
+                {[
+                  { name: 'Paneer Masala', url: 'https://images.unsplash.com/photo-1631452180519-c014fe946bc7?auto=format&fit=crop&q=80&w=800' },
+                  { name: 'Aloo Paratha', url: 'https://images.unsplash.com/photo-1626074353765-517a681e40be?auto=format&fit=crop&q=80&w=800' },
+                  { name: 'Rajma Chawal', url: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&q=80&w=800' },
+                  { name: 'Dal Makhani', url: 'https://images.unsplash.com/photo-1585937421612-70a008356fbe?auto=format&fit=crop&q=80&w=800' },
+                  { name: 'Poha Jalebi', url: 'https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&q=80&w=800' },
+                  { name: 'Chole Bhature', url: 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&q=80&w=800' },
+                  { name: 'Veg Biryani', url: 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?auto=format&fit=crop&q=80&w=800' },
+                ].map(p => (
+                  <button
+                    key={p.name}
+                    type="button"
+                    disabled={isBusy}
+                    onClick={() => {
+                      cleanupPreviewUrl();
+                      setSelectedFile(null);
+                      setFormData({ ...formData, image: p.url });
+                      setImagePreview(p.url);
+                    }}
+                    className="px-2.5 py-1 rounded-lg bg-slate-200/70 dark:bg-slate-700/70 hover:bg-emerald-500/20 hover:text-emerald-600 dark:hover:text-emerald-400 text-[10px] font-bold text-slate-600 dark:text-slate-300 whitespace-nowrap transition-all cursor-pointer"
+                  >
+                    + {p.name}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
