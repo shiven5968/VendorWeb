@@ -21,38 +21,37 @@ import { WeeklyMenuReviewSection } from '../components/WeeklyMenuReviewSection';
 
 const MEAL_IMAGES = {
   // Breakfasts
-  idli_sambhar: "/meal-images/idli-sambhar.jpg",
+  idli_sambhar: "/meal-images/veg-fried-idli.jpg",
   matar_kulche: "/meal-images/matar-kulche.jpg",
   aloo_paratha: "/meal-images/aloo-paratha.jpg",
   pav_bhaji: "/meal-images/pav-bhaji.jpg",
-  puri_aloo_jalebi: "/meal-images/puri-aloo.jpg",
+  puri_aloo_jalebi: "/meal-images/puri-aloo-tamatar.jpg",
   aloo_sandwich: "/meal-images/veg-sandwich.jpg",
 
   // Lunches
-  rajma_rice: "https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=800&q=80",
-  tahri_pulao: "https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=800&q=80",
+  rajma_rice: "/meal-images/rajma-masala.jpg",
+  tahri_pulao: "/meal-images/aloo-tamatar-tahri.jpg",
   chhole_rice: "/meal-images/kaabli-chhole.jpg",
-  kadhi_rice: "https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=800&q=80",
-  aloo_matar_dal: "https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=800&q=80",
-  mix_dal_taroi: "https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=800&q=80",
+  kadhi_rice: "/meal-images/kadhi-rice.jpg",
+  mix_dal_taroi: "/meal-images/mix-dal-tarohi.jpg",
   chole_bhature: "/meal-images/chhole-bhature.jpg",
 
   // Snacks
   burger: "/meal-images/burger.jpg",
   macaroni: "/meal-images/macaroni.jpg",
-  samosa: "https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=800&q=80",
+  samosa: "/meal-images/samosa.jpg",
   pakoda: "/meal-images/bread-pakoda.jpg",
   chowmein: "/meal-images/chowmein.jpg",
   bread_roll: "/meal-images/bread-roll.jpg",
   off_snacks: "",
 
   // Dinners
-  arhar_dal_thali: "https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=800&q=80",
-  kali_masoor_icecream: "https://images.unsplash.com/photo-1585937421612-70a008356fbe?auto=format&fit=crop&w=800&q=80",
+  arhar_dal_thali: "/meal-images/arhar-dal-aloo-gobhi.jpg",
+  kali_masoor_icecream: "/meal-images/kali-masoor-aloo-beans.jpg",
   butter_paneer_puri: "/meal-images/butter-paneer.jpg",
-  dal_makhani_thali: "https://images.unsplash.com/photo-1585937421612-70a008356fbe?auto=format&fit=crop&w=800&q=80",
-  chhole_paratha: "https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=800&q=80",
-  lauki_kofta_kheer: "https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=800&q=80"
+  dal_makhani_thali: "/meal-images/dal-makhani-mix-veg.jpg",
+  arhar_dal_lauki: "/meal-images/arhar-dal-lauki.jpg",
+  lauki_kofta_kheer: "/meal-images/lauki-kofta-arabi.jpg"
 };
 
 const FULL_WEEKLY_MENU = {
@@ -84,13 +83,13 @@ const FULL_WEEKLY_MENU = {
     Breakfast: { title: "Aloo Tamatar Sabji & Puri", items: ["Puri", "Aaloo Tamatar Sabji", "Mirchi", "Tea", "Jalebi", "Curd"], image: MEAL_IMAGES.puri_aloo_jalebi, protein: "12g", calories: "640 kcal" },
     Lunch: { title: "Mix Daal, Tarohi & Roti", items: ["Chana Dal", "Shimla Soyabean", "Roti", "Rice", "Mix Salad", "Curd", "Lemon 1/2"], image: MEAL_IMAGES.mix_dal_taroi, protein: "31g", calories: "880 kcal" },
     Snacks: { title: "Bread Roll & Tea", items: ["Bread Roll", "Chilly & Tomato Sauce", "Tea"], image: MEAL_IMAGES.bread_roll, protein: "6g", calories: "360 kcal" },
-    Dinner: { title: "Arhar Daal & Lauki", items: ["Rice", "Roti", "Coconut Laddoo", "Mix Salad", "Achar"], image: MEAL_IMAGES.arhar_dal_thali, protein: "24g", calories: "910 kcal" }
+    Dinner: { title: "Arhar Daal & Lauki", items: ["Rice", "Roti", "Coconut Laddoo", "Mix Salad", "Achar"], image: MEAL_IMAGES.arhar_dal_lauki, protein: "24g", calories: "910 kcal" }
   },
   Saturday: {
     Breakfast: { title: "Aloo Tamatar Sabji & Puri", items: ["Aaloo Tamatar Sabji", "Puri", "Mirchi", "Tea", "Jalebi", "Curd", "Watermelon"], image: MEAL_IMAGES.puri_aloo_jalebi, protein: "12g", calories: "640 kcal" },
     Lunch: { title: "Chhole Bhature & Cold Drink", items: ["Chhole Kabuli (Big)", "Bhature", "Fry Mirch", "Sirka Pyaz", "Jeera Rice", "Cold Drink", "Pickle", "Veg Raita"], image: MEAL_IMAGES.chole_bhature, protein: "21g", calories: "810 kcal" },
     Snacks: { title: "Chowmein & Shikanji", items: ["Chowmein", "Chilly & Tomato Sauce", "Hot Tea"], image: MEAL_IMAGES.chowmein, protein: "7g", calories: "310 kcal" },
-    Dinner: { title: "Arhar Dal & Lauki", items: ["Rice", "Roti", "Mix Salad", "Chhachh"], image: MEAL_IMAGES.arhar_dal_thali, protein: "24g", calories: "910 kcal" }
+    Dinner: { title: "Arhar Dal & Lauki", items: ["Rice", "Roti", "Mix Salad", "Chhachh"], image: MEAL_IMAGES.arhar_dal_lauki, protein: "24g", calories: "910 kcal" }
   },
   Sunday: {
     Breakfast: { title: "Veg Sandwich & Cornflakes", items: ["Veg Sandwich", "Tomato Sauce", "Cornflakes", "Milk", "Tea", "Mix Fruit", "Chat Masala"], image: MEAL_IMAGES.aloo_sandwich, protein: "12g", calories: "420 kcal" },
