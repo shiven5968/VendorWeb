@@ -3,10 +3,11 @@ import { PhotoGallery, EmptyState, LoadingState, DashboardCard, SectionHeader } 
 import { getMessPhotos } from '../services/messOperations';
 import { useApp } from '../context/AppContext';
 import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
+import { getCollegeDateString } from '../utils/dateTime';
 
 export const PhotoArchivePage = () => {
   const { messPhotos } = useApp();
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState(getCollegeDateString());
   const [photos, setPhotos] = useState([]);
   const [loading, setLoading] = useState(false);
 

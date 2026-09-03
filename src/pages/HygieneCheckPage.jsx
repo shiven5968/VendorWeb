@@ -2,11 +2,12 @@ import React, { useState } from 'react';
 import { EmptyState, LoadingState, StatusBadge, DashboardCard, SectionHeader } from '../components/ui';
 import { useApp } from '../context/AppContext';
 import { ClipboardCheck, CheckCircle2 } from 'lucide-react';
+import { getCollegeDateString } from '../utils/dateTime';
 
 export const HygieneCheckPage = () => {
   const { currentUser, submitHygieneCheck, hygieneChecks } = useApp();
   
-  const today = new Date().toISOString().split('T')[0];
+  const today = getCollegeDateString();
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');

@@ -3,11 +3,12 @@ import { PhotoUpload, EmptyState, LoadingState, StatusBadge, DashboardCard, Sect
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import { Camera, CheckCircle2 } from 'lucide-react';
+import { getCollegeDateString } from '../utils/dateTime';
 
 export const DailyPhotosPage = () => {
   const { currentUser, uploadMessPhoto, messPhotos } = useApp();
   
-  const today = new Date().toISOString().split('T')[0];
+  const today = getCollegeDateString();
   const [selectedDate] = useState(today);
   const [selectedMealCategory, setSelectedMealCategory] = useState('Breakfast');
   const [selectedPhotoCategory, setSelectedPhotoCategory] = useState('Food Preparation');

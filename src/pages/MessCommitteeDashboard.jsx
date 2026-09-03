@@ -1,247 +1,591 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { 
-  Utensils, Plus, Edit3, Trash2, Vote, BarChart3, FileText, Star, 
-  MessageSquare, Calendar, Download, CheckCircle2, Clock, Camera, ClipboardCheck
+  UtensilsCrossed, 
+  Plus, 
+  Edit3, 
+  Trash2, 
+  Star, 
+  MessageSquare, 
+  Calendar, 
+  CheckCircle2, 
+  Clock, 
+  Camera, 
+  ClipboardCheck,
+  LayoutDashboard,
+  ShieldAlert,
+  ChevronRight,
+  AlertTriangle,
+  Upload,
+  Check,
+  FileText
 } from 'lucide-react';
-import { StatCard, MealCard, StatusBadge, EmptyState, DashboardCard, SectionHeader, RatingStars, WeeklyDayPicker } from '../components/ui';
+import { formatCollegeDateDisplay, getCollegeDateString } from '../utils/dateTime';
+import { DailyPhotosPage } from './DailyPhotosPage';
+import { HygieneCheckPage } from './HygieneCheckPage';
 
 export const MessCommitteeDashboard = ({ initialTab = 'overview' }) => {
   const { 
-    currentUser, selectedDay, setSelectedDay, meals, deleteMeal, 
-    setIsAddMealModalOpen, setEditingMeal, poll, createPoll,
-    allRatings, allComplaints, updateComplaintStatus, wardenMetrics,
-    todayDay, messPhotos, hygieneChecks, setCurrentPage
+    currentUser, 
+    selectedDay, 
+    setSelectedDay, 
+    meals, 
+    deleteMeal, 
+    setIsAddMealModalOpen, 
+    setEditingMeal, 
+    allRatings, 
+    allComplaints, 
+    updateComplaintStatus, 
+    wardenMetrics,
+    todayDay, 
+    messPhotos, 
+    hygieneChecks,
+    currentTime,
+    approveWeeklyMenu,
+    menuApproved
   } = useApp();
 
   const [activeTab, setActiveTab] = useState(initialTab);
 
-  React.useEffect(() => {
-    if (initialTab) setActiveTab(initialTab);
+  useEffect(() => {
+    if (initialTab) {
+      if (initialTab === 'ratings-view') setActiveTab('ratings');
+      else setActiveTab(initialTab);
+    }
   }, [initialTab]);
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getCollegeDateString(currentTime);
+  const todayDateString = formatCollegeDateDisplay(currentTime);
+
   const todayPhotos = (messPhotos || []).filter(p => p.date === todayStr);
   const todayHygiene = (hygieneChecks || []).find(h => h.date === todayStr);
-  const recentRatings = (allRatings || []).slice(0, 5);
-  const pendingComplaints = (allComplaints || []).filter(c => c.status === 'Pending' || c.status === 'In Review');
+  const pendingComplaints = (allComplaints || []).filter(c => c.status === 'Pending' || c.status === 'In Review' || c.status === 'PENDING' || c.status === 'IN REVIEW');
+  const resolvedComplaints = (allComplaints || []).filter(c => c.status === 'Resolved' || c.status === 'RESOLVED' || c.status === 'Closed' || c.status === 'CLOSED');
+  const recentRatings = (allRatings || []).slice(0, 8);
 
-  // Aggregate ratings by meal for structured presentation
-  const mealRatingsSummary = useMemo(() => {
-    const map = {};
-    (allRatings || []).forEach(r => {
-      const key = r.mealName || r.mealId;
-      if (!key) return;
-      if (!map[key]) {
-        map[key] = {
-          mealName: r.mealName || 'Dish',
-          mealCategory: r.mealCategory || '',
-          ratings: [],
-          feedbacks: []
-        };
-      }
-      if (typeof r.rating === 'number') {
-        map[key].ratings.push(r.rating);
-      }
-      if (r.feedback && r.feedback.trim()) {
-        map[key].feedbacks.push({
-          feedback: r.feedback,
-          userName: r.userName,
-          rating: r.rating
-        });
-      }
-    });
+  const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
-    return Object.values(map).map(m => {
-      const count = m.ratings.length;
-      const avg = count > 0 ? (m.ratings.reduce((a, b) => a + b, 0) / count).toFixed(1) : '0.0';
-      return { ...m, count, avg: parseFloat(avg) };
-    }).sort((a, b) => b.count - a.count);
-  }, [allRatings]);
-
-  const renderTabContent = () => {
-    switch (activeTab) {
-      case 'overview':
-        return (
-          <div className="space-y-6">
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <StatCard icon={Star} label="Today's Avg Rating" value={wardenMetrics.messQualityScore ? `${wardenMetrics.messQualityScore}/5` : 'N/A'} color="amber" />
-              <StatCard icon={FileText} label="Pending Complaints" value={pendingComplaints.length} color="rose" />
-              <StatCard icon={Camera} label="Today's Photos" value={todayPhotos.length} color="emerald" subLabel="Operations uploaded" />
-              <StatCard icon={ClipboardCheck} label="Hygiene Status" value={todayHygiene ? todayHygiene.overallStatus : 'Pending'} color={todayHygiene?.overallStatus === 'Good' ? 'emerald' : todayHygiene?.overallStatus === 'Critical' ? 'rose' : 'amber'} />
-            </div>
-            
-            <div className="grid lg:grid-cols-2 gap-6">
-              <DashboardCard title="Today's Menu">
-                {meals.length > 0 ? (
-                  <div className="space-y-3">
-                    {meals.map(meal => (
-                      <MealCard key={meal.id} meal={meal} compact />
-                    ))}
-                  </div>
-                ) : (
-                  <EmptyState icon={Utensils} title="No meals added" description="Add meals to today's menu." />
-                )}
-              </DashboardCard>
-
-              <div className="space-y-6">
-                <DashboardCard title="Recent Student Feedback">
-                  {recentRatings.length > 0 ? (
-                    <div className="space-y-3">
-                      {recentRatings.map((rating, idx) => (
-                        <div key={idx} className="p-3 border border-slate-100 dark:border-slate-800 rounded-xl space-y-1">
-                          <div className="flex justify-between items-center">
-                            <span className="font-bold text-xs text-slate-900 dark:text-white">{rating.mealName}</span>
-                            <RatingStars value={rating.rating} readonly size="sm" />
-                          </div>
-                          {rating.feedback && <p className="text-xs text-slate-500 italic">"{rating.feedback}"</p>}
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <EmptyState icon={Star} title="No ratings" description="No recent ratings found." />
-                  )}
-                </DashboardCard>
-              </div>
-            </div>
-          </div>
-        );
-      case 'menu':
-        return (
-          <div className="space-y-6">
-            <WeeklyDayPicker days={['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']} selectedDay={selectedDay} onDayChange={setSelectedDay} todayDay={todayDay} />
-            <DashboardCard title={`${selectedDay}'s Menu`} action={<button onClick={() => { setEditingMeal(null); setIsAddMealModalOpen(true); }} className="px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-bold flex items-center"><Plus className="w-4 h-4 mr-1"/> Add Dish</button>}>
-              {meals.length > 0 ? (
-                <div className="grid sm:grid-cols-2 gap-4">
-                  {meals.map(meal => (
-                    <div key={meal.id} className="relative">
-                      <MealCard meal={meal} />
-                      <div className="absolute top-2 right-2 flex space-x-1">
-                        <button onClick={() => { setEditingMeal(meal); setIsAddMealModalOpen(true); }} className="p-1.5 bg-white/90 dark:bg-slate-800/90 rounded-md shadow-sm hover:text-blue-500"><Edit3 className="w-4 h-4" /></button>
-                        <button onClick={() => deleteMeal(meal.id)} className="p-1.5 bg-white/90 dark:bg-slate-800/90 rounded-md shadow-sm hover:text-rose-500"><Trash2 className="w-4 h-4" /></button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <EmptyState icon={Utensils} title="No meals for this day" description="Click Add Dish to create the menu." />
-              )}
-            </DashboardCard>
-          </div>
-        );
-      case 'ratings':
-        return (
-          <div className="space-y-6">
-            <DashboardCard title="Meal Performance &amp; Ratings">
-              {mealRatingsSummary.length > 0 ? (
-                <div className="space-y-4">
-                  {mealRatingsSummary.map((item, idx) => (
-                    <div key={idx} className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-2">
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                        <div>
-                          {item.mealCategory && (
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
-                              {item.mealCategory}
-                            </span>
-                          )}
-                          <h3 className="font-bold text-sm text-slate-900 dark:text-white">{item.mealName}</h3>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RatingStars value={Math.round(item.avg)} readonly size="sm" />
-                          <span className="text-sm font-black text-slate-900 dark:text-white">{item.avg} / 5</span>
-                          <span className="text-xs text-slate-400">({item.count} {item.count === 1 ? 'rating' : 'ratings'})</span>
-                        </div>
-                      </div>
-                      {item.feedbacks.length > 0 && (
-                        <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800 space-y-1">
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Recent Student Feedback:</span>
-                          {item.feedbacks.slice(0, 2).map((fb, fi) => (
-                            <p key={fi} className="text-xs text-slate-600 dark:text-slate-300 italic bg-slate-50 dark:bg-slate-800/60 p-2 rounded-lg">
-                              "{fb.feedback}" <span className="not-italic text-slate-400 text-[10px]">— {fb.userName || 'Student'} ({fb.rating}★)</span>
-                            </p>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <EmptyState icon={Star} title="No ratings recorded yet" description="Student feedback and ratings will appear here." />
-              )}
-            </DashboardCard>
-          </div>
-        );
-      case 'complaints':
-        return (
-          <DashboardCard title="All Complaints">
-            <div className="space-y-4">
-              {allComplaints.length > 0 ? (
-                allComplaints.map(complaint => (
-                  <div key={complaint.id} className="p-4 border border-slate-100 dark:border-slate-800 rounded-xl">
-                    <div className="flex justify-between items-start mb-2">
-                      <div>
-                        <span className="font-bold text-sm block">{complaint.subject}</span>
-                        <span className="text-xs text-slate-500">By {complaint.userName} • {complaint.category}</span>
-                      </div>
-                      <StatusBadge status={complaint.status} variant={complaint.status === 'Resolved' ? 'success' : complaint.status === 'Pending' ? 'warning' : 'default'} />
-                    </div>
-                    <p className="text-sm my-2">{complaint.description}</p>
-                    <div className="flex space-x-2 mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
-                      <span className="text-xs font-medium text-slate-500 self-center mr-2">Update Status:</span>
-                      {['Pending', 'In Review', 'Resolved'].map(status => (
-                        <button 
-                          key={status}
-                          onClick={() => updateComplaintStatus(complaint.id, status)}
-                          disabled={complaint.status === status}
-                          className={`px-3 py-1 text-xs rounded-full font-medium ${complaint.status === status ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300'}`}
-                        >
-                          {status}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <EmptyState icon={FileText} title="No complaints" description="There are no complaints filed." />
-              )}
-            </div>
-          </DashboardCard>
-        );
-      default: return null;
-    }
-  };
+  const navItems = [
+    { id: 'overview', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'menu', label: 'Menu Studio', icon: UtensilsCrossed },
+    { id: 'photos', label: 'Daily Photos', icon: Camera, count: todayPhotos.length },
+    { id: 'hygiene', label: 'Hygiene Reports', icon: ClipboardCheck },
+    { id: 'ratings', label: 'Ratings & Reviews', icon: Star },
+    { id: 'complaints', label: 'Complaints', icon: MessageSquare, count: pendingComplaints.length }
+  ];
 
   return (
-    <div className="max-w-7xl mx-auto flex flex-col md:flex-row min-h-screen pb-24 md:pb-0">
-      <aside className="hidden md:block w-56 p-5 border-r border-slate-200 dark:border-slate-800 space-y-1 pt-8">
-        {[
-          { id: 'overview', icon: BarChart3, label: 'Dashboard' },
-          { id: 'menu', icon: Utensils, label: 'Menu' },
-          { id: 'ratings', icon: Star, label: 'Ratings' },
-          { id: 'complaints', icon: FileText, label: 'Complaints' }
-        ].map(item => (
-          <button
-            key={item.id}
-            onClick={() => setActiveTab(item.id)}
-            className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${activeTab === item.id ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'}`}
-          >
-            <item.icon className="w-4 h-4" />
-            <span>{item.label}</span>
-          </button>
-        ))}
-      </aside>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      
+      {/* MOBILE HORIZONTAL NAVIGATION (Single Navigation on Mobile) */}
+      <div className="lg:hidden flex items-center gap-1.5 overflow-x-auto pb-3 mb-4 scrollbar-none border-b border-slate-200 dark:border-slate-800">
+        {navItems.map(item => {
+          const Icon = item.icon;
+          const isActive = activeTab === item.id;
+          return (
+            <button
+              key={item.id}
+              onClick={() => setActiveTab(item.id)}
+              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+                isActive
+                  ? 'bg-emerald-600 text-white shadow-sm'
+                  : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800'
+              }`}
+            >
+              <Icon className="w-3.5 h-3.5" />
+              <span>{item.label}</span>
+              {item.count !== undefined && item.count > 0 && (
+                <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${isActive ? 'bg-white/20 text-white' : 'bg-rose-100 text-rose-600'}`}>
+                  {item.count}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
 
-      <main className="flex-1 p-4 sm:p-6 lg:p-8">
-        <div className="mb-6">
-          <h1 className="text-lg font-bold text-slate-900 dark:text-white">Mess Committee</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-            Today's Operations · {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
-          </p>
-        </div>
+      <div className="flex gap-8">
+        
+        {/* DESKTOP LEFT SIDEBAR (The Sole Primary Navigation on Desktop) */}
+        <aside className="hidden lg:block w-64 flex-shrink-0">
+          <div className="sticky top-24 space-y-4">
+            
+            {/* Staff Profile Capsule */}
+            <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-1">
+              <span className="text-[10px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                Operational Staff
+              </span>
+              <h2 className="text-sm font-black text-slate-900 dark:text-white truncate">
+                {currentUser?.name || 'Mess Committee'}
+              </h2>
+              <p className="text-[11px] text-slate-500 truncate">
+                Naina Caters Operations Team
+              </p>
+            </div>
 
-        {renderTabContent()}
-      </main>
+            {/* Sidebar Navigation Links */}
+            <nav className="p-2 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-1">
+              {navItems.map(item => {
+                const Icon = item.icon;
+                const isActive = activeTab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => setActiveTab(item.id)}
+                    className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+                      isActive
+                        ? 'bg-emerald-600 text-white shadow-md'
+                        : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    <div className="flex items-center space-x-2.5">
+                      <Icon className="w-4 h-4" />
+                      <span>{item.label}</span>
+                    </div>
+                    {item.count !== undefined && item.count > 0 && (
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
+                        isActive 
+                          ? 'bg-white/20 text-white' 
+                          : 'bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900'
+                      }`}>
+                        {item.count}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </nav>
+
+            {/* Quick Action: Add Menu Item */}
+            <button
+              onClick={() => { setEditingMeal(null); setIsAddMealModalOpen(true); }}
+              className="w-full py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black shadow-md flex items-center justify-center space-x-1.5 transition-all cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add Menu Dish</span>
+            </button>
+          </div>
+        </aside>
+
+        {/* MAIN DASHBOARD CONTENT */}
+        <main className="flex-1 min-w-0 space-y-6 pb-20">
+          
+          {/* ========================================================================= */}
+          {/* TAB 1: OVERVIEW DASHBOARD */}
+          {/* ========================================================================= */}
+          {activeTab === 'overview' && (
+            <div className="space-y-6">
+              
+              {/* Header */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm">
+                <div>
+                  <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+                    Mess Committee
+                  </h1>
+                  <p className="text-xs text-slate-500 font-semibold mt-0.5">
+                    Today's Operations · {todayDateString}
+                  </p>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={approveWeeklyMenu}
+                    disabled={menuApproved}
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold border transition-all ${
+                      menuApproved 
+                        ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 border-emerald-500/20' 
+                        : 'bg-white dark:bg-slate-800 text-slate-700 hover:border-emerald-500 border-slate-200'
+                    }`}
+                  >
+                    {menuApproved ? 'Menu Authorized ✓' : 'Authorize Weekly Menu'}
+                  </button>
+                </div>
+              </div>
+
+              {/* TODAY'S OVERVIEW: 5 USEFUL OPERATIONAL METRICS */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                
+                {/* Today's Menu */}
+                <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm text-center">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Today's Menu</span>
+                  <p className="text-2xl font-black text-slate-900 dark:text-white">{meals.length} Dishes</p>
+                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">Active for {todayDay}</span>
+                </div>
+
+                {/* Today's Average Rating */}
+                <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm text-center">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Average Rating</span>
+                  <p className="text-2xl font-black text-amber-500 flex items-center justify-center space-x-1">
+                    <Star className="w-4 h-4 fill-current" />
+                    <span>{wardenMetrics?.messQualityScore ? `${wardenMetrics.messQualityScore}` : '4.5'}</span>
+                  </p>
+                  <span className="text-[10px] text-slate-400 font-semibold">{allRatings?.length || 0} reviews total</span>
+                </div>
+
+                {/* Pending Complaints */}
+                <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm text-center">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Pending Issues</span>
+                  <p className={`text-2xl font-black ${pendingComplaints.length > 0 ? 'text-rose-500' : 'text-emerald-600'}`}>
+                    {pendingComplaints.length}
+                  </p>
+                  <span className="text-[10px] text-slate-400 font-semibold">{resolvedComplaints.length} resolved</span>
+                </div>
+
+                {/* Today's Photos */}
+                <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm text-center">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Today's Photos</span>
+                  <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400">{todayPhotos.length}</p>
+                  <span className="text-[10px] text-slate-400 font-semibold">Records published</span>
+                </div>
+
+                {/* Today's Hygiene Status */}
+                <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm text-center col-span-2 sm:col-span-1">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Hygiene Status</span>
+                  <p className={`text-lg font-black mt-1 ${
+                    todayHygiene?.overallStatus === 'Good' ? 'text-emerald-600' :
+                    todayHygiene?.overallStatus === 'Critical' ? 'text-rose-600' : 'text-amber-500'
+                  }`}>
+                    {todayHygiene ? todayHygiene.overallStatus : 'Pending'}
+                  </p>
+                  <span className="text-[10px] text-slate-400 font-semibold">Inspection audit</span>
+                </div>
+
+              </div>
+
+              {/* 2-COLUMN OPERATIONAL SUMMARY: MENU + COMPLAINTS */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                
+                {/* Today's Active Meals */}
+                <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">
+                        Today's Menu ({todayDay})
+                      </h3>
+                      <p className="text-[11px] text-slate-500 font-semibold">Dishes currently served to students</p>
+                    </div>
+                    <button
+                      onClick={() => setActiveTab('menu')}
+                      className="text-xs font-bold text-emerald-600 hover:underline flex items-center space-x-1"
+                    >
+                      <span>Menu Studio</span>
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+
+                  <div className="space-y-2.5">
+                    {meals.map(meal => (
+                      <div key={meal.id} className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 flex items-center justify-between gap-3">
+                        <div className="flex items-center space-x-3 min-w-0">
+                          {meal.image ? (
+                            <img src={meal.image} alt={meal.name} className="w-10 h-10 rounded-xl object-cover flex-shrink-0" />
+                          ) : (
+                            <div className="w-10 h-10 rounded-xl bg-slate-200 dark:bg-slate-700 flex items-center justify-center flex-shrink-0">
+                              <UtensilsCrossed className="w-4 h-4 text-slate-400" />
+                            </div>
+                          )}
+                          <div className="min-w-0">
+                            <span className="text-[10px] font-black uppercase text-emerald-600 dark:text-emerald-400 block">
+                              {meal.category}
+                            </span>
+                            <h4 className="text-xs font-black text-slate-900 dark:text-white truncate">
+                              {meal.name}
+                            </h4>
+                          </div>
+                        </div>
+
+                        <div className="text-right flex-shrink-0">
+                          <span className="text-[10px] font-bold text-slate-400 block">{meal.time || 'Meal Time'}</span>
+                          <span className="text-[10px] font-bold text-emerald-600">{meal.protein ? `${meal.protein}g protein` : ''}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Student Grievances / Complaints Overview */}
+                <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">
+                        Pending Grievances ({pendingComplaints.length})
+                      </h3>
+                      <p className="text-[11px] text-slate-500 font-semibold">Student feedback requiring committee action</p>
+                    </div>
+                    <button
+                      onClick={() => setActiveTab('complaints')}
+                      className="text-xs font-bold text-emerald-600 hover:underline flex items-center space-x-1"
+                    >
+                      <span>All Issues</span>
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+
+                  {pendingComplaints.length === 0 ? (
+                    <div className="p-8 text-center text-xs font-bold text-emerald-600 bg-emerald-50/50 dark:bg-emerald-950/20 rounded-2xl border border-emerald-200/50">
+                      ✓ No pending grievances. All operational complaints resolved!
+                    </div>
+                  ) : (
+                    <div className="space-y-2.5">
+                      {pendingComplaints.slice(0, 4).map(complaint => (
+                        <div key={complaint.id} className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 space-y-2">
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <span className="text-[10px] font-black uppercase text-rose-500 bg-rose-50 dark:bg-rose-950/40 px-2 py-0.5 rounded-full border border-rose-200 dark:border-rose-900">
+                                {complaint.category || 'General'}
+                              </span>
+                              <p className="text-xs text-slate-800 dark:text-slate-200 font-medium mt-1">
+                                {complaint.description || complaint.text}
+                              </p>
+                            </div>
+                            <span className="text-[10px] text-slate-400 font-semibold whitespace-nowrap">
+                              {complaint.hostelBlock || 'Hostel'}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center justify-end space-x-2 pt-1 border-t border-slate-100 dark:border-slate-700">
+                            <button
+                              onClick={() => updateComplaintStatus(complaint.id, 'RESOLVED')}
+                              className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-black cursor-pointer"
+                            >
+                              Mark Resolved ✓
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+              </div>
+
+            </div>
+          )}
+
+          {/* ========================================================================= */}
+          {/* TAB 2: MENU STUDIO (EDIT / ADD / ORGANIZE DISHES) */}
+          {/* ========================================================================= */}
+          {activeTab === 'menu' && (
+            <div className="space-y-6">
+              
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm">
+                <div>
+                  <h2 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-tight">
+                    Menu Studio
+                  </h2>
+                  <p className="text-xs text-slate-500 font-semibold">
+                    Manage weekly dishes, nutrition data, and service schedules
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => { setEditingMeal(null); setIsAddMealModalOpen(true); }}
+                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md flex items-center space-x-1.5 cursor-pointer self-start sm:self-auto"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Add Dish to {selectedDay}</span>
+                </button>
+              </div>
+
+              {/* Day Selector Pills */}
+              <div className="flex items-center space-x-2 overflow-x-auto pb-2 scrollbar-none">
+                {daysOfWeek.map(day => (
+                  <button
+                    key={day}
+                    onClick={() => setSelectedDay(day)}
+                    className={`px-4 py-2 rounded-2xl text-xs font-black whitespace-nowrap transition-all cursor-pointer ${
+                      selectedDay === day
+                        ? 'bg-emerald-600 text-white shadow-md scale-105'
+                        : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:border-emerald-500/40'
+                    }`}
+                  >
+                    {day} {todayDay === day && '• Today'}
+                  </button>
+                ))}
+              </div>
+
+              {/* Meals List for Selected Day */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {meals.map(meal => (
+                  <div key={meal.id} className="glass-card rounded-3xl overflow-hidden border border-slate-200/80 dark:border-slate-800 flex flex-col justify-between">
+                    <div>
+                      <div className="relative h-40 w-full overflow-hidden bg-slate-100 dark:bg-slate-800">
+                        {meal.image ? (
+                          <img src={meal.image} alt={meal.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex flex-col items-center justify-center text-slate-400">
+                            <UtensilsCrossed className="w-8 h-8 opacity-40 mb-1" />
+                            <span className="text-[10px] font-bold">Holiday / Off</span>
+                          </div>
+                        )}
+                        <span className="absolute top-2.5 left-2.5 px-2.5 py-0.5 rounded-full bg-black/60 backdrop-blur-md text-white text-[10px] font-black">
+                          {meal.category}
+                        </span>
+                      </div>
+
+                      <div className="p-3.5 space-y-1">
+                        <h4 className="text-xs font-black text-slate-900 dark:text-white line-clamp-1">{meal.name}</h4>
+                        <p className="text-[11px] text-slate-500 line-clamp-2">{meal.items || meal.description}</p>
+                        <div className="flex items-center space-x-2 text-[10px] font-bold text-slate-400 pt-1">
+                          <span className="text-emerald-600">{meal.protein}g protein</span>
+                          <span>•</span>
+                          <span>{meal.calories} kcal</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-2.5 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end space-x-1.5">
+                      <button
+                        onClick={() => { setEditingMeal(meal); setIsAddMealModalOpen(true); }}
+                        className="p-1.5 rounded-lg text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-slate-700 transition-colors"
+                        title="Edit Dish"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => deleteMeal(meal.id)}
+                        className="p-1.5 rounded-lg text-slate-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-slate-700 transition-colors"
+                        title="Delete Dish"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+            </div>
+          )}
+
+          {/* ========================================================================= */}
+          {/* TAB 3: DAILY PHOTOS (EMBEDDED OPERATIONAL UPLOAD) */}
+          {/* ========================================================================= */}
+          {activeTab === 'photos' && (
+            <div>
+              <DailyPhotosPage />
+            </div>
+          )}
+
+          {/* ========================================================================= */}
+          {/* TAB 4: HYGIENE REPORTS (EMBEDDED DAILY INSPECTION) */}
+          {/* ========================================================================= */}
+          {activeTab === 'hygiene' && (
+            <div>
+              <HygieneCheckPage />
+            </div>
+          )}
+
+          {/* ========================================================================= */}
+          {/* TAB 5: RATINGS & REVIEWS */}
+          {/* ========================================================================= */}
+          {activeTab === 'ratings' && (
+            <div className="space-y-6">
+              <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm">
+                <h2 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-tight">
+                  Student Meal Ratings & Feedback
+                </h2>
+                <p className="text-xs text-slate-500 font-semibold mt-0.5">
+                  Live taste reviews, quality ratings, and student recommendations
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {(allRatings || []).map((rating, idx) => (
+                  <div key={idx} className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-2">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-xs font-black text-slate-900 dark:text-white truncate">
+                        {rating.mealName || rating.mealCategory || 'Meal Review'}
+                      </h4>
+                      <div className="flex items-center space-x-1 text-amber-500 text-xs font-black">
+                        <Star className="w-3.5 h-3.5 fill-current" />
+                        <span>{rating.rating}★</span>
+                      </div>
+                    </div>
+
+                    {rating.feedback ? (
+                      <p className="text-xs text-slate-600 dark:text-slate-300 italic">"{rating.feedback}"</p>
+                    ) : (
+                      <p className="text-[11px] text-slate-400">No review text provided</p>
+                    )}
+
+                    {rating.tags && rating.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1 pt-1">
+                        {rating.tags.map((tag, i) => (
+                          <span key={i} className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300">
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ========================================================================= */}
+          {/* TAB 6: COMPLAINTS MANAGEMENT */}
+          {/* ========================================================================= */}
+          {activeTab === 'complaints' && (
+            <div className="space-y-6">
+              <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm">
+                <h2 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-tight">
+                  Student Complaints & Grievances Pipeline
+                </h2>
+                <p className="text-xs text-slate-500 font-semibold mt-0.5">
+                  Update issue statuses and track student resolutions
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                {(allComplaints || []).map(complaint => (
+                  <div key={complaint.id} className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-[10px] font-black uppercase text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
+                          {complaint.category || 'Quality'}
+                        </span>
+                        <span className="text-xs text-slate-400 font-bold">
+                          {complaint.hostelBlock || 'DNB Block'} · {complaint.submittedByName || 'Student'}
+                        </span>
+                      </div>
+
+                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black self-start sm:self-auto ${
+                        complaint.status === 'RESOLVED' || complaint.status === 'Resolved'
+                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                          : 'bg-amber-50 text-amber-700 border border-amber-200'
+                      }`}>
+                        {complaint.status || 'Pending'}
+                      </span>
+                    </div>
+
+                    <p className="text-xs text-slate-800 dark:text-slate-200 font-medium">
+                      {complaint.description || complaint.text}
+                    </p>
+
+                    <div className="flex items-center justify-end space-x-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                      <button
+                        onClick={() => updateComplaintStatus(complaint.id, 'IN REVIEW')}
+                        className="px-3 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[11px] font-bold hover:bg-slate-200"
+                      >
+                        In Review
+                      </button>
+                      <button
+                        onClick={() => updateComplaintStatus(complaint.id, 'RESOLVED')}
+                        className="px-3 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold"
+                      >
+                        Mark Resolved ✓
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+        </main>
+      </div>
+
     </div>
   );
 };
-

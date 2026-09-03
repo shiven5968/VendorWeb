@@ -11,6 +11,8 @@ import {
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { clsx } from 'clsx';
 
+import { formatCollegeDateDisplay, getCollegeDateString } from '../utils/dateTime';
+
 export const WardenDashboard = ({ initialTab = 'overview' }) => {
   const { 
     currentUser, 
@@ -30,7 +32,8 @@ export const WardenDashboard = ({ initialTab = 'overview' }) => {
     updateComplaintStatus, 
     messPhotos, 
     hygieneChecks, 
-    todayDay 
+    todayDay,
+    currentTime
   } = useApp();
 
   const [activeTab, setActiveTab] = useState(initialTab);
@@ -39,15 +42,8 @@ export const WardenDashboard = ({ initialTab = 'overview' }) => {
     if (initialTab) setActiveTab(initialTab);
   }, [initialTab]);
 
-  const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
-  const todayFormattedDate = useMemo(() => {
-    return new Date().toLocaleDateString('en-US', { 
-      weekday: 'long', 
-      month: 'short', 
-      day: 'numeric', 
-      year: 'numeric' 
-    });
-  }, []);
+  const todayStr = getCollegeDateString(currentTime);
+  const todayFormattedDate = formatCollegeDateDisplay(currentTime);
 
   // Safe complaint filtering
   const pendingComplaints = useMemo(() => {

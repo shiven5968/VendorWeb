@@ -9,40 +9,16 @@ export const BottomNav = () => {
   const { role, isAuthenticated } = useAuth();
 
   if (!isAuthenticated) return null;
-  // ABES Officials use dedicated single navigation (sidebar on desktop, tabs on mobile)
-  if (role === 'warden') return null;
+  // Staff and Officials use dedicated single navigation (sidebar on desktop, tab row on mobile)
+  if (role === 'warden' || role === 'mess_committee' || role === 'committee') return null;
 
-  const getTabs = () => {
-    switch(role) {
-      case 'warden':
-        return [
-          { id: 'dashboard', label: 'Home', icon: Home },
-          { id: 'photo-archive', label: 'Photos', icon: Camera },
-          { id: 'complaints', label: 'Complaints', icon: MessageSquare },
-          { id: 'analytics', label: 'Analytics', icon: BarChart3 },
-          { id: 'profile', label: 'Profile', icon: User }
-        ];
-      case 'mess_committee':
-      case 'committee':
-        return [
-          { id: 'dashboard', label: 'Home', icon: Home },
-          { id: 'daily-photos', label: 'Photos', icon: Camera },
-          { id: 'hygiene', label: 'Hygiene', icon: ShieldCheck },
-          { id: 'complaints', label: 'Complaints', icon: MessageSquare },
-          { id: 'profile', label: 'Profile', icon: User }
-        ];
-      default:
-        return [
-          { id: 'dashboard', label: 'Home', icon: Home },
-          { id: 'menu', label: 'Menu', icon: UtensilsCrossed },
-          { id: 'complaints', label: 'Complaints', icon: MessageSquare },
-          { id: 'rewards', label: 'Rewards', icon: Gift },
-          { id: 'profile', label: 'Profile', icon: User }
-        ];
-    }
-  };
-
-  const tabs = getTabs();
+  const tabs = [
+    { id: 'dashboard', label: 'Home', icon: Home },
+    { id: 'menu', label: 'Menu', icon: UtensilsCrossed },
+    { id: 'complaints', label: 'Complaints', icon: MessageSquare },
+    { id: 'rewards', label: 'Rewards', icon: Gift },
+    { id: 'profile', label: 'Profile', icon: User }
+  ];
 
   return (
     <div className="md:hidden fixed bottom-0 left-0 w-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 pb-safe z-50 transition-colors">

@@ -20,18 +20,11 @@ export const Navbar = () => {
   const getNavItems = () => {
     switch(role) {
       case 'warden':
-        // Primary navigation for ABES Officials is the Left Sidebar ONLY.
-        // The top header must NOT contain duplicate page navigation links.
-        return [];
       case 'mess_committee':
       case 'committee':
-        return [
-          { id: 'dashboard', label: 'Dashboard', icon: Home },
-          { id: 'daily-photos', label: 'Photos', icon: Camera },
-          { id: 'hygiene', label: 'Hygiene', icon: ShieldCheck },
-          { id: 'ratings-view', label: 'Ratings', icon: Clipboard },
-          { id: 'complaints', label: 'Complaints', icon: MessageSquare }
-        ];
+        // Primary navigation for Staff & Officials is the Left Sidebar ONLY.
+        // The top header must NOT contain duplicate page navigation links.
+        return [];
       default:
         return [
           { id: 'dashboard', label: 'Home', icon: Home },
@@ -62,6 +55,11 @@ export const Navbar = () => {
               {role === 'warden' && (
                 <span className="ml-2 text-[10px] font-black uppercase tracking-wider text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 rounded-full border border-blue-200 dark:border-blue-800">
                   ABES OFFICIALS
+                </span>
+              )}
+              {(role === 'mess_committee' || role === 'committee') && (
+                <span className="ml-2 text-[10px] font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
+                  MESS COMMITTEE
                 </span>
               )}
             </div>

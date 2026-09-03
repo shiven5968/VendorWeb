@@ -2,8 +2,10 @@ import { collection, addDoc, getDocs, query, where, orderBy, limit, Timestamp } 
 import { db as firestoreDb, storage, isFirebaseConfigured } from './firebase.js';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 
-const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
-const UPLOAD_TIMEOUT_MS = 15000; // 15-second watchdog
+import { getCollegeDateString } from '../utils/dateTime.js';
+
+const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB limit
+const UPLOAD_TIMEOUT_MS = 60000; // 60-second watchdog for mobile resilience
 
 const uploadPhotoWithTimeout = async (file, path) => {
   if (!isFirebaseConfigured || !storage) throw new Error("Firebase not configured");
@@ -15,7 +17,7 @@ const uploadPhotoWithTimeout = async (file, path) => {
   return new Promise((resolve, reject) => {
     let timeoutTimer = setTimeout(() => {
       uploadTask.cancel();
-      reject(new Error('Upload timed out.'));
+      reject(new Error('Upload timed out. Please check your network connection and try again.'));
     }, UPLOAD_TIMEOUT_MS);
 
     uploadTask.on(
@@ -40,6 +42,7 @@ const uploadPhotoWithTimeout = async (file, path) => {
 
 export const saveMessPhoto = async ({ date, mealCategory, photoCategory, uploadedBy, uploadedByName, notes, files }) => {
   if (!isFirebaseConfigured) return null;
+  const targetDate = date || getCollegeDateString();
   
   try {
     const urls = [];
@@ -49,14 +52,14 @@ export const saveMessPhoto = async ({ date, mealCategory, photoCategory, uploade
       }
       const timestamp = Date.now();
       const safeName = file.name ? file.name.replace(/[^a-zA-Z0-9.-]/g, '_') : 'photo.jpg';
-      const path = `mess-photos/${date}/${timestamp}_${safeName}`;
+      const path = `mess-photos/${targetDate}/${timestamp}_${safeName}`;
       
       const url = await uploadPhotoWithTimeout(file, path);
       urls.push(url);
     }
     
     const photoData = {
-      date,
+      date: targetDate,
       mealCategory,
       photoCategory,
       uploadedBy,
@@ -77,10 +80,11 @@ export const saveMessPhoto = async ({ date, mealCategory, photoCategory, uploade
 
 export const saveHygieneCheck = async ({ date, submittedBy, submittedByName, items, overallStatus, notes }) => {
   if (!isFirebaseConfigured) return null;
+  const targetDate = date || getCollegeDateString();
   
   try {
     const checkData = {
-      date,
+      date: targetDate,
       submittedBy,
       submittedByName,
       items,

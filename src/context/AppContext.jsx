@@ -22,12 +22,19 @@ import {
   sortMealsByOfficialOrder
 } from '../services/mealTiming';
 
+import { 
+  COLLEGE_TIMEZONE,
+  getCollegeDateString, 
+  getCollegeDayName, 
+  formatCollegeDateDisplay, 
+  getCollegeTimeParts,
+  isTodayInCollege 
+} from '../utils/dateTime.js';
+
 const AppContext = createContext();
 
 const getTodayDayName = (date = new Date()) => {
-  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  const dayIdx = date.getDay();
-  return days[dayIdx] || 'Wednesday';
+  return getCollegeDayName(date);
 };
 
 export const AppProvider = ({ children }) => {
@@ -54,6 +61,7 @@ export const AppProvider = ({ children }) => {
   }, []);
 
   const todayDay = getTodayDayName(currentTime);
+  const collegeTodayDate = getCollegeDateString(currentTime);
   const [selectedDay, setSelectedDay] = useState(todayDay);
 
   // Keep selectedDay in sync if user hasn't explicitly navigated away
@@ -792,8 +800,11 @@ export const AppProvider = ({ children }) => {
         darkMode,
         toggleDarkMode,
 
-        // Day & Meals
+        // College Timezone & Calendar
         todayDay,
+        collegeTodayDate,
+        formatCollegeDateDisplay,
+        isTodayInCollege,
         selectedDay,
         setSelectedDay,
         meals: dayMeals,
