@@ -1,124 +1,101 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { UtensilsCrossed, Star, Sun, Moon, Coffee, Calendar, ChevronRight } from 'lucide-react';
+import { MealCard, WeeklyDayPicker, SectionHeader, EmptyState, Modal, RatingStars } from '../components/ui';
+import { UtensilsCrossed, Star } from 'lucide-react';
 
 export const MenuPage = () => {
-  const { selectedDay, setSelectedDay, meals, setSelectedMealModal } = useApp();
+  const { 
+    selectedDay, 
+    setSelectedDay, 
+    todayDay,
+    meals,
+    getUserRating,
+    checkIsRatingAllowed,
+    rateMeal
+  } = useApp();
+
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
-  const categoryStyles = {
-    Breakfast: { bg: 'bg-amber-500', icon: Sun },
-    Lunch: { bg: 'bg-emerald-600', icon: UtensilsCrossed },
-    Snacks: { bg: 'bg-orange-500', icon: Coffee },
-    Dinner: { bg: 'bg-indigo-600', icon: Moon },
+  const [ratingModalOpen, setRatingModalOpen] = useState(false);
+  const [selectedMealToRate, setSelectedMealToRate] = useState(null);
+  const [ratingValue, setRatingValue] = useState(0);
+  const [ratingSubmitting, setRatingSubmitting] = useState(false);
+
+  const handleRateClick = (meal) => {
+    setSelectedMealToRate(meal);
+    setRatingValue(getUserRating(meal.id) || 0);
+    setRatingModalOpen(true);
+  };
+
+  const submitRating = async () => {
+    if (!selectedMealToRate || ratingValue === 0 || ratingSubmitting) return;
+    try {
+      setRatingSubmitting(true);
+      await rateMeal(selectedMealToRate.id, ratingValue);
+      setRatingModalOpen(false);
+    } catch (error) {
+      console.error("Error rating meal:", error);
+    } finally {
+      setRatingSubmitting(false);
+    }
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 pb-24 md:pb-12">
-      
-      {/* Day Selector */}
-      <div className="space-y-2">
-        <div className="flex items-center space-x-2">
-          <Calendar className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-          <h1 className="text-xl font-black text-slate-900 dark:text-white">WEEKLY MESS MENU</h1>
-        </div>
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-5xl mx-auto">
+      <SectionHeader 
+        title="Weekly Menu" 
+        subtitle={`Viewing schedule for ${selectedDay}`} 
+      />
 
-        <div className="flex items-center space-x-2 overflow-x-auto pb-2 scrollbar-none">
-          {days.map(day => {
-            const isSelected = selectedDay === day;
-            return (
-              <button
-                key={day}
-                onClick={() => setSelectedDay(day)}
-                className={`px-4 py-2 rounded-2xl text-xs font-black whitespace-nowrap transition-all ${
-                  isSelected
-                    ? 'bg-emerald-600 text-white shadow-md scale-105'
-                    : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:border-emerald-500/40'
-                }`}
-              >
-                {day}
-              </button>
-            );
-          })}
-        </div>
+      <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm sticky top-20 z-10">
+        <WeeklyDayPicker 
+          days={days} 
+          selectedDay={selectedDay} 
+          onDayChange={setSelectedDay} 
+          todayDay={todayDay} 
+        />
       </div>
 
-      {/* Selected Day Meals List */}
-      {meals.length === 0 ? (
-        <div className="p-8 text-center text-xs font-bold text-slate-400 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800">
-          No meals scheduled for {selectedDay}.
+      <div className="mt-6">
+        {meals && meals.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {meals.map(meal => (
+              <MealCard 
+                key={meal.id} 
+                meal={meal} 
+                onRate={() => handleRateClick(meal)}
+                userRating={getUserRating(meal.id)}
+                showRating={selectedDay === todayDay && checkIsRatingAllowed(meal.category)}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="pt-12">
+            <EmptyState 
+              icon={UtensilsCrossed} 
+              title="No Menu Available" 
+              description={`The menu for ${selectedDay} has not been published yet.`} 
+            />
+          </div>
+        )}
+      </div>
+
+      <Modal isOpen={ratingModalOpen} onClose={() => setRatingModalOpen(false)} title={`Rate ${selectedMealToRate?.category}`}>
+        <div className="space-y-6 py-4">
+          <div className="text-center">
+            <h4 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">{selectedMealToRate?.name}</h4>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">How was the food? Your feedback helps improve the mess.</p>
+            <RatingStars value={ratingValue} onChange={setRatingValue} size="lg" />
+          </div>
+          <button 
+            onClick={submitRating}
+            disabled={ratingValue === 0 || ratingSubmitting}
+            className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-xl font-medium transition-colors"
+          >
+            {ratingSubmitting ? 'Submitting...' : 'Submit Rating'}
+          </button>
         </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {meals.map(meal => {
-            const style = categoryStyles[meal.category] || categoryStyles.Lunch;
-            const CategoryIcon = style.icon;
-
-            return (
-              <div
-                key={meal.id}
-                onClick={() => setSelectedMealModal(meal)}
-                className="glass-card rounded-3xl overflow-hidden flex flex-col justify-between border border-slate-200/80 dark:border-slate-800 hover:border-emerald-500/40 hover:shadow-xl transition-all cursor-pointer group"
-              >
-                <div>
-                  <div className="relative h-44 w-full overflow-hidden">
-                    <img
-                      src={meal.image}
-                      alt={meal.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent"></div>
-
-                    <span className={`absolute top-3 left-3 px-3 py-1 rounded-full ${style.bg} text-white text-[10px] font-black flex items-center space-x-1 shadow-md`}>
-                      <CategoryIcon className="w-3 h-3" />
-                      <span>{meal.category}</span>
-                    </span>
-
-                    <span className="absolute bottom-3 left-3 px-2.5 py-0.5 rounded-full bg-black/60 backdrop-blur-md text-white text-[10px] font-semibold">
-                      {meal.time}
-                    </span>
-
-                    <div className="absolute bottom-3 right-3 bg-black/70 backdrop-blur-md text-white px-2.5 py-1 rounded-xl text-[10px] font-black flex items-center space-x-1 shadow-md">
-                      {meal.rating ? (
-                        <>
-                          <Star className="w-3 h-3 text-amber-400 fill-current" />
-                          <span>{meal.rating}</span>
-                        </>
-                      ) : (
-                        <span className="text-slate-300">No ratings yet</span>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="p-4 space-y-2">
-                    <h3 className="text-base font-black text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors line-clamp-1">
-                      {meal.name}
-                    </h3>
-                    
-                    <p className="text-xs text-slate-600 dark:text-slate-300 font-medium line-clamp-2 leading-relaxed">
-                      {meal.items || meal.description}
-                    </p>
-
-                    <div className="flex items-center space-x-3 text-[11px] font-bold text-slate-500 dark:text-slate-400 pt-1">
-                      <span className="text-emerald-600 dark:text-emerald-400">💪 {meal.protein}g protein</span>
-                      <span>•</span>
-                      <span>🔥 {meal.calories} kcal</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-3 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                  <span className="text-xs font-black text-emerald-600 dark:text-emerald-400 group-hover:translate-x-0.5 transition-transform flex items-center space-x-1">
-                    <span>VIEW MEAL</span>
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  </span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
+      </Modal>
     </div>
   );
 };

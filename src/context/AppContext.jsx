@@ -89,6 +89,8 @@ export const AppProvider = ({ children }) => {
   const [redemptions, setRedemptions] = useState(() => db.getItem('redemptions', []));
   const [usersList, setUsersList] = useState(() => db.getUsers() || INITIAL_USERS);
   const [musclePassSubscription, setMusclePassSubscription] = useState(null);
+  const [messPhotos, setMessPhotos] = useState([]);
+  const [hygieneChecks, setHygieneChecks] = useState([]);
 
   // Live Database Sync State
   const [mealsVersion, setMealsVersion] = useState(0);
@@ -670,6 +672,34 @@ export const AppProvider = ({ children }) => {
     addNotification('Menu Approved ✅', 'Weekly mess menu authorized by Chief Warden.', 'success');
   };
 
+  const uploadMessPhoto = async (photoData, files) => {
+    if (!currentUser) return;
+    try {
+      const { saveMessPhoto } = await import('../services/messOperations.js');
+      const result = await saveMessPhoto({ ...photoData, uploadedBy: currentUser.uid || currentUser.id, uploadedByName: currentUser.name, files });
+      setMessPhotos(prev => [result, ...prev]);
+      addNotification('Photos Uploaded', 'Daily mess photos published successfully.', 'success');
+      return result;
+    } catch (e) {
+      addNotification('Upload Failed', e.message || 'Could not upload photos.', 'error');
+      throw e;
+    }
+  };
+
+  const submitHygieneCheck = async (checkData) => {
+    if (!currentUser) return;
+    try {
+      const { saveHygieneCheck } = await import('../services/messOperations.js');
+      const result = await saveHygieneCheck({ ...checkData, submittedBy: currentUser.uid || currentUser.id, submittedByName: currentUser.name });
+      setHygieneChecks(prev => [result, ...prev]);
+      addNotification('Inspection Submitted', 'Hygiene inspection report saved.', 'success');
+      return result;
+    } catch (e) {
+      addNotification('Submission Failed', e.message || 'Could not save inspection.', 'error');
+      throw e;
+    }
+  };
+
   const addNotification = (title, message, type = 'info') => {
     const newNotif = {
       id: 'n_' + Date.now(),
@@ -780,6 +810,10 @@ export const AppProvider = ({ children }) => {
         wardenAnalytics,
         menuApproved,
         approveWeeklyMenu,
+        messPhotos,
+        hygieneChecks,
+        uploadMessPhoto,
+        submitHygieneCheck,
 
         // Modals & UI
         selectedMealModal,

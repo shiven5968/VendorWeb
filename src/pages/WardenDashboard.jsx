@@ -1,371 +1,213 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { 
-  ShieldAlert, 
-  CheckCircle, 
-  Award, 
-  TrendingUp, 
-  FileText, 
-  Download, 
-  Users, 
-  AlertCircle,
-  Star,
-  Check,
-  Utensils,
-  Plus,
-  Edit3,
-  Trash2
+  ShieldAlert, CheckCircle, Award, TrendingUp, FileText, Download, 
+  Users, AlertCircle, Star, Check, Utensils, Plus, Edit3, Trash2, Camera, ClipboardCheck
 } from 'lucide-react';
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
+import { StatCard, StatusBadge, EmptyState, DashboardCard, SectionHeader, PhotoGallery, WeeklyDayPicker, MealCard } from '../components/ui';
 
 export const WardenDashboard = () => {
   const { 
-    currentUser,
-    wardenMetrics, 
-    allComplaints, 
-    allRatings,
-    meals, 
-    selectedDay,
-    setSelectedDay,
-    setIsAddMealModalOpen,
-    setEditingMeal,
-    deleteMeal,
-    menuApproved, 
-    approveWeeklyMenu, 
-    poll,
-    updateComplaintStatus
+    currentUser, wardenMetrics, allComplaints, allRatings, meals, 
+    selectedDay, setSelectedDay, setIsAddMealModalOpen, setEditingMeal, deleteMeal, 
+    menuApproved, approveWeeklyMenu, updateComplaintStatus, messPhotos, hygieneChecks, todayDay
   } = useApp();
 
-  const [activeSection, setActiveSection] = useState('overview');
+  const [activeTab, setActiveTab] = useState('overview');
 
-  const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-  const ratedMeals = meals.filter(m => m.rating !== null && m.rating !== undefined);
+  const pendingComplaints = allComplaints.filter(c => c.status === 'Pending' || c.status === 'In Review');
+  const resolvedComplaints = allComplaints.filter(c => c.status === 'Resolved');
+  const todayPhotos = messPhotos?.filter(p => p.date === new Date().toISOString().split('T')[0]) || [];
+  const todayHygiene = hygieneChecks?.find(h => h.date === new Date().toISOString().split('T')[0]);
 
-  return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 pb-24 md:pb-12">
-      
-      {/* Header (DYNAMIC WARDEN NAME) */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-3xl bg-slate-900 text-white shadow-xl border border-slate-800">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-black tracking-tight">
-            Hello, {currentUser?.name || 'Chief Warden'} 👋
-          </h1>
-          <p className="text-xs text-slate-400 font-semibold mt-1">Hostel Governance & Oversight Console</p>
-        </div>
-
-        <div className="flex items-center space-x-3">
-          <button
-            onClick={() => { setEditingMeal(null); setIsAddMealModalOpen(true); }}
-            className="px-4 py-2.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs shadow-md flex items-center space-x-1.5 border border-slate-700 cursor-pointer"
-          >
-            <Plus className="w-4 h-4 text-emerald-400" />
-            <span>Add Dish</span>
-          </button>
-
-          <button
-            onClick={approveWeeklyMenu}
-            disabled={menuApproved}
-            className={`px-5 py-2.5 rounded-2xl text-xs font-black flex items-center space-x-1.5 transition-all ${
-              menuApproved
-                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 cursor-default'
-                : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-md cursor-pointer'
-            }`}
-          >
-            <Check className="w-4 h-4" />
-            <span>{menuApproved ? 'Menu Authorized' : 'Approve Weekly Menu'}</span>
-          </button>
-        </div>
-      </div>
-
-      {/* LAUNCH-STATE REAL METRICS */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        
-        <div className="glass-card p-4 rounded-3xl border border-slate-200/80 dark:border-slate-800 text-center">
-          <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Overall Mess Rating</span>
-          <p className="text-2xl font-black text-amber-500 flex items-center justify-center space-x-1">
-            {wardenMetrics.messQualityScore ? (
-              <>
-                <Star className="w-4 h-4 fill-current" />
-                <span>{wardenMetrics.messQualityScore} / 5.0</span>
-              </>
-            ) : (
-              <span className="text-sm font-bold text-slate-400">No ratings yet</span>
-            )}
-          </p>
-          <span className="text-[10px] text-slate-400 font-semibold">{wardenMetrics.totalRatings} total reviews</span>
-        </div>
-
-        <div className="glass-card p-4 rounded-3xl border border-slate-200/80 dark:border-slate-800 text-center">
-          <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Open Complaints</span>
-          <p className="text-2xl font-black text-rose-500">
-            {wardenMetrics.openComplaints}
-          </p>
-          <span className="text-[10px] text-emerald-500 font-semibold">{wardenMetrics.resolvedComplaints} resolved</span>
-        </div>
-
-        <div className="glass-card p-4 rounded-3xl border border-slate-200/80 dark:border-slate-800 text-center">
-          <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Student Satisfaction</span>
-          <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400">
-            {allRatings.length > 0 ? `${wardenMetrics.studentSatisfaction}%` : 'No data yet'}
-          </p>
-          <span className="text-[10px] text-slate-400 font-semibold">Positive ratings (4-5★)</span>
-        </div>
-
-        <div className="glass-card p-4 rounded-3xl border border-slate-200/80 dark:border-slate-800 text-center">
-          <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Active Voting</span>
-          <p className="text-2xl font-black text-purple-600 dark:text-purple-400">
-            {poll ? `${poll.totalVotes} Votes` : '0'}
-          </p>
-          <span className="text-[10px] text-slate-400 font-semibold">{poll ? 'Live dish replacement' : 'No active polls'}</span>
-        </div>
-
-      </div>
-
-      {/* Section Switcher */}
-      <div className="flex items-center space-x-2 overflow-x-auto p-1 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-        {[
-          { id: 'overview', label: 'Quality Overview' },
-          { id: 'menu', label: 'Menu & Dishes' },
-          { id: 'complaints', label: `Complaints (${allComplaints.length})` },
-          { id: 'feedback', label: `Student Reviews (${allRatings.length})` },
-          { id: 'voting', label: 'Voting Status' },
-          { id: 'reports', label: 'Reports' },
-        ].map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveSection(tab.id)}
-            className={`px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
-              activeSection === tab.id
-                ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm'
-                : 'text-slate-500'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {/* TAB 1: OVERVIEW / QUALITY */}
-      {activeSection === 'overview' && (
-        <div className="glass-card p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 space-y-3">
-          <h3 className="text-xs font-black uppercase text-slate-400">Meal Quality Index</h3>
-          
-          {ratedMeals.length > 0 ? (
-            <div className="h-56 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={ratedMeals}>
-                  <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                  <XAxis dataKey="name" tick={{ fontSize: 9 }} />
-                  <YAxis domain={[0, 5]} tick={{ fontSize: 9 }} />
-                  <Tooltip />
-                  <Bar dataKey="rating" fill="#10b981" radius={[6, 6, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case 'overview':
+        return (
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+              <StatCard icon={Star} label="Avg Rating" value={wardenMetrics.messQualityScore ? `${wardenMetrics.messQualityScore}/5` : 'N/A'} color="amber" />
+              <StatCard icon={FileText} label="Pending Complaints" value={pendingComplaints.length} color="rose" />
+              <StatCard icon={CheckCircle} label="Resolved Complaints" value={resolvedComplaints.length} color="emerald" />
+              <StatCard icon={Camera} label="Today's Photos" value={todayPhotos.length} color="blue" />
+              <StatCard icon={ClipboardCheck} label="Hygiene Status" value={todayHygiene ? todayHygiene.overallStatus : 'Pending'} color={todayHygiene?.overallStatus === 'Good' ? 'emerald' : todayHygiene?.overallStatus === 'Critical' ? 'rose' : 'amber'} />
+              <StatCard icon={Users} label="Total Ratings" value={wardenMetrics.totalRatings} color="indigo" />
             </div>
-          ) : (
-            <div className="py-12 text-center text-xs font-bold text-slate-400">
-              No rating data yet. Quality scores will appear automatically as students submit meal feedback.
+            
+            <div className="grid lg:grid-cols-2 gap-6">
+              <DashboardCard title="Recent Activity">
+                {allRatings.length > 0 || allComplaints.length > 0 ? (
+                  <div className="space-y-3">
+                    {allComplaints.slice(0, 3).map(c => (
+                      <div key={`c-${c.id}`} className="p-3 border-l-4 border-rose-500 bg-slate-50 dark:bg-slate-800/50 rounded-r-xl">
+                        <span className="text-xs font-bold text-rose-500">Complaint • {c.status}</span>
+                        <p className="text-sm font-medium mt-1">{c.subject}</p>
+                      </div>
+                    ))}
+                    {allRatings.slice(0, 3).map((r, i) => (
+                      <div key={`r-${i}`} className="p-3 border-l-4 border-amber-500 bg-slate-50 dark:bg-slate-800/50 rounded-r-xl">
+                        <span className="text-xs font-bold text-amber-500">Rating • {r.rating}/5</span>
+                        <p className="text-sm font-medium mt-1">{r.mealName}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <EmptyState icon={Award} title="No recent activity" description="Activity will appear here." />
+                )}
+              </DashboardCard>
+              
+              <DashboardCard title="Quick Actions">
+                <div className="space-y-3">
+                  <button onClick={approveWeeklyMenu} disabled={menuApproved} className={`w-full p-4 rounded-xl font-bold flex items-center justify-between ${menuApproved ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 border border-emerald-200 dark:border-emerald-800 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-500 text-white'}`}>
+                    <div className="flex items-center space-x-3">
+                      <Check className="w-5 h-5" />
+                      <span>{menuApproved ? 'Weekly Menu Approved' : 'Approve Weekly Menu'}</span>
+                    </div>
+                  </button>
+                </div>
+              </DashboardCard>
             </div>
-          )}
-        </div>
-      )}
-
-      {/* TAB 2: MENU & DISH MANAGEMENT */}
-      {activeSection === 'menu' && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2 overflow-x-auto pb-1 scrollbar-none">
-              {daysOfWeek.map(day => (
-                <button
-                  key={day}
-                  onClick={() => setSelectedDay(day)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
-                    selectedDay === day ? 'bg-emerald-600 text-white shadow-md' : 'bg-white dark:bg-slate-900 text-slate-600 border'
-                  }`}
-                >
-                  {day}
-                </button>
-              ))}
-            </div>
-
-            <button
-              onClick={() => { setEditingMeal(null); setIsAddMealModalOpen(true); }}
-              className="px-3 py-1.5 rounded-xl bg-emerald-600 text-white text-xs font-bold flex items-center space-x-1 shadow-sm whitespace-nowrap cursor-pointer"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Add Dish</span>
-            </button>
           </div>
-
-          {meals.length === 0 ? (
-            <div className="p-8 text-center text-xs font-bold text-slate-400 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800">
-              No dishes scheduled for {selectedDay}. Click "Add Dish" to publish items.
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {meals.map(meal => (
-                <div key={meal.id} className="glass-card rounded-3xl overflow-hidden border border-slate-200/80 dark:border-slate-800 flex flex-col justify-between shadow-sm">
-                  <div>
-                    <div className="relative h-36 w-full">
-                      <img 
-                        src={meal.image} 
-                        alt={meal.name} 
-                        className="w-full h-full object-cover" 
-                        onError={(e) => {
-                          e.target.onerror = null;
-                          e.target.src = 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&q=80&w=800';
-                        }}
-                      />
-                      <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-black/70 text-white text-[10px] font-bold">
-                        {meal.category}
-                      </span>
-                      <span className="absolute bottom-2 right-2 bg-black/70 backdrop-blur-md text-white px-2 py-0.5 rounded-lg text-[10px] font-bold flex items-center space-x-0.5">
-                        {meal.rating ? `${meal.rating} ★` : 'No ratings yet'}
-                      </span>
+        );
+      case 'menu':
+        return (
+          <div className="space-y-6">
+            <WeeklyDayPicker days={['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']} selectedDay={selectedDay} onDayChange={setSelectedDay} todayDay={todayDay} />
+            <DashboardCard title={`${selectedDay}'s Menu Oversight`} action={<button onClick={() => { setEditingMeal(null); setIsAddMealModalOpen(true); }} className="px-3 py-1.5 bg-slate-800 text-white rounded-lg text-xs font-bold flex items-center"><Plus className="w-4 h-4 mr-1"/> Add Dish</button>}>
+              {meals.length > 0 ? (
+                <div className="grid sm:grid-cols-2 gap-4">
+                  {meals.map(meal => (
+                    <div key={meal.id} className="relative">
+                      <MealCard meal={meal} />
+                      <div className="absolute top-2 right-2 flex space-x-1">
+                        <button onClick={() => { setEditingMeal(meal); setIsAddMealModalOpen(true); }} className="p-1.5 bg-white/90 dark:bg-slate-800/90 rounded-md shadow-sm hover:text-blue-500"><Edit3 className="w-4 h-4" /></button>
+                        <button onClick={() => deleteMeal(meal.id)} className="p-1.5 bg-white/90 dark:bg-slate-800/90 rounded-md shadow-sm hover:text-rose-500"><Trash2 className="w-4 h-4" /></button>
+                      </div>
                     </div>
-                    <div className="p-3 space-y-1">
-                      <h4 className="text-xs font-black text-slate-900 dark:text-white">{meal.name}</h4>
-                      <p className="text-[11px] text-slate-500 line-clamp-1">{meal.items}</p>
-                      <span className="text-[10px] text-slate-400 block">{meal.calories} kcal • {meal.protein}g protein</span>
-                    </div>
-                  </div>
-
-                  <div className="p-2 bg-slate-50 dark:bg-slate-800/50 border-t flex justify-between">
-                    <button
-                      onClick={() => { setEditingMeal(meal); setIsAddMealModalOpen(true); }}
-                      className="px-2.5 py-1 rounded-lg text-emerald-600 dark:text-emerald-400 text-xs font-bold flex items-center space-x-1 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 cursor-pointer"
-                    >
-                      <Edit3 className="w-3 h-3" />
-                      <span>Edit</span>
-                    </button>
-                    <button
-                      onClick={() => deleteMeal(meal.id)}
-                      className="px-2.5 py-1 rounded-lg text-rose-600 dark:text-rose-400 text-xs font-bold flex items-center space-x-1 hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                      <span>Delete</span>
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* TAB 3: COMPLAINTS */}
-      {activeSection === 'complaints' && (
-        <div className="space-y-3">
-          {allComplaints.length === 0 ? (
-            <div className="p-8 text-center text-xs font-bold text-slate-400 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800">
-              No complaints filed yet.
-            </div>
-          ) : (
-            allComplaints.map(c => (
-              <div key={c.id} className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
-                <div>
-                  <div className="flex items-center space-x-2">
-                    <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[10px] font-bold text-slate-600 dark:text-slate-300">
-                      {c.category}
-                    </span>
-                    <h4 className="text-xs font-black text-slate-900 dark:text-white">{c.description}</h4>
-                  </div>
-                  <span className="text-[10px] text-slate-400 block mt-0.5">
-                    Student: {c.userName || 'Student'} ({c.block}) • {new Date(c.timestamp).toLocaleDateString()}
-                  </span>
-                </div>
-
-                <div className="flex items-center space-x-1.5">
-                  {['PENDING', 'IN REVIEW', 'RESOLVED'].map(st => (
-                    <button
-                      key={st}
-                      onClick={() => updateComplaintStatus(c.id, st)}
-                      className={`px-2.5 py-1 rounded-lg text-[10px] font-bold cursor-pointer ${
-                        c.status === st ? 'bg-emerald-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'
-                      }`}
-                    >
-                      {st}
-                    </button>
                   ))}
                 </div>
-              </div>
-            ))
-          )}
-        </div>
-      )}
-
-      {/* TAB 4: FEEDBACK */}
-      {activeSection === 'feedback' && (
-        <div className="space-y-3">
-          {allRatings.length === 0 ? (
-            <div className="p-8 text-center text-xs font-bold text-slate-400 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800">
-              No student reviews submitted yet.
-            </div>
-          ) : (
-            allRatings.map(r => (
-              <div key={r.id} className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between shadow-sm">
-                <div>
-                  <div className="flex items-center space-x-2">
-                    <h4 className="text-xs font-black text-slate-900 dark:text-white">{r.mealName}</h4>
-                    <span className="text-xs font-black text-amber-500">{r.rating} ★</span>
-                  </div>
-                  {r.feedback && <p className="text-[11px] text-slate-500 italic mt-0.5">"{r.feedback}"</p>}
-                  <span className="text-[10px] text-slate-400 block mt-0.5">
-                    By {r.userName || 'Student'} • {new Date(r.timestamp).toLocaleDateString()}
-                  </span>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      )}
-
-      {/* TAB 5: VOTING */}
-      {activeSection === 'voting' && (
-        <div className="p-5 rounded-3xl bg-slate-900 text-white space-y-4 border border-slate-800">
-          {poll ? (
-            <>
-              <div className="flex justify-between items-center text-xs">
-                <span className="font-bold">Active Replacement Poll: {poll.dishToReplace}</span>
-                <span className="text-emerald-400">{poll.totalVotes} Total Student Votes</span>
-              </div>
-              <div className="space-y-2">
-                {poll.options.map(opt => (
-                  <div key={opt.id} className="space-y-1">
-                    <div className="flex justify-between text-xs font-bold">
-                      <span>{opt.name} ({opt.protein})</span>
-                      <span className="text-emerald-400">{opt.percent}% ({opt.votes} votes)</span>
+              ) : (
+                <EmptyState icon={Utensils} title="No meals for this day" description="Mess committee has not added meals." />
+              )}
+            </DashboardCard>
+          </div>
+        );
+      case 'photos':
+        return (
+          <DashboardCard title="Today's Mess Photos">
+            {todayPhotos.length > 0 ? (
+              <PhotoGallery photos={todayPhotos.flatMap(doc => doc.urls.map(url => ({ url, category: doc.photoCategory, meal: doc.mealCategory, uploadedBy: doc.uploadedByName })))} groupBy="meal" />
+            ) : (
+              <EmptyState icon={Camera} title="No photos uploaded today" description="Mess Committee will upload daily photos here." />
+            )}
+          </DashboardCard>
+        );
+      case 'hygiene':
+        return (
+          <DashboardCard title="Hygiene Reports">
+            <div className="space-y-4">
+              {hygieneChecks && hygieneChecks.length > 0 ? (
+                hygieneChecks.map(check => (
+                  <div key={check.id} className="p-4 border border-slate-100 dark:border-slate-800 rounded-xl">
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <span className="font-bold text-sm block">Inspection: {check.date}</span>
+                        <span className="text-xs text-slate-500">By {check.submittedByName}</span>
+                      </div>
+                      <StatusBadge status={check.overallStatus} variant={check.overallStatus === 'Good' ? 'success' : check.overallStatus === 'Critical' ? 'danger' : 'warning'} />
                     </div>
-                    <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
-                      <div className="h-full bg-emerald-500 transition-all duration-500" style={{ width: `${opt.percent}%` }}></div>
+                    <div className="grid grid-cols-2 gap-2">
+                      {check.items.map((item, i) => (
+                        <div key={i} className="text-xs flex justify-between bg-slate-50 dark:bg-slate-900 p-2 rounded">
+                          <span>{item.label}</span>
+                          <span className={item.status === 'Good' ? 'text-emerald-500' : item.status === 'Critical' ? 'text-rose-500' : 'text-amber-500'}>{item.status}</span>
+                        </div>
+                      ))}
+                    </div>
+                    {check.notes && <p className="text-sm mt-4 p-3 bg-slate-50 dark:bg-slate-900 rounded-lg italic">Notes: {check.notes}</p>}
+                  </div>
+                ))
+              ) : (
+                <EmptyState icon={ClipboardCheck} title="No hygiene reports" description="No daily inspections submitted yet." />
+              )}
+            </div>
+          </DashboardCard>
+        );
+      case 'complaints':
+        return (
+          <DashboardCard title="Oversight: Complaints">
+            <div className="space-y-4">
+              {allComplaints.length > 0 ? (
+                allComplaints.map(complaint => (
+                  <div key={complaint.id} className="p-4 border border-slate-100 dark:border-slate-800 rounded-xl">
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <span className="font-bold text-sm block">{complaint.subject}</span>
+                        <span className="text-xs text-slate-500">By {complaint.userName} • {complaint.category}</span>
+                      </div>
+                      <StatusBadge status={complaint.status} variant={complaint.status === 'Resolved' ? 'success' : complaint.status === 'Pending' ? 'warning' : 'default'} />
+                    </div>
+                    <p className="text-sm my-2">{complaint.description}</p>
+                    <div className="flex space-x-2 mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                      <span className="text-xs font-medium text-slate-500 self-center mr-2">Oversight Status Update:</span>
+                      {['Pending', 'In Review', 'Resolved'].map(status => (
+                        <button 
+                          key={status}
+                          onClick={() => updateComplaintStatus(complaint.id, status)}
+                          disabled={complaint.status === status}
+                          className={`px-3 py-1 text-xs rounded-full font-medium ${complaint.status === status ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300'}`}
+                        >
+                          {status}
+                        </button>
+                      ))}
                     </div>
                   </div>
-                ))}
-              </div>
-            </>
-          ) : (
-            <div className="py-6 text-center text-xs font-bold text-slate-400">
-              No active voting polls at this time.
+                ))
+              ) : (
+                <EmptyState icon={FileText} title="No complaints" description="There are no complaints filed." />
+              )}
             </div>
-          )}
-        </div>
-      )}
+          </DashboardCard>
+        );
+      default: return null;
+    }
+  };
 
-      {/* TAB 6: REPORTS */}
-      {activeSection === 'reports' && (
-        <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center space-y-3">
-          <h3 className="text-base font-black text-slate-900 dark:text-white">Mess Quality & Governance Report</h3>
-          <p className="text-xs text-slate-500 font-semibold">Campus food quality compliance and audit exporter.</p>
-          <button
-            onClick={() => window.print()}
-            className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md inline-flex items-center space-x-1.5 cursor-pointer"
+  return (
+    <div className="max-w-7xl mx-auto flex flex-col md:flex-row min-h-screen pb-24 md:pb-0">
+      <aside className="hidden md:block w-64 p-6 border-r border-slate-200 dark:border-slate-800 space-y-2">
+        <div className="font-black text-xl mb-8">ABES Officials</div>
+        {[
+          { id: 'overview', icon: ShieldAlert, label: 'Dashboard' },
+          { id: 'menu', icon: Utensils, label: 'Menu Oversight' },
+          { id: 'photos', icon: Camera, label: 'Mess Photos' },
+          { id: 'hygiene', icon: ClipboardCheck, label: 'Hygiene Reports' },
+          { id: 'complaints', icon: FileText, label: 'Complaints' }
+        ].map(item => (
+          <button 
+            key={item.id} 
+            onClick={() => setActiveTab(item.id)}
+            className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-bold transition-colors ${activeTab === item.id ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
           >
-            <Download className="w-4 h-4" />
-            <span>Export Report (PDF)</span>
+            <item.icon className="w-5 h-5" />
+            <span>{item.label}</span>
           </button>
-        </div>
-      )}
+        ))}
+      </aside>
 
+      <main className="flex-1 p-4 sm:p-6 lg:p-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 mb-8 rounded-3xl bg-slate-900 text-white shadow-xl border border-slate-800">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight">ABES Officials Dashboard</h1>
+            <p className="text-xs text-slate-400 font-semibold mt-1">Institutional Oversight Console</p>
+          </div>
+          <div className="px-3 py-1 bg-blue-500/20 text-blue-400 border border-blue-500/40 rounded-full text-xs font-bold">
+            ABES Official
+          </div>
+        </div>
+        
+        {renderTabContent()}
+      </main>
     </div>
   );
 };

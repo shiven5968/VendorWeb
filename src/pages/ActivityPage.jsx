@@ -1,44 +1,37 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { MessageSquare, Plus, Send, CheckCircle2, Clock, AlertCircle, Star, PhoneCall } from 'lucide-react';
-import { OfficialContactSection } from '../components/OfficialContactSection';
+import { useAuth } from '../context/AuthContext';
+import { StatusBadge, EmptyState, DashboardCard, SectionHeader, Modal } from '../components/ui';
+import { MessageSquare, Plus, CheckCircle2, Clock } from 'lucide-react';
+import { clsx } from 'clsx';
 
 export const ActivityPage = () => {
   const { 
-    currentUser, 
-    currentRole,
     allComplaints, 
     userComplaints, 
     createComplaint, 
-    updateComplaintStatus,
-    allRatings 
+    updateComplaintStatus 
   } = useApp();
+  const { role } = useAuth();
 
-  const [activeTab, setActiveTab] = useState('complaints');
-  const [showForm, setShowForm] = useState(false);
-  const [category, setCategory] = useState('Quality');
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [category, setCategory] = useState('Food Quality');
   const [issueText, setIssueText] = useState('');
-  const [submittedNotice, setSubmittedNotice] = useState(false);
-
-  const displayedComplaints = (currentRole === 'mess_committee' || currentRole === 'committee' || currentRole === 'warden') 
-    ? allComplaints 
-    : userComplaints;
-
-  const myRatings = allRatings.filter(r => r.userId === (currentUser?.uid || currentUser?.id));
-
   const [submitting, setSubmitting] = useState(false);
+
+  const isStaff = ['warden', 'committee', 'mess_committee'].includes(role);
+  const displayedComplaints = isStaff ? allComplaints : userComplaints;
+
+  const categories = ['Food Quality', 'Hygiene', 'Service', 'Quantity', 'Other'];
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!issueText.trim() || submitting) return;
-
     try {
       setSubmitting(true);
       await createComplaint(category, issueText);
       setIssueText('');
-      setShowForm(false);
-      setSubmittedNotice(true);
-      setTimeout(() => setSubmittedNotice(false), 2500);
+      setIsFormOpen(false);
     } catch (err) {
       console.error('Error creating complaint:', err);
     } finally {
@@ -46,240 +39,135 @@ export const ActivityPage = () => {
     }
   };
 
-  const getStatusBadge = (status) => {
-    if (status === 'RESOLVED' || status === 'Resolved') {
-      return (
-        <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold border border-emerald-500/20">
-          RESOLVED
-        </span>
-      );
-    } else if (status === 'IN REVIEW' || status === 'In Review' || status === 'In Progress') {
-      return (
-        <span className="px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs font-bold border border-amber-500/20">
-          IN REVIEW
-        </span>
-      );
+  const formatDate = (dateString) => {
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    } catch {
+      return dateString;
     }
-    return (
-      <span className="px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-bold border border-blue-500/20">
-        PENDING
-      </span>
-    );
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 pb-24 md:pb-12">
-      
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">Activity & Support</h1>
-          <p className="text-xs text-slate-500 font-semibold">
-            {currentRole === 'student' ? 'Report mess grievances, track feedback & reach campus officials' : 'Hostel Issues & Ratings Log'}
-          </p>
-        </div>
-
-        {currentRole === 'student' && (
-          <button
-            onClick={() => setShowForm(!showForm)}
-            className="px-4 py-2 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md flex items-center space-x-1"
-          >
-            <Plus className="w-4 h-4" />
-            <span>New Complaint</span>
-          </button>
-        )}
-      </div>
-
-      {submittedNotice && (
-        <div className="p-3 rounded-2xl bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-xs font-bold text-center border border-emerald-500/30">
-          Complaint submitted. Status: PENDING.
-        </div>
-      )}
-
-      {/* New Complaint Form */}
-      {showForm && (
-        <form onSubmit={handleSubmit} className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3 shadow-md">
-          <h3 className="text-sm font-black text-slate-900 dark:text-white">Report Mess Issue</h3>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Category</label>
-              <select
-                value={category}
-                onChange={e => setCategory(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold outline-none"
-              >
-                <option value="Taste">Taste</option>
-                <option value="Quality">Quality</option>
-                <option value="Quantity">Quantity</option>
-                <option value="Cleanliness">Cleanliness</option>
-                <option value="Menu">Menu</option>
-                <option value="Other">Other</option>
-              </select>
-            </div>
-
-            <div className="sm:col-span-2">
-              <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Short Description</label>
-              <input
-                type="text"
-                required
-                value={issueText}
-                onChange={e => setIssueText(e.target.value)}
-                placeholder="Briefly describe the issue..."
-                className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs outline-none"
-              />
-            </div>
-          </div>
-
-          <div className="flex justify-end space-x-2 pt-1">
-            <button
-              type="button"
-              onClick={() => setShowForm(false)}
-              className="px-3.5 py-1.5 rounded-xl text-xs font-bold text-slate-500"
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-4xl mx-auto">
+      <SectionHeader 
+        title="Complaints & Feedback" 
+        subtitle={isStaff ? "Manage student issues" : "Track and submit your issues"}
+        action={
+          !isStaff && (
+            <button 
+              onClick={() => setIsFormOpen(true)}
+              className="flex items-center space-x-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-medium transition-colors shadow-sm"
             >
-              Cancel
+              <Plus className="w-4 h-4" />
+              <span className="hidden sm:inline">New Complaint</span>
+              <span className="sm:hidden">New</span>
             </button>
-            <button
-              type="submit"
-              className="px-5 py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold shadow-md flex items-center space-x-1"
-            >
-              <Send className="w-3.5 h-3.5" />
-              <span>Submit Complaint</span>
-            </button>
-          </div>
-        </form>
-      )}
+          )
+        }
+      />
 
-      {/* Tabs */}
-      <div className="flex items-center space-x-2 p-1 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-        <button
-          onClick={() => setActiveTab('complaints')}
-          className={`flex-1 py-2 rounded-xl text-xs font-black transition-all ${
-            activeTab === 'complaints'
-              ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm'
-              : 'text-slate-500'
-          }`}
-        >
-          Complaints ({displayedComplaints.length})
-        </button>
-
-        {currentRole === 'student' && (
-          <button
-            onClick={() => setActiveTab('ratings')}
-            className={`flex-1 py-2 rounded-xl text-xs font-black transition-all ${
-              activeTab === 'ratings'
-                ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm'
-                : 'text-slate-500'
-            }`}
-          >
-            My Ratings ({myRatings.length})
-          </button>
-        )}
-
-        <button
-          onClick={() => setActiveTab('contacts')}
-          className={`flex-1 py-2 rounded-xl text-xs font-black transition-all ${
-            activeTab === 'contacts'
-              ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm'
-              : 'text-slate-500'
-          }`}
-        >
-          Official Contacts
-        </button>
-      </div>
-
-      {/* Complaints List */}
-      {activeTab === 'complaints' && (
-        <div className="space-y-3">
-          {displayedComplaints.length === 0 ? (
-            <div className="p-8 text-center text-xs font-bold text-slate-400 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800">
-              No complaints filed yet.
-            </div>
-          ) : (
-            displayedComplaints.map(c => (
-              <div key={c.id} className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
-                <div className="space-y-1">
-                  <div className="flex items-center space-x-2">
-                    <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-[10px] font-black uppercase text-slate-600 dark:text-slate-300">
-                      {c.category}
+      <div className="space-y-4">
+        {displayedComplaints && displayedComplaints.length > 0 ? (
+          [...displayedComplaints].sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt)).map(complaint => (
+            <DashboardCard key={complaint.id} className="hover:border-emerald-500/30 transition-colors">
+              <div className="flex flex-col sm:flex-row justify-between gap-4">
+                <div className="space-y-2 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="px-2.5 py-1 text-xs font-semibold rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                      {complaint.category}
                     </span>
-                    <span className="text-xs font-black text-slate-900 dark:text-white">{c.description}</span>
+                    <span className="text-xs text-slate-500 dark:text-slate-400 flex items-center">
+                      <Clock className="w-3 h-3 mr-1" />
+                      {formatDate(complaint.createdAt)}
+                    </span>
                   </div>
-                  <span className="text-[10px] text-slate-400 block">
-                    {c.userName || 'Student'} • {c.block} • {new Date(c.timestamp).toLocaleDateString()}
-                  </span>
+                  <p className="text-slate-800 dark:text-slate-200 text-sm leading-relaxed whitespace-pre-wrap">
+                    {complaint.issue}
+                  </p>
+                  {isStaff && complaint.studentName && (
+                    <p className="text-xs text-slate-500">Reported by: <span className="font-medium text-slate-700 dark:text-slate-300">{complaint.studentName}</span></p>
+                  )}
                 </div>
-
-                <div className="flex items-center space-x-2">
-                  <div>{getStatusBadge(c.status)}</div>
-
-                  {(currentRole === 'mess_committee' || currentRole === 'committee' || currentRole === 'warden') && (
-                    <div className="flex space-x-1 pl-2 border-l border-slate-200 dark:border-slate-700">
-                      {['PENDING', 'IN REVIEW', 'RESOLVED'].map(st => (
-                        <button
-                          key={st}
-                          onClick={() => updateComplaintStatus(c.id, st)}
-                          className={`px-2 py-0.5 rounded text-[9px] font-bold ${
-                            c.status === st ? 'bg-slate-900 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'
-                          }`}
+                
+                <div className="flex flex-col items-end justify-between min-w-[120px]">
+                  <StatusBadge status={complaint.status} variant="complaint" />
+                  
+                  {isStaff && complaint.status !== 'RESOLVED' && (
+                    <div className="mt-4 flex gap-2">
+                      {complaint.status === 'PENDING' && (
+                        <button 
+                          onClick={() => updateComplaintStatus(complaint.id, 'IN REVIEW')}
+                          className="text-xs px-3 py-1.5 bg-amber-100 text-amber-700 hover:bg-amber-200 rounded-lg font-medium transition-colors"
                         >
-                          {st.substring(0, 3)}
+                          Review
                         </button>
-                      ))}
+                      )}
+                      <button 
+                        onClick={() => updateComplaintStatus(complaint.id, 'RESOLVED')}
+                        className="text-xs px-3 py-1.5 bg-emerald-100 text-emerald-700 hover:bg-emerald-200 rounded-lg font-medium transition-colors"
+                      >
+                        Resolve
+                      </button>
                     </div>
                   )}
                 </div>
               </div>
-            ))
-          )}
-        </div>
-      )}
+            </DashboardCard>
+          ))
+        ) : (
+          <EmptyState 
+            icon={CheckCircle2} 
+            title={isStaff ? "No active complaints" : "You're all clear"} 
+            description={isStaff ? "There are no complaints to review at the moment." : "No complaints submitted. Everything looks good!"} 
+          />
+        )}
+      </div>
 
-      {/* Ratings List */}
-      {activeTab === 'ratings' && (
-        <div className="space-y-3">
-          {myRatings.length === 0 ? (
-            <div className="p-8 text-center text-xs font-bold text-slate-400 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800">
-              No feedback yet.
+      <Modal isOpen={isFormOpen} onClose={() => setIsFormOpen(false)} title="Submit Complaint">
+        <form onSubmit={handleSubmit} className="space-y-6 py-2">
+          <div className="space-y-3">
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Category</label>
+            <div className="flex flex-wrap gap-2">
+              {categories.map(cat => (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setCategory(cat)}
+                  className={clsx(
+                    "px-4 py-2 text-sm font-medium rounded-full border transition-colors",
+                    category === cat 
+                      ? "bg-emerald-100 border-emerald-200 text-emerald-700 dark:bg-emerald-500/20 dark:border-emerald-500/30 dark:text-emerald-400"
+                      : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
+                  )}
+                >
+                  {cat}
+                </button>
+              ))}
             </div>
-          ) : (
-            myRatings.map(r => (
-              <div key={r.id} className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between shadow-sm">
-                <div>
-                  <h4 className="text-xs font-black text-slate-900 dark:text-white">{r.mealName}</h4>
-                  {r.feedback && <p className="text-[11px] text-slate-500 italic mt-0.5">"{r.feedback}"</p>}
-                  {r.tags && r.tags.length > 0 && (
-                    <div className="flex gap-1 mt-1">
-                      {r.tags.map((t, i) => (
-                        <span key={i} className="px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 text-[9px] font-bold">
-                          {t}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                <div className="px-3 py-1 rounded-xl bg-amber-500/10 text-amber-500 text-xs font-black flex items-center space-x-1">
-                  <Star className="w-3.5 h-3.5 fill-current" />
-                  <span>{r.rating} ★</span>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      )}
+          </div>
 
-      {/* Official Contacts Section */}
-      {activeTab === 'contacts' && (
-        <OfficialContactSection />
-      )}
+          <div className="space-y-3">
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Description</label>
+            <textarea 
+              rows={4}
+              value={issueText}
+              onChange={(e) => setIssueText(e.target.value)}
+              placeholder="Describe your issue in detail..."
+              className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 resize-none transition-shadow"
+              required
+            />
+          </div>
 
-      {/* Persistent Contacts Quick Strip at Bottom of Activity Page */}
-      {activeTab !== 'contacts' && (
-        <div className="pt-4 border-t border-slate-200 dark:border-slate-800">
-          <OfficialContactSection />
-        </div>
-      )}
-
+          <button 
+            type="submit"
+            disabled={!issueText.trim() || submitting}
+            className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
+          >
+            {submitting ? 'Submitting...' : 'Submit Issue'}
+          </button>
+        </form>
+      </Modal>
     </div>
   );
 };

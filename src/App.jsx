@@ -23,6 +23,9 @@ import { ActivityPage } from './pages/ActivityPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { AnalyticsPage } from './pages/AnalyticsPage';
 import { ReportsPage } from './pages/ReportsPage';
+import { DailyPhotosPage } from './pages/DailyPhotosPage';
+import { HygieneCheckPage } from './pages/HygieneCheckPage';
+import { PhotoArchivePage } from './pages/PhotoArchivePage';
 import { Loader2 } from 'lucide-react';
 
 const AppContent = () => {
@@ -38,7 +41,9 @@ const AppContent = () => {
     isSearchOpen, 
     setIsSearchOpen, 
     isNotificationsOpen, 
-    setIsNotificationsOpen 
+    setIsNotificationsOpen,
+    isNotificationOpen,
+    setIsNotificationOpen
   } = useApp();
 
   // Role selection state for unauthenticated landing -> login flow
@@ -58,8 +63,9 @@ const AppContent = () => {
             setSelectedMeal(null);
           } else if (isSearchOpen) {
             setIsSearchOpen(false);
-          } else if (isNotificationsOpen) {
-            setIsNotificationsOpen(false);
+          } else if (isNotificationsOpen || isNotificationOpen) {
+            setIsNotificationsOpen?.(false);
+            setIsNotificationOpen?.(false);
           } else if (currentPage !== 'dashboard') {
             setCurrentPage('dashboard');
           } else if (canGoBack) {
@@ -80,14 +86,16 @@ const AppContent = () => {
     isAddMealModalOpen, 
     selectedMeal, 
     isSearchOpen, 
-    isNotificationsOpen, 
+    isNotificationsOpen,
+    isNotificationOpen,
     currentPage, 
     setCurrentPage, 
     setIsAddMealModalOpen, 
     setEditingMeal, 
     setSelectedMeal, 
     setIsSearchOpen, 
-    setIsNotificationsOpen
+    setIsNotificationsOpen,
+    setIsNotificationOpen
   ]);
 
   // URL Path Synchronization & Strict Role Guarding
@@ -131,7 +139,6 @@ const AppContent = () => {
   }, [user, role, setCurrentPage]);
 
   // Loading Screen — only shown during initial Firebase auth resolution
-  // NOT shown during profile loading (to avoid unmounting LoginPage during login)
   if (isInitialAuthLoading) {
     return (
       <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center space-y-3 text-white">
@@ -176,28 +183,35 @@ const AppContent = () => {
 
   // 2. Authenticated Flow with Strict Role Guarding
   const renderAuthenticatedPage = () => {
-    // Common Authenticated Pages
-    if (currentPage === 'activity') return <ActivityPage />;
+    // ── SHARED PAGES (all roles) ─────────────────────────────────────
     if (currentPage === 'profile') return <ProfilePage />;
     if (currentPage === 'menu') return <MenuPage />;
     if (currentPage === 'voting') return <VotingPage />;
+    // 'activity' kept for backward compat, maps to complaints page
+    if (currentPage === 'activity') return <ActivityPage />;
+    if (currentPage === 'complaints') return <ActivityPage />;
 
-    // STUDENT ONLY
+    // ── STUDENT ONLY ─────────────────────────────────────────────────
     if (role === 'student') {
       if (currentPage === 'muscle-pass') return <MusclePassPage />;
       if (currentPage === 'rewards') return <HealthyRewardsPage />;
       return <StudentDashboard />;
     }
 
-    // MESS COMMITTEE ONLY
+    // ── MESS COMMITTEE ONLY ──────────────────────────────────────────
     if (role === 'mess_committee') {
+      if (currentPage === 'daily-photos') return <DailyPhotosPage />;
+      if (currentPage === 'hygiene') return <HygieneCheckPage />;
       if (currentPage === 'analytics') return <AnalyticsPage />;
       if (currentPage === 'reports') return <ReportsPage />;
+      // ratings-view and other committee sub-pages handled inside MessCommitteeDashboard
       return <MessCommitteeDashboard />;
     }
 
-    // WARDEN ONLY
+    // ── WARDEN / ABES OFFICIALS ONLY ─────────────────────────────────
     if (role === 'warden') {
+      if (currentPage === 'photo-archive') return <PhotoArchivePage />;
+      if (currentPage === 'hygiene-archive') return <WardenDashboard initialTab="hygiene" />;
       if (currentPage === 'analytics') return <AnalyticsPage />;
       if (currentPage === 'reports') return <ReportsPage />;
       return <WardenDashboard />;
@@ -207,13 +221,11 @@ const AppContent = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-between bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-300 relative">
-      <div>
-        <Navbar />
-        <main className="transition-all duration-300">
-          {renderAuthenticatedPage()}
-        </main>
-      </div>
+    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-300 relative">
+      <Navbar />
+      <main className="flex-1 transition-all duration-300">
+        {renderAuthenticatedPage()}
+      </main>
 
       <Footer />
       <BottomNav />
