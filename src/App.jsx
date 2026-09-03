@@ -153,8 +153,7 @@ const AppContent = () => {
     if (isLoginFlow) {
       return (
         <div className="min-h-screen flex flex-col justify-between bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
-          <Navbar />
-          <main className="flex-1 flex items-center justify-center">
+          <main className="flex-1 flex items-center justify-center p-4">
             <LoginPage 
               initialRole={selectedRole} 
               onBackToRoles={() => setIsLoginFlow(false)} 
@@ -167,8 +166,7 @@ const AppContent = () => {
 
     return (
       <div className="min-h-screen flex flex-col justify-between bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
-        <Navbar />
-        <main className="flex-1">
+        <main className="flex-1 flex items-center justify-center">
           <LandingPage 
             onSelectRole={(chosenRole) => {
               setSelectedRole(chosenRole);

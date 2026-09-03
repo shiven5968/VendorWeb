@@ -1,70 +1,115 @@
 import React from 'react';
-import { UtensilsCrossed, GraduationCap, Shield, ChefHat } from 'lucide-react';
+import { UtensilsCrossed, GraduationCap, Shield, ChefHat, ArrowRight } from 'lucide-react';
 
 export const LandingPage = ({ onSelectRole }) => {
   return (
-    <div className="min-h-[calc(100vh-56px)] flex flex-col items-center justify-center px-4 py-10">
-      {/* Brand */}
-      <div className="text-center mb-10">
-        <div className="inline-flex items-center justify-center w-12 h-12 bg-emerald-600 rounded-xl mb-4">
-          <UtensilsCrossed className="w-6 h-6 text-white" />
+    <div className="min-h-[85vh] flex flex-col justify-between max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      
+      {/* HERO SECTION */}
+      <div className="text-center space-y-4 pt-8 sm:pt-16">
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-3xl bg-emerald-600 text-white shadow-xl shadow-emerald-500/20 mb-2">
+          <UtensilsCrossed className="w-8 h-8" />
         </div>
-        <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
-          MessMates
+
+        <h1 className="text-4xl sm:text-6xl font-black text-slate-900 dark:text-white tracking-tight">
+          MESSMATES
         </h1>
-        <p className="text-sm text-emerald-600 dark:text-emerald-400 font-medium mt-1">
+
+        <p className="text-xl sm:text-2xl font-bold text-emerald-600 dark:text-emerald-400">
           Know Your Meal Before You Eat It
         </p>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
-          ABES Engineering College · Campus Dining Platform
+
+        <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 max-w-md mx-auto font-medium">
+          Campus dining made intelligent, transparent, and simple.
         </p>
       </div>
 
-      {/* Role Selection */}
-      <div className="w-full max-w-sm space-y-3">
-        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider text-center mb-4">
-          Select your role to continue
+      {/* 3 PRIMARY ROLE CARDS (THE ONLY ENTRY POINTS) */}
+      <div className="pt-12 pb-8">
+        <p className="text-center text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">
+          Select Your Role to Continue
         </p>
 
-        <button
-          onClick={() => onSelectRole('student')}
-          className="w-full flex items-center space-x-4 p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl hover:border-emerald-500 dark:hover:border-emerald-600 hover:shadow-sm transition-all text-left"
-        >
-          <div className="w-10 h-10 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-lg flex items-center justify-center flex-shrink-0">
-            <GraduationCap className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="text-sm font-semibold text-slate-900 dark:text-white">Students</div>
-            <div className="text-xs text-slate-500 dark:text-slate-400">Daily menu, nutrition &amp; feedback</div>
-          </div>
-        </button>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          
+          {/* STUDENTS */}
+          <button
+            type="button"
+            onClick={() => onSelectRole('student')}
+            className="group p-6 rounded-3xl bg-white dark:bg-slate-900 border-2 border-slate-200/80 dark:border-slate-800 hover:border-emerald-500 text-left transition-all hover:shadow-xl hover:-translate-y-1 flex flex-col justify-between min-h-[160px]"
+          >
+            <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+              <GraduationCap className="w-6 h-6" />
+            </div>
 
-        <button
-          onClick={() => onSelectRole('committee')}
-          className="w-full flex items-center space-x-4 p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl hover:border-emerald-500 dark:hover:border-emerald-600 hover:shadow-sm transition-all text-left"
-        >
-          <div className="w-10 h-10 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-lg flex items-center justify-center flex-shrink-0">
-            <ChefHat className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="text-sm font-semibold text-slate-900 dark:text-white">Mess Committee</div>
-            <div className="text-xs text-slate-500 dark:text-slate-400">Menu management &amp; operations</div>
-          </div>
-        </button>
+            <div className="pt-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-black text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                  Students
+                </h3>
+                <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-emerald-500 group-hover:translate-x-1 transition-all" />
+              </div>
+              <p className="text-xs text-slate-500 font-semibold mt-0.5">
+                Daily menus, nutrition &amp; feedback
+              </p>
+            </div>
+          </button>
 
-        <button
-          onClick={() => onSelectRole('warden')}
-          className="w-full flex items-center space-x-4 p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl hover:border-emerald-500 dark:hover:border-emerald-600 hover:shadow-sm transition-all text-left"
-        >
-          <div className="w-10 h-10 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-lg flex items-center justify-center flex-shrink-0">
-            <Shield className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="text-sm font-semibold text-slate-900 dark:text-white">ABES Officials</div>
-            <div className="text-xs text-slate-500 dark:text-slate-400">Institutional oversight &amp; monitoring</div>
-          </div>
-        </button>
+          {/* MESS COMMITTEE */}
+          <button
+            type="button"
+            onClick={() => onSelectRole('committee')}
+            className="group p-6 rounded-3xl bg-white dark:bg-slate-900 border-2 border-slate-200/80 dark:border-slate-800 hover:border-emerald-500 text-left transition-all hover:shadow-xl hover:-translate-y-1 flex flex-col justify-between min-h-[160px]"
+          >
+            <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+              <ChefHat className="w-6 h-6" />
+            </div>
+
+            <div className="pt-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-black text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                  Mess Committee
+                </h3>
+                <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-emerald-500 group-hover:translate-x-1 transition-all" />
+              </div>
+              <p className="text-xs text-slate-500 font-semibold mt-0.5">
+                Menu operations &amp; daily oversight
+              </p>
+            </div>
+          </button>
+
+          {/* ABES OFFICIALS */}
+          <button
+            type="button"
+            onClick={() => onSelectRole('warden')}
+            className="group p-6 rounded-3xl bg-white dark:bg-slate-900 border-2 border-slate-200/80 dark:border-slate-800 hover:border-emerald-500 text-left transition-all hover:shadow-xl hover:-translate-y-1 flex flex-col justify-between min-h-[160px]"
+          >
+            <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+              <Shield className="w-6 h-6" />
+            </div>
+
+            <div className="pt-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-black text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                  ABES Officials
+                </h3>
+                <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-emerald-500 group-hover:translate-x-1 transition-all" />
+              </div>
+              <p className="text-xs text-slate-500 font-semibold mt-0.5">
+                Institutional governance &amp; audits
+              </p>
+            </div>
+          </button>
+
+        </div>
       </div>
+
+      {/* FOOTNOTE */}
+      <div className="text-center text-xs text-slate-400 font-semibold py-4">
+        ABES Engineering College · Campus Dining Platform
+      </div>
+
     </div>
   );
 };
+

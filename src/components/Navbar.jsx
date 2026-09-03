@@ -13,7 +13,9 @@ export const Navbar = () => {
     unreadCount, 
     setIsNotificationOpen
   } = useApp();
-  const { role } = useAuth();
+  const { user, role, isAuthenticated } = useAuth();
+
+  if (!user || !isAuthenticated) return null;
 
   const getNavItems = () => {
     switch(role) {
