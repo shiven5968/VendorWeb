@@ -35,7 +35,6 @@ export const LoginPage = ({ initialRole = 'student', onBackToRoles }) => {
     sendOTP, 
     verifyOTP, 
     resetPassword, 
-    isLoginSubmitting,
     isRegisterSubmitting
   } = useAuth();
   const { setCurrentPage } = useApp();
@@ -45,7 +44,8 @@ export const LoginPage = ({ initialRole = 'student', onBackToRoles }) => {
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
-  // Granular UI loading states (not tied to AuthContext loading — pure local UI)
+  // Granular UI loading states
+  const [isLoginSubmitting, setIsLoginSubmitting] = useState(false);
   const [isOtpSending, setIsOtpSending] = useState(false);
   const [isOtpVerifying, setIsOtpVerifying] = useState(false);
   const [isForgotSubmitting, setIsForgotSubmitting] = useState(false);
@@ -58,6 +58,13 @@ export const LoginPage = ({ initialRole = 'student', onBackToRoles }) => {
     identifier: '', // Admission Number for student, Email for staff
     password: ''
   });
+
+  // Reset fields when role changes to avoid cross-role credential bleed
+  useEffect(() => {
+    setLoginData({ identifier: '', password: '' });
+    setErrorMessage('');
+    setSuccessMessage('');
+  }, [activeRole]);
 
   // Student In-Memory Registration Form State
   const [regData, setRegData] = useState({
@@ -100,7 +107,12 @@ export const LoginPage = ({ initialRole = 'student', onBackToRoles }) => {
 
   const handleLoginChange = (e) => {
     const { name, value } = e.target;
-    setLoginData(prev => ({ ...prev, [name]: value }));
+    if (name === 'password') {
+      setLoginData(prev => ({ ...prev, password: value }));
+    } else {
+      // Supports admissionNumber, email, or identifier
+      setLoginData(prev => ({ ...prev, identifier: value }));
+    }
   };
 
   const handleRegChange = (e) => {
@@ -114,13 +126,19 @@ export const LoginPage = ({ initialRole = 'student', onBackToRoles }) => {
     setErrorMessage('');
     setSuccessMessage('');
 
-    const cleanIdentifier = loginData.identifier.trim();
+    const cleanIdentifier = (loginData.identifier || '').trim();
     if (!cleanIdentifier) {
       setErrorMessage(activeRole === 'student' ? 'Please enter your Admission Number.' : 'Please enter your official college email.');
       return;
     }
     if (!loginData.password) {
       setErrorMessage('Please enter your password.');
+      return;
+    }
+
+    // Student validation: prevent email autofill confusion
+    if (activeRole === 'student' && cleanIdentifier.includes('@')) {
+      setErrorMessage('Please enter your official Admission Number (e.g. 2025B01011362), not your email address.');
       return;
     }
 
@@ -437,15 +455,34 @@ export const LoginPage = ({ initialRole = 'student', onBackToRoles }) => {
                 ) : (
                   <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
                 )}
-                <input
-                  type="text"
-                  required
-                  name="identifier"
-                  placeholder={activeRole === 'student' ? 'e.g. 2100320100001' : activeRole === 'warden' ? 'anita@abes.ac.in or alok@abes.ac.in' : 'committee@abes.ac.in'}
-                  value={loginData.identifier}
-                  onChange={handleLoginChange}
-                  className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500/20"
-                />
+                {activeRole === 'student' ? (
+                  <input
+                    type="text"
+                    required
+                    id="student-admission-number"
+                    name="admissionNumber"
+                    autoComplete="off"
+                    autoCorrect="off"
+                    spellCheck="false"
+                    autoCapitalize="characters"
+                    placeholder="e.g. 2025B01011362"
+                    value={loginData.identifier}
+                    onChange={handleLoginChange}
+                    className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500/20"
+                  />
+                ) : (
+                  <input
+                    type="email"
+                    required
+                    id="staff-college-email"
+                    name="email"
+                    autoComplete="username"
+                    placeholder={activeRole === 'warden' ? 'anita@abes.ac.in or alok@abes.ac.in' : 'committee@abes.ac.in'}
+                    value={loginData.identifier}
+                    onChange={handleLoginChange}
+                    className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500/20"
+                  />
+                )}
               </div>
             </div>
 
