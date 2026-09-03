@@ -27,9 +27,9 @@ export const ROLE_CONFIG = {
   },
   warden: {
     firestoreValue: 'warden',
-    label: 'ABES Official',
-    shortLabel: 'Official',
-    description: 'Authorized ABES Official',
+    label: 'ABES Officials',
+    shortLabel: 'ABES Officials',
+    description: 'Authorized ABES Officials',
     color: 'blue',
     bgClass: 'bg-blue-500/10 text-blue-700 dark:text-blue-400',
     icon: 'Shield',

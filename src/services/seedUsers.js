@@ -7,7 +7,6 @@ export const PILOT_ACCOUNTS = [
     name: 'Parth Sharma',
     admissionNumber: '2100320100001',
     email: 'parth.sharma@abes.ac.in',
-    password: 'password123',
     role: 'student',
     gender: 'Male',
     hostelBlock: 'DNB Block',
@@ -19,7 +18,6 @@ export const PILOT_ACCOUNTS = [
     name: 'Mess Committee',
     admissionNumber: 'MC-2026-01',
     email: 'committee@abes.ac.in',
-    password: 'password123',
     role: 'mess_committee',
     gender: 'Other',
     hostelBlock: 'Admin Block',
@@ -31,10 +29,31 @@ export const PILOT_ACCOUNTS = [
     name: 'Chief Warden',
     admissionNumber: 'CW-2026-01',
     email: 'warden@abes.ac.in',
-    password: 'password123',
     role: 'warden',
     gender: 'Male',
     hostelBlock: 'Hostel Office',
+    dietPreference: 'Standard',
+    proteinTarget: 100,
+    rewardPoints: 0
+  },
+  {
+    name: 'Dr. Anita Sharma',
+    admissionNumber: 'OFFICIAL-ANITA',
+    email: 'anita@abes.ac.in',
+    role: 'warden',
+    gender: 'Other',
+    hostelBlock: 'ABES Administration',
+    dietPreference: 'Standard',
+    proteinTarget: 100,
+    rewardPoints: 0
+  },
+  {
+    name: 'Prof. Alok Singh',
+    admissionNumber: 'OFFICIAL-ALOK',
+    email: 'alok@abes.ac.in',
+    role: 'warden',
+    gender: 'Other',
+    hostelBlock: 'ABES Administration',
     dietPreference: 'Standard',
     proteinTarget: 100,
     rewardPoints: 0
@@ -43,66 +62,10 @@ export const PILOT_ACCOUNTS = [
 
 /**
  * Developer utility to seed pilot accounts into Firebase Auth & Firestore
+/**
+ * Provisioning is handled via node scripts/provision-officials.mjs outside browser runtime.
+ * This stub is kept for backward compatibility without hardcoded credentials.
  */
 export const seedPilotAccounts = async () => {
-  if (!isFirebaseConfigured) {
-    return { success: true, seeded: 0, message: 'Active in local store' };
-  }
-
-  let seededCount = 0;
-  for (const account of PILOT_ACCOUNTS) {
-    try {
-      const userCredential = await createUserWithEmailAndPassword(auth, account.email, account.password);
-      const user = userCredential.user;
-
-      await updateProfile(user, { displayName: account.name });
-
-      const profileDoc = {
-        uid: user.uid,
-        name: account.name,
-        admissionNumber: account.admissionNumber,
-        email: account.email,
-        role: account.role,
-        gender: account.gender,
-        hostelBlock: account.hostelBlock,
-        dietPreference: account.dietPreference,
-        proteinTarget: account.proteinTarget,
-        rewardPoints: account.rewardPoints,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-
-      await setDoc(doc(db, 'users', user.uid), profileDoc);
-      
-      // Index in admission_map
-      if (account.admissionNumber) {
-        await setDoc(doc(db, 'admission_map', account.admissionNumber), {
-          admissionNumber: account.admissionNumber,
-          email: account.email,
-          uid: user.uid,
-          createdAt: new Date().toISOString()
-        });
-      }
-
-      seededCount++;
-    } catch (err) {
-      if (err.code === 'auth/email-already-in-use') {
-        // Ensure admission_map document exists even if user is already in Auth
-        if (account.admissionNumber) {
-          try {
-            await setDoc(doc(db, 'admission_map', account.admissionNumber), {
-              admissionNumber: account.admissionNumber,
-              email: account.email
-            }, { merge: true });
-          } catch (e) {
-            // Ignore if silent
-          }
-        }
-      } else {
-        console.warn(`Error seeding account ${account.email}:`, err.message);
-      }
-    }
-  }
-
-  return { success: true, seeded: seededCount };
+  return { success: true, seeded: 0, message: 'Provisioned via administrative scripts' };
 };

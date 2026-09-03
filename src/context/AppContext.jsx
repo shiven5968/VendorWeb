@@ -126,7 +126,6 @@ export const AppProvider = ({ children }) => {
       const initializeFirebaseData = async () => {
         try {
           await seedFirestoreData();
-          await seedPilotAccounts();
         } catch (e) {
           console.error('Error seeding Firebase database:', e);
         }
@@ -154,7 +153,7 @@ export const AppProvider = ({ children }) => {
     }
 
     const currentUid = authUser.uid;
-    const isStaffUser = currentRole === 'warden' || currentRole === 'mess_committee' || currentRole === 'committee' || (authUser.email || '').includes('warden') || (authUser.email || '').includes('committee');
+    const isStaffUser = currentRole === 'warden' || currentRole === 'mess_committee' || currentRole === 'committee' || (authUser.email || '').includes('warden') || (authUser.email || '').includes('committee') || authUser.email === 'anita@abes.ac.in' || authUser.email === 'alok@abes.ac.in';
 
     // 1. MEALS: Community schedule
     const unsubMeals = onSnapshot(
@@ -699,7 +698,7 @@ export const AppProvider = ({ children }) => {
 
   const approveWeeklyMenu = () => {
     setMenuApproved(true);
-    addNotification('Menu Approved ✅', 'Weekly mess menu authorized by Chief Warden.', 'success');
+    addNotification('Menu Approved ✅', 'Weekly mess menu authorized by ABES Officials.', 'success');
   };
 
   const uploadMessPhoto = async (photoData, files) => {

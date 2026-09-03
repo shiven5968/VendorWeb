@@ -9,6 +9,8 @@ export const BottomNav = () => {
   const { role, isAuthenticated } = useAuth();
 
   if (!isAuthenticated) return null;
+  // ABES Officials use dedicated single navigation (sidebar on desktop, tabs on mobile)
+  if (role === 'warden') return null;
 
   const getTabs = () => {
     switch(role) {

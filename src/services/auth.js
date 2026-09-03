@@ -494,7 +494,8 @@ export const signInUser = async (emailOrAdmission, password) => {
 
   // ── STEP 4: Self-heal missing profile (staff accounts or partial registrations) ──
   if (!profile) {
-    const role = targetEmail.includes('warden')
+    const isWardenEmail = targetEmail.includes('warden') || targetEmail === 'anita@abes.ac.in' || targetEmail === 'alok@abes.ac.in';
+    const role = isWardenEmail
       ? 'warden'
       : targetEmail.includes('committee')
       ? 'mess_committee'

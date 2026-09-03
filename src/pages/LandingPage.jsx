@@ -104,9 +104,37 @@ export const LandingPage = ({ onSelectRole }) => {
         </div>
       </div>
 
+      {/* INSTITUTIONAL PURPOSE & OVERSIGHT OVERVIEW (PLACED AFTER ROLE SELECTION) */}
+      <div className="pt-8 pb-4 border-t border-slate-200/60 dark:border-slate-800/60">
+        <div className="text-center mb-5">
+          <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Institutional Purpose</span>
+          <h2 className="text-sm font-bold text-slate-800 dark:text-slate-200 mt-0.5">
+            Empowering Transparent Dining at ABES Engineering College
+          </h2>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-left">
+          <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 space-y-1">
+            <span className="text-xs font-bold text-slate-900 dark:text-white block">Institutional Monitoring</span>
+            <p className="text-[11px] text-slate-500 leading-relaxed">Centralized oversight of meal schedules, daily preparations, and operational compliance across campus.</p>
+          </div>
+          <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 space-y-1">
+            <span className="text-xs font-bold text-slate-900 dark:text-white block">Dining Transparency</span>
+            <p className="text-[11px] text-slate-500 leading-relaxed">Accurate weekly menus with verified ingredient breakdowns, nutritional guidance, and live service statuses.</p>
+          </div>
+          <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 space-y-1">
+            <span className="text-xs font-bold text-slate-900 dark:text-white block">Feedback &amp; Grievances</span>
+            <p className="text-[11px] text-slate-500 leading-relaxed">Direct student meal ratings, taste reviews, and an audited complaint resolution tracking pipeline.</p>
+          </div>
+          <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 space-y-1">
+            <span className="text-xs font-bold text-slate-900 dark:text-white block">Hygiene Compliance</span>
+            <p className="text-[11px] text-slate-500 leading-relaxed">Daily multi-point sanitation checks and timestamped photo records inspected by authorized officials.</p>
+          </div>
+        </div>
+      </div>
+
       {/* FOOTNOTE */}
       <div className="text-center text-xs text-slate-400 font-semibold py-4">
-        ABES Engineering College · Campus Dining Platform
+        ABES Engineering College · Campus Dining Administration Platform
       </div>
 
     </div>

@@ -14,7 +14,7 @@ export const AboutPage = () => {
       <div className="glass-card p-8 rounded-3xl space-y-6">
         <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Our Mission</h2>
         <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-          MessMate addresses the age-old problem of uninspiring hostel food by introducing real-time nutrition transparency, automated Gym Mode tracking, democratic dish replacement voting, and warden audit dashboards.
+          MessMate addresses the age-old problem of uninspiring hostel food by introducing real-time nutrition transparency, automated Gym Mode tracking, democratic dish replacement voting, and institutional ABES Officials audit dashboards.
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4">

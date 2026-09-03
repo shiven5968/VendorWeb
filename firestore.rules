@@ -28,12 +28,14 @@ service cloud.firestore {
       return isAuthenticated() && getUserRole() == 'student';
     }
 
-    // Role check: Chief Warden
+    // Role check: Chief Warden / ABES Officials
     function isWarden() {
       return isAuthenticated() && (
         getUserRole() == 'warden' ||
         (request.auth.token.email != null && (
           request.auth.token.email == 'warden@abes.ac.in' ||
+          request.auth.token.email == 'anita@abes.ac.in' ||
+          request.auth.token.email == 'alok@abes.ac.in' ||
           request.auth.token.email.matches('^warden.*@abes\\.ac\\.in$')
         ))
       );

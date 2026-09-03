@@ -39,16 +39,16 @@ export const PhotoArchivePage = () => {
   };
 
   // Convert array of photo docs to format expected by PhotoGallery
-  // Each doc has urls[]
-  const galleryPhotos = photos.flatMap(doc => 
-    doc.urls.map(url => ({
+  const galleryPhotos = (photos || []).flatMap(doc => {
+    const urls = Array.isArray(doc.urls) ? doc.urls : (doc.url ? [doc.url] : (doc.downloadUrl ? [doc.downloadUrl] : []));
+    return urls.map(url => ({
       url,
-      category: doc.photoCategory,
-      meal: doc.mealCategory,
-      uploadedBy: doc.uploadedByName,
+      category: doc.photoCategory || 'Mess Photo',
+      meal: doc.mealCategory || 'General',
+      uploadedBy: doc.uploadedByName || 'Mess Committee',
       timestamp: doc.timestamp?.toDate ? doc.timestamp.toDate() : new Date()
-    }))
-  );
+    }));
+  });
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">

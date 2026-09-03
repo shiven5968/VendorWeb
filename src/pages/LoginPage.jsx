@@ -114,7 +114,8 @@ export const LoginPage = ({ initialRole = 'student', onBackToRoles }) => {
     setErrorMessage('');
     setSuccessMessage('');
 
-    if (!loginData.identifier.trim()) {
+    const cleanIdentifier = loginData.identifier.trim();
+    if (!cleanIdentifier) {
       setErrorMessage(activeRole === 'student' ? 'Please enter your Admission Number.' : 'Please enter your official college email.');
       return;
     }
@@ -123,11 +124,37 @@ export const LoginPage = ({ initialRole = 'student', onBackToRoles }) => {
       return;
     }
 
+    // Role-specific pre-check for ABES Officials
+    if (activeRole === 'warden') {
+      const email = cleanIdentifier.toLowerCase();
+      const authorizedOfficials = ['anita@abes.ac.in', 'alok@abes.ac.in'];
+      if (!authorizedOfficials.includes(email)) {
+        setErrorMessage('Access Denied: Only authorized ABES Officials (anita@abes.ac.in, alok@abes.ac.in) are permitted to sign in to this portal.');
+        return;
+      }
+    }
+
     try {
-      await login(loginData.identifier.trim(), loginData.password);
+      setIsLoginSubmitting(true);
+      const res = await login(cleanIdentifier, loginData.password);
+      
+      // Strict role boundary enforcement:
+      if (activeRole === 'warden' && res?.profile?.role !== 'warden') {
+        await logout();
+        setErrorMessage('Access Denied: This account is not authorized as an ABES Official.');
+        return;
+      }
+      if (activeRole === 'committee' && res?.profile?.role !== 'mess_committee' && res?.profile?.role !== 'committee') {
+        await logout();
+        setErrorMessage('Access Denied: This account is not authorized as Mess Committee.');
+        return;
+      }
+
       setCurrentPage('dashboard');
     } catch (err) {
       setErrorMessage(err.message || 'Login failed. Please check your credentials.');
+    } finally {
+      setIsLoginSubmitting(false);
     }
   };
 
@@ -414,7 +441,7 @@ export const LoginPage = ({ initialRole = 'student', onBackToRoles }) => {
                   type="text"
                   required
                   name="identifier"
-                  placeholder={activeRole === 'student' ? 'e.g. 2100320100001' : 'staff@abes.ac.in'}
+                  placeholder={activeRole === 'student' ? 'e.g. 2100320100001' : activeRole === 'warden' ? 'anita@abes.ac.in or alok@abes.ac.in' : 'committee@abes.ac.in'}
                   value={loginData.identifier}
                   onChange={handleLoginChange}
                   className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500/20"
