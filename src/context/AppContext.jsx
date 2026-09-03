@@ -272,6 +272,34 @@ export const AppProvider = ({ children }) => {
       );
     }
 
+    // 10. MESS PHOTOS: Daily operational photos
+    let unsubMessPhotos = () => {};
+    if (isStaffUser) {
+      unsubMessPhotos = onSnapshot(
+        collection(firestoreDb, 'mess_photos'),
+        (snapshot) => {
+          const list = [];
+          snapshot.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
+          setMessPhotos(list);
+        },
+        (err) => console.warn('Firestore mess_photos listener:', err.message)
+      );
+    }
+
+    // 11. HYGIENE CHECKS: Daily hygiene compliance reports
+    let unsubHygiene = () => {};
+    if (isStaffUser) {
+      unsubHygiene = onSnapshot(
+        collection(firestoreDb, 'hygiene_checks'),
+        (snapshot) => {
+          const list = [];
+          snapshot.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
+          setHygieneChecks(list);
+        },
+        (err) => console.warn('Firestore hygiene_checks listener:', err.message)
+      );
+    }
+
     return () => {
       unsubMeals();
       unsubRatings();
@@ -282,6 +310,8 @@ export const AppProvider = ({ children }) => {
       unsubRedemptions();
       unsubSubscription();
       unsubUsers();
+      unsubMessPhotos();
+      unsubHygiene();
     };
   }, [authUser?.uid, currentRole]);
 

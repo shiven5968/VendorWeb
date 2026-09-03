@@ -4,14 +4,15 @@ import { useApp } from '../context/AppContext';
 import { ClipboardCheck, CheckCircle2 } from 'lucide-react';
 
 export const HygieneCheckPage = () => {
-  const { currentUser, submitHygieneCheck } = useApp();
+  const { currentUser, submitHygieneCheck, hygieneChecks } = useApp();
   
   const today = new Date().toISOString().split('T')[0];
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const [submissions, setSubmissions] = useState([]);
   const [error, setError] = useState('');
   const [generalNotes, setGeneralNotes] = useState('');
+
+  const todaySubmissions = (hygieneChecks || []).filter(h => h.date === today);
 
   const checklistItems = [
     'Kitchen cleanliness',
@@ -57,21 +58,18 @@ export const HygieneCheckPage = () => {
     
     try {
       const overallStatus = calculateOverallStatus();
-      const result = await submitHygieneCheck({
+      await submitHygieneCheck({
         date: today,
         items,
         overallStatus,
         notes: generalNotes
       });
-      if (result) {
-        setSubmissions(prev => [result, ...prev]);
-        setSubmitted(true);
-        setTimeout(() => {
-          setSubmitted(false);
-          setItems(checklistItems.map(label => ({ label, status: '', comment: '' })));
-          setGeneralNotes('');
-        }, 3000);
-      }
+      setSubmitted(true);
+      setTimeout(() => {
+        setSubmitted(false);
+        setItems(checklistItems.map(label => ({ label, status: '', comment: '' })));
+        setGeneralNotes('');
+      }, 2500);
     } catch (err) {
       setError(err.message || 'Failed to submit inspection.');
     } finally {
@@ -147,19 +145,19 @@ export const HygieneCheckPage = () => {
       </DashboardCard>
 
       <DashboardCard title="Today's Submissions">
-        {submissions.length === 0 ? (
+        {todaySubmissions.length === 0 ? (
           <EmptyState icon={ClipboardCheck} title="No inspections today" description="Submit an inspection report to see it here." />
         ) : (
           <div className="space-y-3">
-            {submissions.map((sub, i) => (
-              <div key={i} className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center justify-between">
+            {todaySubmissions.map((sub, i) => (
+              <div key={sub.id || i} className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-bold">Inspection at {sub.timestamp?.toDate ? sub.timestamp.toDate().toLocaleTimeString() : new Date().toLocaleTimeString()}</p>
+                  <p className="text-sm font-bold">Inspection at {sub.timestamp?.toDate ? sub.timestamp.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                   <p className="text-xs text-slate-500">By {sub.submittedByName || sub.submittedBy}</p>
                 </div>
                 <StatusBadge 
                   status={sub.overallStatus} 
-                  variant={sub.overallStatus === 'Good' ? 'success' : sub.overallStatus === 'Critical' ? 'danger' : 'warning'} 
+                  variant="hygiene"
                 />
               </div>
             ))}

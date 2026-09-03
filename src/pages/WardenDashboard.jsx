@@ -1,24 +1,61 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
 import { 
   ShieldAlert, CheckCircle, Award, TrendingUp, FileText, Download, 
   Users, AlertCircle, Star, Check, Utensils, Plus, Edit3, Trash2, Camera, ClipboardCheck
 } from 'lucide-react';
-import { StatCard, StatusBadge, EmptyState, DashboardCard, SectionHeader, PhotoGallery, WeeklyDayPicker, MealCard } from '../components/ui';
+import { StatCard, StatusBadge, EmptyState, DashboardCard, SectionHeader, PhotoGallery, WeeklyDayPicker, MealCard, RatingStars } from '../components/ui';
 
-export const WardenDashboard = () => {
+export const WardenDashboard = ({ initialTab = 'overview' }) => {
   const { 
     currentUser, wardenMetrics, allComplaints, allRatings, meals, 
     selectedDay, setSelectedDay, setIsAddMealModalOpen, setEditingMeal, deleteMeal, 
     menuApproved, approveWeeklyMenu, updateComplaintStatus, messPhotos, hygieneChecks, todayDay
   } = useApp();
 
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState(initialTab);
+
+  React.useEffect(() => {
+    if (initialTab) setActiveTab(initialTab);
+  }, [initialTab]);
 
   const pendingComplaints = allComplaints.filter(c => c.status === 'Pending' || c.status === 'In Review');
   const resolvedComplaints = allComplaints.filter(c => c.status === 'Resolved');
   const todayPhotos = messPhotos?.filter(p => p.date === new Date().toISOString().split('T')[0]) || [];
   const todayHygiene = hygieneChecks?.find(h => h.date === new Date().toISOString().split('T')[0]);
+
+  // Aggregate ratings by meal for structured presentation
+  const mealRatingsSummary = useMemo(() => {
+    const map = {};
+    (allRatings || []).forEach(r => {
+      const key = r.mealName || r.mealId;
+      if (!key) return;
+      if (!map[key]) {
+        map[key] = {
+          mealName: r.mealName || 'Dish',
+          mealCategory: r.mealCategory || '',
+          ratings: [],
+          feedbacks: []
+        };
+      }
+      if (typeof r.rating === 'number') {
+        map[key].ratings.push(r.rating);
+      }
+      if (r.feedback && r.feedback.trim()) {
+        map[key].feedbacks.push({
+          feedback: r.feedback,
+          userName: r.userName,
+          rating: r.rating
+        });
+      }
+    });
+
+    return Object.values(map).map(m => {
+      const count = m.ratings.length;
+      const avg = count > 0 ? (m.ratings.reduce((a, b) => a + b, 0) / count).toFixed(1) : '0.0';
+      return { ...m, count, avg: parseFloat(avg) };
+    }).sort((a, b) => b.count - a.count);
+  }, [allRatings]);
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -29,9 +66,9 @@ export const WardenDashboard = () => {
               <StatCard icon={Star} label="Avg Rating" value={wardenMetrics.messQualityScore ? `${wardenMetrics.messQualityScore}/5` : 'N/A'} color="amber" />
               <StatCard icon={FileText} label="Pending Complaints" value={pendingComplaints.length} color="rose" />
               <StatCard icon={CheckCircle} label="Resolved Complaints" value={resolvedComplaints.length} color="emerald" />
-              <StatCard icon={Camera} label="Today's Photos" value={todayPhotos.length} color="blue" />
+              <StatCard icon={Camera} label="Today's Photos" value={todayPhotos.length} color="emerald" />
               <StatCard icon={ClipboardCheck} label="Hygiene Status" value={todayHygiene ? todayHygiene.overallStatus : 'Pending'} color={todayHygiene?.overallStatus === 'Good' ? 'emerald' : todayHygiene?.overallStatus === 'Critical' ? 'rose' : 'amber'} />
-              <StatCard icon={Users} label="Total Ratings" value={wardenMetrics.totalRatings} color="indigo" />
+              <StatCard icon={Users} label="Total Ratings" value={wardenMetrics.totalRatings} color="emerald" />
             </div>
             
             <div className="grid lg:grid-cols-2 gap-6">
@@ -169,45 +206,85 @@ export const WardenDashboard = () => {
             </div>
           </DashboardCard>
         );
+      case 'ratings':
+        return (
+          <div className="space-y-6">
+            <DashboardCard title="Meal Ratings &amp; Student Satisfaction">
+              {mealRatingsSummary.length > 0 ? (
+                <div className="space-y-4">
+                  {mealRatingsSummary.map((item, idx) => (
+                    <div key={idx} className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-2">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div>
+                          {item.mealCategory && (
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
+                              {item.mealCategory}
+                            </span>
+                          )}
+                          <h3 className="font-bold text-sm text-slate-900 dark:text-white">{item.mealName}</h3>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RatingStars value={Math.round(item.avg)} readonly size="sm" />
+                          <span className="text-sm font-black text-slate-900 dark:text-white">{item.avg} / 5</span>
+                          <span className="text-xs text-slate-400">({item.count} {item.count === 1 ? 'rating' : 'ratings'})</span>
+                        </div>
+                      </div>
+                      {item.feedbacks.length > 0 && (
+                        <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800 space-y-1">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Recent Student Feedback:</span>
+                          {item.feedbacks.slice(0, 2).map((fb, fi) => (
+                            <p key={fi} className="text-xs text-slate-600 dark:text-slate-300 italic bg-slate-50 dark:bg-slate-800/60 p-2 rounded-lg">
+                              "{fb.feedback}" <span className="not-italic text-slate-400 text-[10px]">— {fb.userName || 'Student'} ({fb.rating}★)</span>
+                            </p>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <EmptyState icon={Star} title="No ratings recorded yet" description="Student feedback and ratings will appear here." />
+              )}
+            </DashboardCard>
+          </div>
+        );
       default: return null;
     }
   };
 
   return (
     <div className="max-w-7xl mx-auto flex flex-col md:flex-row min-h-screen pb-24 md:pb-0">
-      <aside className="hidden md:block w-64 p-6 border-r border-slate-200 dark:border-slate-800 space-y-2">
-        <div className="font-black text-xl mb-8">ABES Officials</div>
+      <aside className="hidden md:block w-56 p-5 border-r border-slate-200 dark:border-slate-800 space-y-1 pt-8">
         {[
           { id: 'overview', icon: ShieldAlert, label: 'Dashboard' },
           { id: 'menu', icon: Utensils, label: 'Menu Oversight' },
           { id: 'photos', icon: Camera, label: 'Mess Photos' },
           { id: 'hygiene', icon: ClipboardCheck, label: 'Hygiene Reports' },
+          { id: 'ratings', icon: Star, label: 'Ratings' },
           { id: 'complaints', icon: FileText, label: 'Complaints' }
         ].map(item => (
-          <button 
-            key={item.id} 
+          <button
+            key={item.id}
             onClick={() => setActiveTab(item.id)}
-            className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-bold transition-colors ${activeTab === item.id ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
+            className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${activeTab === item.id ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'}`}
           >
-            <item.icon className="w-5 h-5" />
+            <item.icon className="w-4 h-4" />
             <span>{item.label}</span>
           </button>
         ))}
       </aside>
 
       <main className="flex-1 p-4 sm:p-6 lg:p-8">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 mb-8 rounded-3xl bg-slate-900 text-white shadow-xl border border-slate-800">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight">ABES Officials Dashboard</h1>
-            <p className="text-xs text-slate-400 font-semibold mt-1">Institutional Oversight Console</p>
-          </div>
-          <div className="px-3 py-1 bg-blue-500/20 text-blue-400 border border-blue-500/40 rounded-full text-xs font-bold">
-            ABES Official
-          </div>
+        <div className="mb-6">
+          <h1 className="text-lg font-bold text-slate-900 dark:text-white">ABES Officials</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+            Institutional Oversight · {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+          </p>
         </div>
-        
+
         {renderTabContent()}
       </main>
     </div>
   );
 };
+

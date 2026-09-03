@@ -69,18 +69,18 @@ export const ProfilePage = () => {
             <h2 className="text-2xl font-bold text-slate-900 dark:text-white">{currentUser?.name || 'User'}</h2>
             <p className="text-slate-500 dark:text-slate-400 font-medium">{currentUser?.email || ''}</p>
             
-            <div className="mt-4 flex flex-wrap justify-center sm:justify-start gap-2">
-              <span className="px-3 py-1 bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400 rounded-full text-xs font-bold uppercase tracking-wider">
+            <div className="mt-3 flex flex-wrap justify-center sm:justify-start gap-2">
+              <span className="px-2.5 py-0.5 bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400 rounded-full text-xs font-bold">
                 {roleConfig.label}
               </span>
               {currentUser?.admissionNumber && (
-                <span className="px-3 py-1 bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 rounded-full text-xs font-semibold border border-slate-200 dark:border-slate-700">
+                <span className="px-2.5 py-0.5 bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 rounded-full text-xs font-medium border border-slate-200 dark:border-slate-700">
                   {currentUser.admissionNumber}
                 </span>
               )}
-              {menuGroup && (
-                <span className="px-3 py-1 bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400 rounded-full text-xs font-semibold">
-                  Group {menuGroup}
+              {menuGroup?.label && (
+                <span className="px-2.5 py-0.5 bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 rounded-full text-xs font-medium border border-slate-200 dark:border-slate-700">
+                  {menuGroup.label}
                 </span>
               )}
             </div>

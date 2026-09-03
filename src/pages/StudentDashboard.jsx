@@ -1,9 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
-import { StatCard, MealCard, EmptyState, LoadingState, DashboardCard, WeeklyDayPicker, RatingStars, SectionHeader, Modal } from '../components/ui';
+import { MealCard, EmptyState, DashboardCard, WeeklyDayPicker, RatingStars, SectionHeader, Modal } from '../components/ui';
 import { resolveMenuGroup } from '../config/menuGroups';
-import { UtensilsCrossed, Star, MessageSquare, Gift, Award, CheckCircle2, User } from 'lucide-react';
-import { clsx } from 'clsx';
+import { UtensilsCrossed, Star, Award } from 'lucide-react';
+
 
 export const StudentDashboard = () => {
   const { 
@@ -81,57 +81,30 @@ export const StudentDashboard = () => {
   }, [mealSlotInfo, todayMeals]);
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      
-      {/* Greeting & Quick Stats */}
-      <div className="space-y-4">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-              {getGreeting()}, {currentUser?.name?.split(' ')[0] || 'Student'}!
-            </h1>
-            <p className="text-slate-500 dark:text-slate-400">
-              {todayDateString} · <span className="font-semibold text-emerald-600 dark:text-emerald-400">{menuGroup}</span>
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <button onClick={() => setCurrentPage('rewards')} className="flex items-center space-x-1.5 px-3 py-1.5 bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400 rounded-full text-sm font-medium">
-              <Award className="w-4 h-4" />
-              <span>{rewardPoints || 0} pts</span>
-            </button>
-          </div>
-        </div>
+    <div className="space-y-6">
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <StatCard icon={Gift} label="Reward Points" value={rewardPoints || 0} color="amber" />
-          <StatCard icon={Star} label="Ratings Given" value={userRatingsCount} color="blue" />
-          <StatCard icon={MessageSquare} label="Complaints" value={userComplaintsCount} color="rose" />
-          <StatCard icon={UtensilsCrossed} label="Today's Meals" value={todayMeals?.length || 0} color="emerald" />
+      {/* Greeting */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <div>
+          <h1 className="text-xl font-bold text-slate-900 dark:text-white">
+            {getGreeting()}, {currentUser?.name?.split(' ')[0] || 'Student'}
+          </h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+            {todayDateString}
+            {menuGroup?.label && (
+              <span className="text-slate-400 dark:text-slate-500"> · {menuGroup.label}</span>
+            )}
+          </p>
         </div>
-      </div>
-
-      {/* Quick Actions Row */}
-      <div className="grid grid-cols-4 gap-4">
-        {[
-          { label: 'Menu', icon: UtensilsCrossed, page: 'menu', color: 'emerald' },
-          { label: 'Complaints', icon: MessageSquare, page: 'complaints', color: 'rose' },
-          { label: 'Rewards', icon: Gift, page: 'rewards', color: 'amber' },
-          { label: 'Profile', icon: User, page: 'profile', color: 'blue' }
-        ].map((action, idx) => {
-          const Icon = action.icon;
-          return (
-            <button
-              key={idx}
-              onClick={() => setCurrentPage(action.page)}
-              className="flex flex-col items-center justify-center p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm hover:border-emerald-500/50 hover:shadow-md transition-all group"
-            >
-              <div className={`p-3 rounded-xl bg-${action.color}-100 dark:bg-${action.color}-500/20 text-${action.color}-600 dark:text-${action.color}-400 mb-2 group-hover:scale-110 transition-transform`}>
-                <Icon className="w-6 h-6" />
-              </div>
-              <span className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-300">{action.label}</span>
-            </button>
-          );
-        })}
+        {rewardPoints > 0 && (
+          <button
+            onClick={() => setCurrentPage('rewards')}
+            className="flex items-center space-x-1.5 px-3 py-1.5 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800 rounded-lg text-sm font-medium"
+          >
+            <Award className="w-4 h-4" />
+            <span>{rewardPoints} pts</span>
+          </button>
+        )}
       </div>
 
       {/* Active Meal Spotlight */}

@@ -2,14 +2,16 @@ import React, { useState } from 'react';
 import { Star } from 'lucide-react';
 import { clsx } from 'clsx';
 
-export const RatingStars = ({ value = 0, onChange, readonly = false, size = 'md', className = '' }) => {
+export const RatingStars = ({ value, rating, onChange, readonly = false, size = 'md', className = '' }) => {
+  const numericValue = value !== undefined ? value : (rating !== undefined ? rating : 0);
+  const isReadonly = readonly || !onChange;
   const [hovered, setHovered] = useState(0);
   const sizeClass = size === 'sm' ? 'w-4 h-4' : size === 'lg' ? 'w-7 h-7' : 'w-5 h-5';
 
   return (
     <div className={clsx('flex items-center gap-1', className)}>
       {[1, 2, 3, 4, 5].map(star => {
-        const filled = star <= (readonly ? value : (hovered || value));
+        const filled = star <= (isReadonly ? numericValue : (hovered || numericValue));
         return (
           <button
             key={star}

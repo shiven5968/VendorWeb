@@ -1,14 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { PhotoGallery, EmptyState, LoadingState, DashboardCard, SectionHeader } from '../components/ui';
 import { getMessPhotos } from '../services/messOperations';
+import { useApp } from '../context/AppContext';
 import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export const PhotoArchivePage = () => {
+  const { messPhotos } = useApp();
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [photos, setPhotos] = useState([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    // If context already has live photos for this date, use them immediately
+    const contextPhotos = (messPhotos || []).filter(p => p.date === selectedDate);
+    if (contextPhotos.length > 0) {
+      setPhotos(contextPhotos);
+      return;
+    }
+
     const fetchPhotos = async () => {
       setLoading(true);
       try {
@@ -21,7 +30,7 @@ export const PhotoArchivePage = () => {
       }
     };
     fetchPhotos();
-  }, [selectedDate]);
+  }, [selectedDate, messPhotos]);
 
   const changeDate = (days) => {
     const date = new Date(selectedDate);

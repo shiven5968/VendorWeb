@@ -1,24 +1,63 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
 import { 
   Utensils, Plus, Edit3, Trash2, Vote, BarChart3, FileText, Star, 
-  MessageSquare, Calendar, Download, CheckCircle2, Clock
+  MessageSquare, Calendar, Download, CheckCircle2, Clock, Camera, ClipboardCheck
 } from 'lucide-react';
 import { StatCard, MealCard, StatusBadge, EmptyState, DashboardCard, SectionHeader, RatingStars, WeeklyDayPicker } from '../components/ui';
 
-export const MessCommitteeDashboard = () => {
+export const MessCommitteeDashboard = ({ initialTab = 'overview' }) => {
   const { 
     currentUser, selectedDay, setSelectedDay, meals, deleteMeal, 
     setIsAddMealModalOpen, setEditingMeal, poll, createPoll,
     allRatings, allComplaints, updateComplaintStatus, wardenMetrics,
-    todayDay
+    todayDay, messPhotos, hygieneChecks, setCurrentPage
   } = useApp();
 
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState(initialTab);
 
-  const ratedMeals = meals.filter(m => m.rating !== null && m.rating !== undefined);
-  const recentRatings = allRatings.slice(0, 5);
-  const pendingComplaints = allComplaints.filter(c => c.status === 'Pending' || c.status === 'In Review');
+  React.useEffect(() => {
+    if (initialTab) setActiveTab(initialTab);
+  }, [initialTab]);
+
+  const todayStr = new Date().toISOString().split('T')[0];
+  const todayPhotos = (messPhotos || []).filter(p => p.date === todayStr);
+  const todayHygiene = (hygieneChecks || []).find(h => h.date === todayStr);
+  const recentRatings = (allRatings || []).slice(0, 5);
+  const pendingComplaints = (allComplaints || []).filter(c => c.status === 'Pending' || c.status === 'In Review');
+
+  // Aggregate ratings by meal for structured presentation
+  const mealRatingsSummary = useMemo(() => {
+    const map = {};
+    (allRatings || []).forEach(r => {
+      const key = r.mealName || r.mealId;
+      if (!key) return;
+      if (!map[key]) {
+        map[key] = {
+          mealName: r.mealName || 'Dish',
+          mealCategory: r.mealCategory || '',
+          ratings: [],
+          feedbacks: []
+        };
+      }
+      if (typeof r.rating === 'number') {
+        map[key].ratings.push(r.rating);
+      }
+      if (r.feedback && r.feedback.trim()) {
+        map[key].feedbacks.push({
+          feedback: r.feedback,
+          userName: r.userName,
+          rating: r.rating
+        });
+      }
+    });
+
+    return Object.values(map).map(m => {
+      const count = m.ratings.length;
+      const avg = count > 0 ? (m.ratings.reduce((a, b) => a + b, 0) / count).toFixed(1) : '0.0';
+      return { ...m, count, avg: parseFloat(avg) };
+    }).sort((a, b) => b.count - a.count);
+  }, [allRatings]);
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -27,9 +66,9 @@ export const MessCommitteeDashboard = () => {
           <div className="space-y-6">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               <StatCard icon={Star} label="Today's Avg Rating" value={wardenMetrics.messQualityScore ? `${wardenMetrics.messQualityScore}/5` : 'N/A'} color="amber" />
-              <StatCard icon={MessageSquare} label="Total Ratings" value={wardenMetrics.totalRatings} color="blue" />
               <StatCard icon={FileText} label="Pending Complaints" value={pendingComplaints.length} color="rose" />
-              <StatCard icon={Utensils} label="Active Menu" value={`${meals.length} Dishes`} color="emerald" />
+              <StatCard icon={Camera} label="Today's Photos" value={todayPhotos.length} color="emerald" subLabel="Operations uploaded" />
+              <StatCard icon={ClipboardCheck} label="Hygiene Status" value={todayHygiene ? todayHygiene.overallStatus : 'Pending'} color={todayHygiene?.overallStatus === 'Good' ? 'emerald' : todayHygiene?.overallStatus === 'Critical' ? 'rose' : 'amber'} />
             </div>
             
             <div className="grid lg:grid-cols-2 gap-6">
@@ -46,14 +85,14 @@ export const MessCommitteeDashboard = () => {
               </DashboardCard>
 
               <div className="space-y-6">
-                <DashboardCard title="Recent Ratings">
+                <DashboardCard title="Recent Student Feedback">
                   {recentRatings.length > 0 ? (
                     <div className="space-y-3">
                       {recentRatings.map((rating, idx) => (
-                        <div key={idx} className="p-3 border border-slate-100 dark:border-slate-800 rounded-xl">
-                          <div className="flex justify-between items-start mb-2">
-                            <span className="font-bold text-sm">{rating.mealName}</span>
-                            <RatingStars rating={rating.rating} />
+                        <div key={idx} className="p-3 border border-slate-100 dark:border-slate-800 rounded-xl space-y-1">
+                          <div className="flex justify-between items-center">
+                            <span className="font-bold text-xs text-slate-900 dark:text-white">{rating.mealName}</span>
+                            <RatingStars value={rating.rating} readonly size="sm" />
                           </div>
                           {rating.feedback && <p className="text-xs text-slate-500 italic">"{rating.feedback}"</p>}
                         </div>
@@ -92,26 +131,45 @@ export const MessCommitteeDashboard = () => {
         );
       case 'ratings':
         return (
-          <DashboardCard title="All Ratings">
-            <div className="space-y-4">
-              {allRatings.length > 0 ? (
-                allRatings.map((rating, idx) => (
-                  <div key={idx} className="p-4 border border-slate-100 dark:border-slate-800 rounded-xl">
-                    <div className="flex justify-between items-start mb-2">
-                      <div>
-                        <span className="font-bold text-sm block">{rating.mealName}</span>
-                        <span className="text-xs text-slate-500">By {rating.userName} • {rating.timestamp?.toDate ? rating.timestamp.toDate().toLocaleDateString() : 'Recent'}</span>
+          <div className="space-y-6">
+            <DashboardCard title="Meal Performance &amp; Ratings">
+              {mealRatingsSummary.length > 0 ? (
+                <div className="space-y-4">
+                  {mealRatingsSummary.map((item, idx) => (
+                    <div key={idx} className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-2">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div>
+                          {item.mealCategory && (
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
+                              {item.mealCategory}
+                            </span>
+                          )}
+                          <h3 className="font-bold text-sm text-slate-900 dark:text-white">{item.mealName}</h3>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RatingStars value={Math.round(item.avg)} readonly size="sm" />
+                          <span className="text-sm font-black text-slate-900 dark:text-white">{item.avg} / 5</span>
+                          <span className="text-xs text-slate-400">({item.count} {item.count === 1 ? 'rating' : 'ratings'})</span>
+                        </div>
                       </div>
-                      <RatingStars rating={rating.rating} />
+                      {item.feedbacks.length > 0 && (
+                        <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800 space-y-1">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Recent Student Feedback:</span>
+                          {item.feedbacks.slice(0, 2).map((fb, fi) => (
+                            <p key={fi} className="text-xs text-slate-600 dark:text-slate-300 italic bg-slate-50 dark:bg-slate-800/60 p-2 rounded-lg">
+                              "{fb.feedback}" <span className="not-italic text-slate-400 text-[10px]">— {fb.userName || 'Student'} ({fb.rating}★)</span>
+                            </p>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                    {rating.feedback && <p className="text-sm bg-slate-50 dark:bg-slate-900 p-3 rounded-lg mt-2">"{rating.feedback}"</p>}
-                  </div>
-                ))
+                  ))}
+                </div>
               ) : (
-                <EmptyState icon={Star} title="No ratings yet" description="Ratings will appear here." />
+                <EmptyState icon={Star} title="No ratings recorded yet" description="Student feedback and ratings will appear here." />
               )}
-            </div>
-          </DashboardCard>
+            </DashboardCard>
+          </div>
         );
       case 'complaints':
         return (
@@ -155,38 +213,35 @@ export const MessCommitteeDashboard = () => {
 
   return (
     <div className="max-w-7xl mx-auto flex flex-col md:flex-row min-h-screen pb-24 md:pb-0">
-      <aside className="hidden md:block w-64 p-6 border-r border-slate-200 dark:border-slate-800 space-y-2">
-        <div className="font-black text-xl mb-8">Committee Portal</div>
+      <aside className="hidden md:block w-56 p-5 border-r border-slate-200 dark:border-slate-800 space-y-1 pt-8">
         {[
           { id: 'overview', icon: BarChart3, label: 'Dashboard' },
-          { id: 'menu', icon: Utensils, label: 'Menu Studio' },
+          { id: 'menu', icon: Utensils, label: 'Menu' },
           { id: 'ratings', icon: Star, label: 'Ratings' },
           { id: 'complaints', icon: FileText, label: 'Complaints' }
         ].map(item => (
-          <button 
-            key={item.id} 
+          <button
+            key={item.id}
             onClick={() => setActiveTab(item.id)}
-            className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-bold transition-colors ${activeTab === item.id ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
+            className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${activeTab === item.id ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'}`}
           >
-            <item.icon className="w-5 h-5" />
+            <item.icon className="w-4 h-4" />
             <span>{item.label}</span>
           </button>
         ))}
       </aside>
 
       <main className="flex-1 p-4 sm:p-6 lg:p-8">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 mb-8 rounded-3xl bg-slate-900 text-white shadow-xl border border-slate-800">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight">Hello, {currentUser?.name || 'Committee'} 👨‍🍳</h1>
-            <p className="text-xs text-slate-400 font-semibold mt-1">Operational Mess Management Studio</p>
-          </div>
-          <button onClick={() => { setEditingMeal(null); setIsAddMealModalOpen(true); }} className="px-5 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md flex items-center space-x-1.5">
-            <Plus className="w-4 h-4" /><span>ADD MENU</span>
-          </button>
+        <div className="mb-6">
+          <h1 className="text-lg font-bold text-slate-900 dark:text-white">Mess Committee</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+            Today's Operations · {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+          </p>
         </div>
-        
+
         {renderTabContent()}
       </main>
     </div>
   );
 };
+

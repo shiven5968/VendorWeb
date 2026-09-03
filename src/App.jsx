@@ -202,9 +202,9 @@ const AppContent = () => {
     if (role === 'mess_committee') {
       if (currentPage === 'daily-photos') return <DailyPhotosPage />;
       if (currentPage === 'hygiene') return <HygieneCheckPage />;
+      if (currentPage === 'ratings-view' || currentPage === 'ratings') return <MessCommitteeDashboard initialTab="ratings" />;
       if (currentPage === 'analytics') return <AnalyticsPage />;
       if (currentPage === 'reports') return <ReportsPage />;
-      // ratings-view and other committee sub-pages handled inside MessCommitteeDashboard
       return <MessCommitteeDashboard />;
     }
 
@@ -212,6 +212,7 @@ const AppContent = () => {
     if (role === 'warden') {
       if (currentPage === 'photo-archive') return <PhotoArchivePage />;
       if (currentPage === 'hygiene-archive') return <WardenDashboard initialTab="hygiene" />;
+      if (currentPage === 'ratings' || currentPage === 'ratings-view') return <WardenDashboard initialTab="ratings" />;
       if (currentPage === 'analytics') return <AnalyticsPage />;
       if (currentPage === 'reports') return <ReportsPage />;
       return <WardenDashboard />;

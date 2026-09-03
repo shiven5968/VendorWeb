@@ -288,22 +288,22 @@ export const LoginPage = ({ initialRole = 'student', onBackToRoles }) => {
 
   const roleMeta = {
     student: {
-      title: 'Student Portal',
+      title: 'Student Sign In',
       subtitle: 'Sign in with your Admission Number & Password',
       icon: GraduationCap,
       color: 'emerald'
     },
     warden: {
-      title: 'Chief Warden Portal',
-      subtitle: 'Hostel administration & mess governance',
+      title: 'ABES Officials',
+      subtitle: 'Institutional oversight & administration',
       icon: Shield,
-      color: 'blue'
+      color: 'emerald'
     },
     committee: {
-      title: 'Mess Committee Portal',
-      subtitle: 'Menu management & student complaints studio',
+      title: 'Mess Committee',
+      subtitle: 'Menu management & operational oversight',
       icon: ChefHat,
-      color: 'purple'
+      color: 'emerald'
     }
   };
 
@@ -312,30 +312,26 @@ export const LoginPage = ({ initialRole = 'student', onBackToRoles }) => {
 
   return (
     <div className="min-h-[85vh] flex items-center justify-center p-4 sm:p-6 pb-20">
-      <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl shadow-xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 space-y-6">
+      <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-md border border-slate-200 dark:border-slate-800 p-6 sm:p-8 space-y-6">
         
         {/* Top Role Switcher Header */}
-        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
+        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
           <button
             type="button"
             onClick={onBackToRoles}
             className="flex items-center space-x-1.5 text-xs font-bold text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>Change Role</span>
+            <span>Select Role</span>
           </button>
-
-          <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-            {activeRole.replace('_', ' ')}
-          </span>
         </div>
 
         {/* Role Icon & Title */}
         <div className="text-center space-y-1.5">
-          <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 mx-auto flex items-center justify-center shadow-sm">
+          <div className="w-12 h-12 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 mx-auto flex items-center justify-center shadow-sm">
             <RoleIcon className="w-6 h-6" />
           </div>
-          <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">
             {currentMeta.title}
           </h2>
           <p className="text-xs text-slate-500 font-medium max-w-xs mx-auto">
