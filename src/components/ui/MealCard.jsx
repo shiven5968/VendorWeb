@@ -110,7 +110,7 @@ export const MealCard = ({
           <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
             {userRating ? (
               <div className="flex items-center gap-2">
-                <RatingStars value={userRating.rating} readonly size="sm" />
+                <RatingStars value={typeof userRating === 'object' && userRating !== null ? (userRating.rating || 0) : (Number(userRating) || 0)} readonly size="sm" />
                 <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">Rated</span>
               </div>
             ) : onRate ? (

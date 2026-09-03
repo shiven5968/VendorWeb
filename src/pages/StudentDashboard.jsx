@@ -51,7 +51,9 @@ export const StudentDashboard = () => {
 
   const handleRateClick = (meal) => {
     setSelectedMealToRate(meal);
-    setRatingValue(getUserRating(meal.id) || 0);
+    const existing = getUserRating(meal.id);
+    const numericRating = typeof existing === 'object' && existing !== null ? existing.rating : existing;
+    setRatingValue(Number(numericRating) || 0);
     setRatingModalOpen(true);
   };
 
@@ -121,7 +123,7 @@ export const StudentDashboard = () => {
                     {activeMeal.category}
                   </span>
                   <span className="text-sm font-medium text-slate-500 dark:text-slate-400">
-                    {getTimingStatus(activeMeal.category)}
+                    {getTimingStatus(activeMeal.category)?.label || activeMeal.time || 'Meal Service'}
                   </span>
                 </div>
                 <h3 className="text-2xl font-bold text-slate-900 dark:text-white">{activeMeal.name}</h3>

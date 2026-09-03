@@ -29,7 +29,7 @@ import { PhotoArchivePage } from './pages/PhotoArchivePage';
 import { Loader2 } from 'lucide-react';
 
 const AppContent = () => {
-  const { user, profile, role, isInitialAuthLoading } = useAuth();
+  const { user, profile, role, isInitialAuthLoading, isProfileLoading } = useAuth();
   const { 
     currentPage, 
     setCurrentPage, 
@@ -138,41 +138,35 @@ const AppContent = () => {
     }
   }, [user, role, setCurrentPage]);
 
-  // Loading Screen — only shown during initial Firebase auth resolution
-  if (isInitialAuthLoading) {
+  // Loading Screen — shown during initial Firebase auth resolution or profile fetch for active sessions
+  if (isInitialAuthLoading || (user && !profile && isProfileLoading)) {
     return (
       <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center space-y-3 text-white">
         <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
-        <p className="text-xs font-bold text-slate-400">Loading MessMates...</p>
+        <p className="text-xs font-bold text-slate-400">MessMates · Loading your session...</p>
       </div>
     );
   }
 
-  // 1. Unauthenticated Flow: Landing (Role Selection) -> Login
+  // 1. PUBLIC LAYOUT: Unauthenticated Entry (Landing -> Role Selection -> Login)
+  // Strictly isolates public visitors from authenticated navigation, user controls, and internal modals
   if (!user) {
-    if (isLoginFlow) {
-      return (
-        <div className="min-h-screen flex flex-col justify-between bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
-          <main className="flex-1 flex items-center justify-center p-4">
+    return (
+      <div className="min-h-screen flex flex-col justify-between bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
+        <main className="flex-1 flex items-center justify-center p-4">
+          {isLoginFlow ? (
             <LoginPage 
               initialRole={selectedRole} 
               onBackToRoles={() => setIsLoginFlow(false)} 
             />
-          </main>
-          <Footer />
-        </div>
-      );
-    }
-
-    return (
-      <div className="min-h-screen flex flex-col justify-between bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
-        <main className="flex-1 flex items-center justify-center">
-          <LandingPage 
-            onSelectRole={(chosenRole) => {
-              setSelectedRole(chosenRole);
-              setIsLoginFlow(true);
-            }} 
-          />
+          ) : (
+            <LandingPage 
+              onSelectRole={(chosenRole) => {
+                setSelectedRole(chosenRole);
+                setIsLoginFlow(true);
+              }} 
+            />
+          )}
         </main>
         <Footer />
       </div>
