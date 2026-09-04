@@ -135,6 +135,21 @@ const AppContent = () => {
       } else {
         setCurrentPage('dashboard');
       }
+    } else if (user && role === 'student') {
+      // Direct student route URL handling
+      if (path === '/voting' || path.startsWith('/voting')) {
+        setCurrentPage('voting');
+      } else if (path === '/muscle-pass' || path.startsWith('/muscle-pass')) {
+        setCurrentPage('muscle-pass');
+      } else if (path === '/rewards' || path.startsWith('/rewards')) {
+        setCurrentPage('rewards');
+      } else if (path === '/complaints' || path.startsWith('/complaints') || path === '/activity' || path.startsWith('/activity')) {
+        setCurrentPage('complaints');
+      } else if (path === '/menu' || path.startsWith('/menu')) {
+        setCurrentPage('menu');
+      } else if (path === '/profile' || path.startsWith('/profile')) {
+        setCurrentPage('profile');
+      }
     }
   }, [user, role, setCurrentPage]);
 

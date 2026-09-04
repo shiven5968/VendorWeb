@@ -3,6 +3,7 @@
 
 import { doc, collection, setDoc, addDoc, updateDoc, deleteDoc, getDocs, increment } from 'firebase/firestore';
 import { db as firestoreDb, isFirebaseConfigured } from './firebase.js';
+import { getCollegeWeekInfo } from '../utils/dateTime.js';
 
 const DB_PREFIX = 'messmates_launch_';
 
@@ -1096,16 +1097,22 @@ class LaunchDatabase {
   }
 
   createPoll(pollData) {
+    const weekInfo = getCollegeWeekInfo();
     const pollId = 'poll_' + Date.now();
     const newPoll = {
       id: pollId,
       dishToReplace: pollData.dishToReplace,
+      mealCategory: pollData.mealCategory || 'Lunch',
+      question: pollData.question || `Which dish should replace ${pollData.dishToReplace}?`,
       options: pollData.options.map((opt, i) => ({
-        id: 'opt_' + (i + 1),
+        id: opt.id || ('opt_' + (i + 1)),
         name: opt.name,
         protein: opt.protein || '14g'
       })),
-      closingDate: pollData.closingDate || 'Tomorrow at 10:00 PM',
+      weekId: pollData.weekId || weekInfo.weekId,
+      weekStart: weekInfo.weekStartStr,
+      weekEnd: weekInfo.weekEndStr,
+      closingDate: pollData.closingDate || 'End of Week',
       createdAt: new Date().toISOString(),
       status: 'ACTIVE'
     };
@@ -1143,20 +1150,45 @@ class LaunchDatabase {
     }
   }
 
-  async castVote({ pollId, userId, userName, optionId }) {
+  async castVote({ pollId, mealId, mealName, mealCategory, userId, userName, optionId, rating, weekId, weekStart, weekEnd }) {
+    if (!userId) throw new Error('User ID is required to cast a vote.');
+
+    const weekInfo = getCollegeWeekInfo();
+    const targetWeekId = weekId || weekInfo.weekId;
+    const targetWeekStart = weekStart || weekInfo.weekStartStr;
+    const targetWeekEnd = weekEnd || weekInfo.weekEndStr;
+
     const votes = this.getItem('votes', []);
-    const alreadyVoted = votes.some(v => v.pollId === pollId && v.userId === userId);
+    const alreadyVoted = votes.some(v => {
+      if (v.userId !== userId) return false;
+      const vWeek = v.weekId || (v.timestamp ? getCollegeWeekInfo(new Date(v.timestamp)).weekId : null);
+      if (vWeek !== targetWeekId) return false;
+      if (pollId && v.pollId === pollId) return true;
+      if (mealId && v.mealId === mealId) return true;
+      if (!pollId && !mealId && v.mealName && mealName && v.mealName.toLowerCase() === mealName.toLowerCase()) return true;
+      return false;
+    });
+
     if (alreadyVoted) {
-      throw new Error('You have already voted in this poll. Duplicate votes are not allowed.');
+      throw new Error('You have already voted for this meal in this week. You can vote again when this meal is reviewed in a new week!');
     }
 
-    const voteId = 'vote_' + Date.now();
+    const targetKey = (pollId || mealId || (mealName ? mealName.toLowerCase().replace(/[^a-z0-9]/g, '_') : 'item')).replace(/[^a-zA-Z0-9_-]/g, '_');
+    const voteId = `vote_${userId}_${targetWeekId}_${targetKey}`;
+
     const newVote = {
       id: voteId,
-      pollId,
       userId,
       userName: userName || 'Student',
-      optionId,
+      pollId: pollId || null,
+      mealId: mealId || null,
+      mealName: mealName || null,
+      mealCategory: mealCategory || null,
+      optionId: optionId || null,
+      rating: rating !== undefined && rating !== null ? Number(rating) : null,
+      weekId: targetWeekId,
+      weekStart: targetWeekStart,
+      weekEnd: targetWeekEnd,
       timestamp: new Date().toISOString()
     };
 
@@ -1171,7 +1203,7 @@ class LaunchDatabase {
 
     votes.push(newVote);
     this.setItem('votes', votes);
-    // Award strictly +10 reward points for valid monthly poll vote
+    // Award strictly +10 reward points for valid weekly vote
     await this.addRewardPoints(userId, 10);
     return newVote;
   }

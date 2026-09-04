@@ -158,3 +158,112 @@ export function formatRatingRelativeTime(timestamp) {
     return 'You rated this meal';
   }
 }
+
+/**
+ * Returns deterministic week information in Asia/Kolkata timezone.
+ * A week starts on Monday 12:00 AM IST and ends on Sunday 11:59 PM IST.
+ * Sunday 23:59 IST belongs to current week, Monday 00:00 IST belongs to next week.
+ */
+export function getCollegeWeekInfo(dateInput = new Date()) {
+  try {
+    const formatter = new Intl.DateTimeFormat('en-CA', {
+      timeZone: COLLEGE_TIMEZONE,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
+    const dateObj = dateInput instanceof Date ? dateInput : new Date(dateInput);
+    const validDate = isNaN(dateObj.getTime()) ? new Date() : dateObj;
+    const dateStr = formatter.format(validDate);
+    const [y, m, d] = dateStr.split('-').map(Number);
+
+    // Current date in UTC with IST calendar values
+    const current = new Date(Date.UTC(y, m - 1, d));
+    const day = current.getUTCDay(); // 0 is Sunday, 1 is Monday ... 6 is Saturday
+    const diffToMonday = (day === 0 ? -6 : 1 - day);
+
+    const monday = new Date(current);
+    monday.setUTCDate(current.getUTCDate() + diffToMonday);
+
+    const sunday = new Date(monday);
+    sunday.setUTCDate(monday.getUTCDate() + 6);
+
+    // ISO-8601 week number calculation based on Thursday of the week
+    const thursday = new Date(monday);
+    thursday.setUTCDate(monday.getUTCDate() + 3);
+    const isoYear = thursday.getUTCFullYear();
+    const yearStart = new Date(Date.UTC(isoYear, 0, 1));
+    const weekNumber = Math.ceil((((thursday - yearStart) / 86400000) + 1) / 7);
+    const weekId = `${isoYear}-W${String(weekNumber).padStart(2, '0')}`;
+
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const fullMonthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+    const monMonth = monthNames[monday.getUTCMonth()];
+    const sunMonth = monthNames[sunday.getUTCMonth()];
+    const monDay = monday.getUTCDate();
+    const sunDay = sunday.getUTCDate();
+    const sunYear = sunday.getUTCFullYear();
+
+    const weekRangeDisplay = monMonth === sunMonth
+      ? `${monDay} – ${sunDay} ${sunMonth} ${sunYear}`
+      : `${monDay} ${monMonth} – ${sunDay} ${sunMonth} ${sunYear}`;
+
+    const monthLabel = `${fullMonthNames[validDate.getMonth()]} ${validDate.getFullYear()}`;
+
+    return {
+      weekId,
+      weekNumber,
+      year: isoYear,
+      weekStartStr: monday.toISOString().split('T')[0],
+      weekEndStr: sunday.toISOString().split('T')[0],
+      weekRangeDisplay,
+      monthLabel
+    };
+  } catch (e) {
+    return {
+      weekId: '2026-W36',
+      weekNumber: 36,
+      year: 2026,
+      weekStartStr: '2026-08-31',
+      weekEndStr: '2026-09-06',
+      weekRangeDisplay: '31 Aug – 6 Sep 2026',
+      monthLabel: 'September 2026'
+    };
+  }
+}
+
+/**
+ * Returns recent college weeks for historical feedback navigation.
+ * Count defaults to 4 weeks.
+ */
+export function getPastCollegeWeeks(count = 4, referenceDate = new Date()) {
+  const weeks = [];
+  const currentWeekInfo = getCollegeWeekInfo(referenceDate);
+
+  for (let i = 0; i < count; i++) {
+    const d = new Date(referenceDate);
+    d.setDate(d.getDate() - (i * 7));
+    const info = getCollegeWeekInfo(d);
+    const label = i === 0 
+      ? 'This Week' 
+      : i === 1 
+      ? 'Last Week' 
+      : i === 2 
+      ? '2 Weeks Ago' 
+      : i === 3 
+      ? '3 Weeks Ago' 
+      : `${i} Weeks Ago`;
+
+    // Avoid duplicate week entries if referenceDate shifted within same week
+    if (!weeks.some(w => w.weekId === info.weekId)) {
+      weeks.push({
+        ...info,
+        label,
+        isCurrent: info.weekId === currentWeekInfo.weekId
+      });
+    }
+  }
+
+  return weeks;
+}

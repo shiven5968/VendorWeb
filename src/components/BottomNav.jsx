@@ -1,7 +1,7 @@
 import React from 'react';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
-import { UtensilsCrossed, MessageSquare, Gift, User, Home, Camera, ShieldCheck, BarChart3, Clipboard } from 'lucide-react';
+import { UtensilsCrossed, MessageSquare, Gift, User, Home, Vote, Camera, ShieldCheck, BarChart3, Clipboard } from 'lucide-react';
 import { clsx } from 'clsx';
 
 export const BottomNav = () => {
@@ -15,7 +15,7 @@ export const BottomNav = () => {
   const tabs = [
     { id: 'dashboard', label: 'Home', icon: Home },
     { id: 'menu', label: 'Menu', icon: UtensilsCrossed },
-    { id: 'complaints', label: 'Complaints', icon: MessageSquare },
+    { id: 'voting', label: 'Voting', icon: Vote },
     { id: 'rewards', label: 'Rewards', icon: Gift },
     { id: 'profile', label: 'Profile', icon: User }
   ];

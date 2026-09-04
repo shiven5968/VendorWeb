@@ -49,7 +49,10 @@ export const MessCommitteeDashboard = ({ initialTab = 'overview' }) => {
     menuApproved,
     poll,
     createPoll,
-    closePoll
+    closePoll,
+    currentWeekInfo,
+    votesList,
+    getMonthlyVotingSummary
   } = useApp();
 
   const [activeTab, setActiveTab] = useState(initialTab);
@@ -87,7 +90,8 @@ export const MessCommitteeDashboard = ({ initialTab = 'overview' }) => {
       await createPoll({
         dishToReplace: dishToReplace.trim(),
         options,
-        closingDate: 'End of Month'
+        weekId: currentWeekInfo?.weekId,
+        closingDate: `End of Week (${currentWeekInfo?.weekEndStr || 'Sunday'})`
       });
 
       setShowCreatePoll(false);
@@ -549,13 +553,18 @@ export const MessCommitteeDashboard = ({ initialTab = 'overview' }) => {
                   </p>
                 </div>
 
-                <button
-                  onClick={() => setShowCreatePoll(!showCreatePoll)}
-                  className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold shadow-md flex items-center space-x-1.5 self-start sm:self-auto cursor-pointer"
-                >
-                  {showCreatePoll ? <X className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
-                  <span>{showCreatePoll ? 'Cancel' : 'Launch New Poll'}</span>
-                </button>
+                <div className="flex items-center space-x-2 self-start sm:self-auto">
+                  <span className="px-3 py-1.5 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 font-black text-xs border border-purple-200 dark:border-purple-800">
+                    Week {currentWeekInfo?.weekNumber || 36} ({currentWeekInfo?.weekRangeDisplay})
+                  </span>
+                  <button
+                    onClick={() => setShowCreatePoll(!showCreatePoll)}
+                    className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold shadow-md flex items-center space-x-1.5 cursor-pointer"
+                  >
+                    {showCreatePoll ? <X className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
+                    <span>{showCreatePoll ? 'Cancel' : 'Launch New Poll'}</span>
+                  </button>
+                </div>
               </div>
 
               {/* Poll Creation Form */}
@@ -700,6 +709,11 @@ export const MessCommitteeDashboard = ({ initialTab = 'overview' }) => {
                       }`}>
                         {poll.status === 'CLOSED' ? 'CLOSED' : 'ACTIVE POLL'}
                       </span>
+                      {poll.weekId && (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                          {poll.weekId}
+                        </span>
+                      )}
                     </div>
 
                     <div className="flex items-center space-x-3">

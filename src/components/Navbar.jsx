@@ -1,7 +1,7 @@
 import React from 'react';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
-import { UtensilsCrossed, Bell, LogOut, Home, MessageSquare, Gift, User, BarChart3, Camera, ShieldCheck, Clipboard } from 'lucide-react';
+import { UtensilsCrossed, Bell, LogOut, Home, MessageSquare, Gift, User, Vote, Dumbbell, BarChart3, Camera, ShieldCheck, Clipboard } from 'lucide-react';
 import { clsx } from 'clsx';
 
 export const Navbar = () => {
@@ -29,8 +29,10 @@ export const Navbar = () => {
         return [
           { id: 'dashboard', label: 'Home', icon: Home },
           { id: 'menu', label: 'Menu', icon: UtensilsCrossed },
-          { id: 'complaints', label: 'Complaints', icon: MessageSquare },
+          { id: 'voting', label: 'Voting', icon: Vote },
+          { id: 'muscle-pass', label: 'Muscle Pass', icon: Dumbbell },
           { id: 'rewards', label: 'Rewards', icon: Gift },
+          { id: 'complaints', label: 'Complaints', icon: MessageSquare },
           { id: 'profile', label: 'Profile', icon: User }
         ];
     }
@@ -70,7 +72,7 @@ export const Navbar = () => {
             <div className="hidden md:flex space-x-1">
               {navItems.map((item) => {
                 const Icon = item.icon;
-                const isActive = currentPage === item.id;
+                const isActive = currentPage === item.id || (item.id === 'complaints' && currentPage === 'activity');
                 return (
                   <button
                     key={item.id}

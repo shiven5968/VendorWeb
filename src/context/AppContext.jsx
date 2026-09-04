@@ -28,7 +28,9 @@ import {
   getCollegeDayName, 
   formatCollegeDateDisplay, 
   getCollegeTimeParts,
-  isTodayInCollege 
+  isTodayInCollege,
+  getCollegeWeekInfo,
+  getPastCollegeWeeks
 } from '../utils/dateTime.js';
 
 const AppContext = createContext();
@@ -62,6 +64,7 @@ export const AppProvider = ({ children }) => {
 
   const todayDay = getTodayDayName(currentTime);
   const collegeTodayDate = getCollegeDateString(currentTime);
+  const currentWeekInfo = getCollegeWeekInfo(currentTime);
   const [selectedDay, setSelectedDay] = useState(todayDay);
 
   // Keep selectedDay in sync if user hasn't explicitly navigated away
@@ -560,7 +563,7 @@ export const AppProvider = ({ children }) => {
     }
   };
 
-  // 5. VOTING & POLLS
+  // 5. RECURRING WEEKLY VOTING & MEAL FEEDBACK
   const getEnrichedPoll = () => {
     if (!poll) return null;
     const pollVotes = (votesList || []).filter(v => v.pollId === poll.id);
@@ -585,30 +588,194 @@ export const AppProvider = ({ children }) => {
 
   const enrichedPoll = getEnrichedPoll();
 
+  // Scoped to current week so a new week unlocks the vote
   const userVotedOptionId = (currentUser && enrichedPoll)
-    ? ((votesList || []).find(v => v.pollId === enrichedPoll.id && v.userId === (currentUser.uid || currentUser.id))?.optionId || null)
+    ? ((votesList || []).find(v => {
+        if (v.pollId !== enrichedPoll.id || v.userId !== (currentUser.uid || currentUser.id)) return false;
+        const vWeek = v.weekId || (v.timestamp ? getCollegeWeekInfo(new Date(v.timestamp)).weekId : null);
+        return vWeek === currentWeekInfo.weekId;
+      })?.optionId || null)
     : null;
 
   const voteDish = async (optionId) => {
     if (!currentUser || !enrichedPoll) return;
     try {
-      await db.castVote({
+      const newVote = await db.castVote({
         pollId: enrichedPoll.id,
         userId: currentUser.uid || currentUser.id,
         userName: currentUser.name,
-        optionId
+        optionId,
+        weekId: currentWeekInfo.weekId,
+        weekStart: currentWeekInfo.weekStartStr,
+        weekEnd: currentWeekInfo.weekEndStr
       });
-      if (!isFirebaseConfigured) {
-        try {
-          setVotesList(JSON.parse(localStorage.getItem('messmates_launch_votes')) || []);
-        } catch (e) {}
-        setUsersList(db.getUsers());
+      setVotesList(prev => {
+        const exists = prev.some(v => v.id === newVote.id);
+        return exists ? prev : [newVote, ...prev];
+      });
+      if (currentUser) {
+        currentUser.rewardPoints = (currentUser.rewardPoints || 0) + 10;
       }
       setPollsVersion(v => v + 1);
       addNotification('Vote Recorded 🗳️', `+10 Health Points earned by ${currentUser.name}.`, 'success');
+      return newVote;
     } catch (err) {
       addNotification('Vote Failed', err.message, 'warning');
+      throw err;
     }
+  };
+
+  const voteWeeklyMeal = async ({ mealId, mealName, mealCategory, rating }) => {
+    if (!currentUser) {
+      const err = new Error('You must be logged in to submit a vote.');
+      addNotification('Authentication Required', err.message, 'warning');
+      throw err;
+    }
+    if (currentRole !== 'student') {
+      const err = new Error('Only students can participate in mess voting.');
+      addNotification('Permission Denied', err.message, 'warning');
+      throw err;
+    }
+    try {
+      const uid = currentUser.uid || currentUser.id;
+      const newVote = await db.castVote({
+        mealId,
+        mealName,
+        mealCategory,
+        userId: uid,
+        userName: currentUser.name || 'Student',
+        rating,
+        weekId: currentWeekInfo.weekId,
+        weekStart: currentWeekInfo.weekStartStr,
+        weekEnd: currentWeekInfo.weekEndStr
+      });
+
+      setVotesList(prev => {
+        const exists = prev.some(v => v.id === newVote.id);
+        return exists ? prev : [newVote, ...prev];
+      });
+
+      if (currentUser) {
+        currentUser.rewardPoints = (currentUser.rewardPoints || 0) + 10;
+      }
+      setPollsVersion(v => v + 1);
+      addNotification('Weekly Feedback Recorded 🗳️', `+10 Health Points earned for reviewing ${mealName}!`, 'success');
+      return newVote;
+    } catch (err) {
+      console.error('[castVote error]:', err);
+      addNotification('Vote Failed', err.message || 'Could not record vote.', 'warning');
+      throw err;
+    }
+  };
+
+  const hasUserVotedThisWeek = (targetKey) => {
+    if (!currentUser || !targetKey) return null;
+    const uid = currentUser.uid || currentUser.id;
+    const targetWeekId = currentWeekInfo.weekId;
+    return (votesList || []).find(v => {
+      if (v.userId !== uid) return false;
+      const vWeek = v.weekId || (v.timestamp ? getCollegeWeekInfo(new Date(v.timestamp)).weekId : null);
+      if (vWeek !== targetWeekId) return false;
+      if (v.pollId === targetKey) return true;
+      if (v.mealId === targetKey) return true;
+      if (v.mealName && v.mealName.toLowerCase() === targetKey.toLowerCase()) return true;
+      return false;
+    }) || null;
+  };
+
+  const getStudentVotingHistory = (refDate = currentTime) => {
+    if (!currentUser) return [];
+    const uid = currentUser.uid || currentUser.id;
+    const myVotes = (votesList || []).filter(v => v.userId === uid);
+    const pastWeeks = getPastCollegeWeeks(4, refDate);
+
+    return pastWeeks.map(week => {
+      const weekVotes = myVotes.filter(v => {
+        const vWeek = v.weekId || (v.timestamp ? getCollegeWeekInfo(new Date(v.timestamp)).weekId : null);
+        return vWeek === week.weekId;
+      });
+      return {
+        ...week,
+        votes: weekVotes
+      };
+    });
+  };
+
+  const getOverallMealPerformance = () => {
+    const map = {};
+    (votesList || []).forEach(v => {
+      if (!v.rating || (!v.mealName && !v.mealId)) return;
+      const key = v.mealName || v.mealId;
+      if (!map[key]) {
+        map[key] = {
+          mealName: v.mealName || key,
+          mealCategory: v.mealCategory || 'Meal',
+          ratings: [],
+          weeks: new Set()
+        };
+      }
+      map[key].ratings.push(Number(v.rating));
+      if (v.weekId) map[key].weeks.add(v.weekId);
+    });
+
+    const results = Object.values(map).map(item => {
+      const total = item.ratings.length;
+      const sum = item.ratings.reduce((a, b) => a + b, 0);
+      const avg = total > 0 ? (sum / total) : 0;
+      return {
+        mealName: item.mealName,
+        mealCategory: item.mealCategory,
+        avgRating: Number(avg.toFixed(1)),
+        totalVotes: total,
+        weeksCount: item.weeks.size || 1
+      };
+    });
+
+    return results.sort((a, b) => b.avgRating - a.avgRating);
+  };
+
+  const getMonthlyVotingSummary = () => {
+    const now = currentTime;
+    const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const monthName = now.toLocaleString('en-US', { month: 'long', timeZone: 'Asia/Kolkata' });
+    const yearStr = now.getFullYear();
+
+    const monthlyVotes = (votesList || []).filter(v => {
+      if (!v.timestamp) return false;
+      return v.timestamp.startsWith(currentMonthStr);
+    });
+
+    const ratedVotes = monthlyVotes.filter(v => v.rating && v.mealName);
+    const totalVotes = monthlyVotes.length;
+    const totalRated = ratedVotes.length;
+
+    const avgRating = totalRated > 0
+      ? (ratedVotes.reduce((acc, v) => acc + Number(v.rating), 0) / totalRated).toFixed(1)
+      : '—';
+
+    const dishScores = {};
+    ratedVotes.forEach(v => {
+      if (!dishScores[v.mealName]) dishScores[v.mealName] = { sum: 0, count: 0 };
+      dishScores[v.mealName].sum += Number(v.rating);
+      dishScores[v.mealName].count += 1;
+    });
+
+    const dishList = Object.entries(dishScores).map(([name, data]) => ({
+      name,
+      avg: data.sum / data.count,
+      count: data.count
+    })).sort((a, b) => b.avg - a.avg);
+
+    const topDish = dishList.length > 0 ? dishList[0] : null;
+    const lowestDish = dishList.length > 1 ? dishList[dishList.length - 1] : (dishList.length === 1 && dishList[0].avg < 3 ? dishList[0] : null);
+
+    return {
+      monthLabel: `${monthName} ${yearStr}`,
+      totalVotes,
+      avgRating,
+      topDish: topDish ? `${topDish.name} (${topDish.avg.toFixed(1)}★)` : '—',
+      lowestDish: lowestDish ? `${lowestDish.name} (${lowestDish.avg.toFixed(1)}★)` : '—'
+    };
   };
 
   const createPoll = async (pollData) => {
@@ -873,6 +1040,13 @@ export const AppProvider = ({ children }) => {
         poll: enrichedPoll,
         userVotedOptionId,
         voteDish,
+        voteWeeklyMeal,
+        hasUserVotedThisWeek,
+        getStudentVotingHistory,
+        getOverallMealPerformance,
+        getMonthlyVotingSummary,
+        currentWeekInfo,
+        votesList,
         createPoll,
         closePoll,
 
