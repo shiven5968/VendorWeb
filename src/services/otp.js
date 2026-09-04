@@ -86,26 +86,54 @@ export const sendRegistrationOTP = async ({ email, admissionNumber, name }) => {
 
   const metaEnv = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env : (typeof process !== 'undefined' && process.env ? process.env : {});
   const sendApiUrl = metaEnv.VITE_OTP_API_URL || '/api/send-otp';
+  const CANONICAL_OTP_SEND_URL = 'https://messmatesrepo.vercel.app/api/send-otp';
 
   try {
-    const res = await fetch(sendApiUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email: cleanEmail,
-        admissionNumber: cleanAdmission,
-        name: cleanName
-      })
-    });
-
+    let res;
     let data = {};
+
     try {
-      data = await res.json();
-    } catch (e) {
-      data = {};
+      res = await fetch(sendApiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: cleanEmail,
+          admissionNumber: cleanAdmission,
+          name: cleanName
+        })
+      });
+
+      try {
+        data = await res.json();
+      } catch (e) {
+        data = {};
+      }
+    } catch (networkErr) {
+      // If local/relative request fails completely (e.g. offline dev without backend), fallback
+      res = null;
     }
 
-    if (!res.ok) {
+    // If local/preview deployment returns 503 (missing RESEND_API_KEY) or failed, fallback to canonical endpoint
+    if (!res || res.status === 503 || (data.message && data.message.includes('temporarily unavailable'))) {
+      if (sendApiUrl !== CANONICAL_OTP_SEND_URL) {
+        res = await fetch(CANONICAL_OTP_SEND_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: cleanEmail,
+            admissionNumber: cleanAdmission,
+            name: cleanName
+          })
+        });
+        try {
+          data = await res.json();
+        } catch (e) {
+          data = {};
+        }
+      }
+    }
+
+    if (!res || !res.ok) {
       throw new Error(data.message || 'Unable to send verification code. Please try again.');
     }
 
@@ -137,27 +165,55 @@ export const verifyRegistrationOTP = async ({ email, otp, sessionToken, sessionI
 
   const metaEnv = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env : (typeof process !== 'undefined' && process.env ? process.env : {});
   const verifyApiUrl = metaEnv.VITE_OTP_VERIFY_API_URL || '/api/verify-otp';
+  const CANONICAL_OTP_VERIFY_URL = 'https://messmatesrepo.vercel.app/api/verify-otp';
 
   try {
-    const res = await fetch(verifyApiUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email: cleanEmail,
-        otp: cleanOtp,
-        sessionId: targetId,
-        sessionToken: targetId
-      })
-    });
-
+    let res;
     let data = {};
+
     try {
-      data = await res.json();
-    } catch (e) {
-      data = {};
+      res = await fetch(verifyApiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: cleanEmail,
+          otp: cleanOtp,
+          sessionId: targetId,
+          sessionToken: targetId
+        })
+      });
+
+      try {
+        data = await res.json();
+      } catch (e) {
+        data = {};
+      }
+    } catch (networkErr) {
+      res = null;
     }
 
-    if (!res.ok) {
+    // Fallback if local/preview deployment failed or is unconfigured
+    if (!res || res.status === 503 || res.status === 404) {
+      if (verifyApiUrl !== CANONICAL_OTP_VERIFY_URL) {
+        res = await fetch(CANONICAL_OTP_VERIFY_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: cleanEmail,
+            otp: cleanOtp,
+            sessionId: targetId,
+            sessionToken: targetId
+          })
+        });
+        try {
+          data = await res.json();
+        } catch (e) {
+          data = {};
+        }
+      }
+    }
+
+    if (!res || !res.ok) {
       throw new Error(data.message || 'Verification failed. Please check the code.');
     }
 

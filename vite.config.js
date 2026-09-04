@@ -33,6 +33,19 @@ export default defineConfig(({ mode }) => {
               req.on('end', async () => {
                 try {
                   const parsed = JSON.parse(body || '{}');
+                  if (!process.env.RESEND_API_KEY || !process.env.RESEND_API_KEY.startsWith('re_')) {
+                    // Proxy to canonical production endpoint if not configured locally
+                    const proxyRes = await fetch('https://messmatesrepo.vercel.app/api/send-otp', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify(parsed)
+                    });
+                    const proxyData = await proxyRes.json();
+                    res.setHeader('Content-Type', 'application/json');
+                    res.statusCode = proxyRes.status;
+                    res.end(JSON.stringify(proxyData));
+                    return;
+                  }
                   const result = await sendOtpEmail(parsed);
                   res.setHeader('Content-Type', 'application/json');
                   res.statusCode = 200;
@@ -52,6 +65,18 @@ export default defineConfig(({ mode }) => {
               req.on('end', async () => {
                 try {
                   const parsed = JSON.parse(body || '{}');
+                  if (!process.env.RESEND_API_KEY || !process.env.RESEND_API_KEY.startsWith('re_')) {
+                    const proxyRes = await fetch('https://messmatesrepo.vercel.app/api/verify-otp', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify(parsed)
+                    });
+                    const proxyData = await proxyRes.json();
+                    res.setHeader('Content-Type', 'application/json');
+                    res.statusCode = proxyRes.status;
+                    res.end(JSON.stringify(proxyData));
+                    return;
+                  }
                   const result = await verifyOtpCode(parsed);
                   res.setHeader('Content-Type', 'application/json');
                   res.statusCode = 200;

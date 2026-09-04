@@ -43,3 +43,4 @@ build/
 .vercel
 .agents/
 skills-lock.json
+.env*
