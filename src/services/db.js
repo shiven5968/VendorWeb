@@ -1202,7 +1202,7 @@ class LaunchDatabase {
     const pollVotes = votes.filter(v => v.pollId === poll.id);
     const totalVotes = pollVotes.length;
 
-    const enrichedOptions = poll.options.map(opt => {
+    const enrichedOptions = (poll.options || []).map(opt => {
       const optVotes = pollVotes.filter(v => v.optionId === opt.id).length;
       const percent = totalVotes > 0 ? Math.round((optVotes / totalVotes) * 100) : 0;
       return {
@@ -1222,16 +1222,23 @@ class LaunchDatabase {
   createPoll(pollData) {
     const weekInfo = getCollegeWeekInfo();
     const pollId = 'poll_' + Date.now();
+    const options = (pollData.options || []).map((opt, i) => {
+      if (typeof opt === 'string') {
+        return { id: `opt_${i + 1}`, name: opt.trim() };
+      }
+      return {
+        id: opt.id || (`opt_${i + 1}`),
+        name: opt.name?.trim() || '',
+        ...(opt.protein ? { protein: opt.protein } : {})
+      };
+    }).filter(opt => opt.name);
+
     const newPoll = {
       id: pollId,
-      dishToReplace: pollData.dishToReplace,
+      question: pollData.question?.trim() || (pollData.dishToReplace ? `Which dish should replace ${pollData.dishToReplace}?` : 'Weekly Mess Committee Poll'),
+      dishToReplace: pollData.dishToReplace || null,
       mealCategory: pollData.mealCategory || 'Lunch',
-      question: pollData.question || `Which dish should replace ${pollData.dishToReplace}?`,
-      options: pollData.options.map((opt, i) => ({
-        id: opt.id || ('opt_' + (i + 1)),
-        name: opt.name,
-        protein: opt.protein || '14g'
-      })),
+      options,
       weekId: pollData.weekId || weekInfo.weekId,
       weekStart: weekInfo.weekStartStr,
       weekEnd: weekInfo.weekEndStr,
@@ -1273,8 +1280,10 @@ class LaunchDatabase {
     }
   }
 
-  async castVote({ pollId, mealId, mealName, mealCategory, userId, userName, optionId, rating, weekId, weekStart, weekEnd }) {
+  async castVote({ pollId, optionId, userId, userName, weekId, weekStart, weekEnd }) {
     if (!userId) throw new Error('User ID is required to cast a vote.');
+    if (!pollId) throw new Error('Poll ID is required to cast a vote.');
+    if (!optionId) throw new Error('Option ID is required to cast a vote.');
 
     const weekInfo = getCollegeWeekInfo();
     const targetWeekId = weekId || weekInfo.weekId;
@@ -1282,33 +1291,20 @@ class LaunchDatabase {
     const targetWeekEnd = weekEnd || weekInfo.weekEndStr;
 
     const votes = this.getItem('votes', []);
-    const alreadyVoted = votes.some(v => {
-      if (v.userId !== userId) return false;
-      const vWeek = v.weekId || (v.timestamp ? getCollegeWeekInfo(new Date(v.timestamp)).weekId : null);
-      if (vWeek !== targetWeekId) return false;
-      if (pollId && v.pollId === pollId) return true;
-      if (mealId && v.mealId === mealId) return true;
-      if (!pollId && !mealId && v.mealName && mealName && v.mealName.toLowerCase() === mealName.toLowerCase()) return true;
-      return false;
-    });
+    const alreadyVoted = votes.some(v => v.userId === userId && v.pollId === pollId);
 
     if (alreadyVoted) {
-      throw new Error('You have already voted for this meal in this week. You can vote again when this meal is reviewed in a new week!');
+      throw new Error('You have already voted in this poll.');
     }
 
-    const targetKey = (pollId || mealId || (mealName ? mealName.toLowerCase().replace(/[^a-z0-9]/g, '_') : 'item')).replace(/[^a-zA-Z0-9_-]/g, '_');
-    const voteId = `vote_${userId}_${targetWeekId}_${targetKey}`;
+    const voteId = `vote_${userId}_${pollId}`;
 
     const newVote = {
       id: voteId,
       userId,
       userName: userName || 'Student',
-      pollId: pollId || null,
-      mealId: mealId || null,
-      mealName: mealName || null,
-      mealCategory: mealCategory || null,
-      optionId: optionId || null,
-      rating: rating !== undefined && rating !== null ? Number(rating) : null,
+      pollId,
+      optionId,
       weekId: targetWeekId,
       weekStart: targetWeekStart,
       weekEnd: targetWeekEnd,
@@ -1326,15 +1322,7 @@ class LaunchDatabase {
 
     votes.push(newVote);
     this.setItem('votes', votes);
-    // Award strictly +10 reward points for valid weekly vote
-    await this.awardRewardEvent({
-      userId,
-      type: 'VOTE',
-      points: 10,
-      referenceId: voteId,
-      description: mealName ? `Weekly Feedback: ${mealName}` : 'Weekly Feedback Vote',
-      date: getCollegeDateString()
-    });
+    // Voting is civic participation: awards strictly 0 points (no reward event created)
     return newVote;
   }
 

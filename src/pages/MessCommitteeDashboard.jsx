@@ -57,13 +57,11 @@ export const MessCommitteeDashboard = ({ initialTab = 'overview' }) => {
 
   const [activeTab, setActiveTab] = useState(initialTab);
   const [showCreatePoll, setShowCreatePoll] = useState(false);
-  const [dishToReplace, setDishToReplace] = useState('');
-  const [opt1Name, setOpt1Name] = useState('');
-  const [opt1Protein, setOpt1Protein] = useState('');
-  const [opt2Name, setOpt2Name] = useState('');
-  const [opt2Protein, setOpt2Protein] = useState('');
-  const [opt3Name, setOpt3Name] = useState('');
-  const [opt3Protein, setOpt3Protein] = useState('');
+  const [pollQuestion, setPollQuestion] = useState('');
+  const [opt1, setOpt1] = useState('');
+  const [opt2, setOpt2] = useState('');
+  const [opt3, setOpt3] = useState('');
+  const [opt4, setOpt4] = useState('');
   const [isSubmittingPoll, setIsSubmittingPoll] = useState(false);
 
   useEffect(() => {
@@ -75,33 +73,32 @@ export const MessCommitteeDashboard = ({ initialTab = 'overview' }) => {
 
   const handleCreatePollSubmit = async (e) => {
     e.preventDefault();
-    if (!dishToReplace.trim() || !opt1Name.trim() || !opt2Name.trim() || isSubmittingPoll) return;
+    if (!pollQuestion.trim() || !opt1.trim() || !opt2.trim() || !opt3.trim() || isSubmittingPoll) return;
 
     try {
       setIsSubmittingPoll(true);
       const options = [
-        { name: opt1Name.trim(), protein: opt1Protein ? `${opt1Protein}g` : '12g' },
-        { name: opt2Name.trim(), protein: opt2Protein ? `${opt2Protein}g` : '14g' },
+        { name: opt1.trim() },
+        { name: opt2.trim() },
+        { name: opt3.trim() },
       ];
-      if (opt3Name.trim()) {
-        options.push({ name: opt3Name.trim(), protein: opt3Protein ? `${opt3Protein}g` : '15g' });
+      if (opt4.trim()) {
+        options.push({ name: opt4.trim() });
       }
 
       await createPoll({
-        dishToReplace: dishToReplace.trim(),
+        question: pollQuestion.trim(),
         options,
         weekId: currentWeekInfo?.weekId,
         closingDate: `End of Week (${currentWeekInfo?.weekEndStr || 'Sunday'})`
       });
 
       setShowCreatePoll(false);
-      setDishToReplace('');
-      setOpt1Name('');
-      setOpt1Protein('');
-      setOpt2Name('');
-      setOpt2Protein('');
-      setOpt3Name('');
-      setOpt3Protein('');
+      setPollQuestion('');
+      setOpt1('');
+      setOpt2('');
+      setOpt3('');
+      setOpt4('');
     } catch (err) {
       console.error('Error creating poll:', err);
     } finally {
@@ -572,7 +569,7 @@ export const MessCommitteeDashboard = ({ initialTab = 'overview' }) => {
                 <form onSubmit={handleCreatePollSubmit} className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-purple-500/30 space-y-4 shadow-lg">
                   <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
                     <h3 className="text-sm font-black text-slate-900 dark:text-white">
-                      Create Dish Replacement Poll
+                      Create Weekly Mess Poll
                     </h3>
                     <span className="text-[10px] font-bold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/40 px-2.5 py-0.5 rounded-full">
                       Student Democratization
@@ -581,96 +578,62 @@ export const MessCommitteeDashboard = ({ initialTab = 'overview' }) => {
 
                   <div>
                     <label className="block text-xs font-black uppercase text-slate-500 dark:text-slate-400 mb-1">
-                      Current Dish to Replace
+                      Poll Question <span className="text-rose-500">*</span>
                     </label>
                     <input
                       type="text"
                       required
-                      placeholder="e.g. Lauki Sabji (Sunday Dinner)"
-                      value={dishToReplace}
-                      onChange={e => setDishToReplace(e.target.value)}
+                      placeholder="e.g. Which dessert should be served for Sunday dinner?"
+                      value={pollQuestion}
+                      onChange={e => setPollQuestion(e.target.value)}
                       className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white outline-none focus:border-purple-500"
                     />
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-2.5">
+                    <label className="block text-xs font-black uppercase text-slate-500 dark:text-slate-400">
+                      Voting Options (Min 3 required)
+                    </label>
+
                     <div>
-                      <label className="block text-xs font-black uppercase text-slate-500 dark:text-slate-400 mb-1">
-                        Option 1 Name
-                      </label>
                       <input
                         type="text"
                         required
-                        placeholder="e.g. Paneer Bhurji"
-                        value={opt1Name}
-                        onChange={e => setOpt1Name(e.target.value)}
+                        placeholder="Option 1 *"
+                        value={opt1}
+                        onChange={e => setOpt1(e.target.value)}
                         className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white outline-none focus:border-purple-500"
                       />
                     </div>
-                    <div>
-                      <label className="block text-xs font-black uppercase text-slate-500 dark:text-slate-400 mb-1">
-                        Option 1 Protein (g)
-                      </label>
-                      <input
-                        type="number"
-                        placeholder="18"
-                        value={opt1Protein}
-                        onChange={e => setOpt1Protein(e.target.value)}
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white outline-none focus:border-purple-500"
-                      />
-                    </div>
-                  </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-black uppercase text-slate-500 dark:text-slate-400 mb-1">
-                        Option 2 Name
-                      </label>
                       <input
                         type="text"
                         required
-                        placeholder="e.g. Soya Chaap Masala"
-                        value={opt2Name}
-                        onChange={e => setOpt2Name(e.target.value)}
+                        placeholder="Option 2 *"
+                        value={opt2}
+                        onChange={e => setOpt2(e.target.value)}
                         className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white outline-none focus:border-purple-500"
                       />
                     </div>
-                    <div>
-                      <label className="block text-xs font-black uppercase text-slate-500 dark:text-slate-400 mb-1">
-                        Option 2 Protein (g)
-                      </label>
-                      <input
-                        type="number"
-                        placeholder="22"
-                        value={opt2Protein}
-                        onChange={e => setOpt2Protein(e.target.value)}
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white outline-none focus:border-purple-500"
-                      />
-                    </div>
-                  </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-black uppercase text-slate-500 dark:text-slate-400 mb-1">
-                        Option 3 Name (Optional)
-                      </label>
                       <input
                         type="text"
-                        placeholder="e.g. Aloo Gobhi Matar"
-                        value={opt3Name}
-                        onChange={e => setOpt3Name(e.target.value)}
+                        required
+                        placeholder="Option 3 *"
+                        value={opt3}
+                        onChange={e => setOpt3(e.target.value)}
                         className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white outline-none focus:border-purple-500"
                       />
                     </div>
+
                     <div>
-                      <label className="block text-xs font-black uppercase text-slate-500 dark:text-slate-400 mb-1">
-                        Option 3 Protein (g)
-                      </label>
                       <input
-                        type="number"
-                        placeholder="12"
-                        value={opt3Protein}
-                        onChange={e => setOpt3Protein(e.target.value)}
+                        type="text"
+                        placeholder="Option 4 (Optional)"
+                        value={opt4}
+                        onChange={e => setOpt4(e.target.value)}
                         className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white outline-none focus:border-purple-500"
                       />
                     </div>
@@ -695,7 +658,7 @@ export const MessCommitteeDashboard = ({ initialTab = 'overview' }) => {
                 </form>
               )}
 
-              {/* Active Poll Live Stats */}
+              {/* Active / Closed Poll Live Stats */}
               {poll ? (
                 <div className="p-6 rounded-3xl bg-slate-900 text-white space-y-5 shadow-xl border border-purple-500/30">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
@@ -733,28 +696,30 @@ export const MessCommitteeDashboard = ({ initialTab = 'overview' }) => {
 
                   <div>
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                      Proposed Dish Replacement
+                      Mess Committee Poll Question
                     </span>
                     <h3 className="text-lg font-black text-white mt-0.5">
-                      Which dish should replace <span className="text-amber-400 underline">{poll.dishToReplace}</span>?
+                      {poll.question}
                     </h3>
                   </div>
 
                   <div className="space-y-3">
-                    {poll.options.map(opt => (
+                    {(poll.options || []).map(opt => (
                       <div key={opt.id} className="p-4 rounded-2xl bg-slate-800/80 border border-slate-700 space-y-2">
                         <div className="flex justify-between items-center text-xs sm:text-sm font-black">
                           <div className="flex items-center space-x-2">
                             <span>{opt.name}</span>
-                            <span className="text-xs text-emerald-400 font-bold">({opt.protein})</span>
+                            {opt.protein && (
+                              <span className="text-xs text-emerald-400 font-bold">({opt.protein})</span>
+                            )}
                           </div>
-                          <span className="text-purple-400 font-black">{opt.percent}% ({opt.votes} votes)</span>
+                          <span className="text-purple-400 font-black">{opt.percent || 0}% ({opt.votes || 0} votes)</span>
                         </div>
 
                         <div className="w-full h-2.5 bg-slate-700 rounded-full overflow-hidden">
                           <div
                             className="h-full bg-purple-500 rounded-full transition-all duration-500"
-                            style={{ width: `${opt.percent}%` }}
+                            style={{ width: `${opt.percent || 0}%` }}
                           />
                         </div>
                       </div>

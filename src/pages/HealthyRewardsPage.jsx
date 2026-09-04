@@ -60,7 +60,7 @@ export const HealthyRewardsPage = () => {
           </div>
           <h1 className="text-2xl sm:text-3xl font-black">{currentUser?.name || 'Student'}</h1>
           <p className="text-xs text-emerald-100 font-medium">
-            Earn points by actively rating mess meals, logging in daily, and participating in monthly polls.
+            Earn points by actively rating mess meals and logging in daily.
           </p>
         </div>
 
@@ -72,7 +72,7 @@ export const HealthyRewardsPage = () => {
       </div>
 
       {/* Official Rules Info Strip */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex items-center space-x-3">
           <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
             <Star className="w-4 h-4 fill-amber-500" />
@@ -90,16 +90,6 @@ export const HealthyRewardsPage = () => {
           <div>
             <span className="text-xs font-black text-slate-900 dark:text-white">+2 Points</span>
             <p className="text-[10px] text-slate-500 font-semibold">Daily login (once per calendar day)</p>
-          </div>
-        </div>
-
-        <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex items-center space-x-3">
-          <div className="w-8 h-8 rounded-xl bg-purple-500/10 text-purple-500 flex items-center justify-center">
-            <Vote className="w-4 h-4" />
-          </div>
-          <div>
-            <span className="text-xs font-black text-slate-900 dark:text-white">+10 Points</span>
-            <p className="text-[10px] text-slate-500 font-semibold">Per monthly dish replacement poll</p>
           </div>
         </div>
       </div>

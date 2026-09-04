@@ -332,8 +332,7 @@ service cloud.firestore {
                     && request.resource.data.points <= 10
                     && (
                       (request.resource.data.type == 'LOGIN' && request.resource.data.points == 2) ||
-                      (request.resource.data.type == 'MEAL_RATING' && request.resource.data.points == 1) ||
-                      (request.resource.data.type == 'VOTE' && request.resource.data.points == 10)
+                      (request.resource.data.type == 'MEAL_RATING' && request.resource.data.points == 1)
                     );
 
       // Ledger is strictly append-only and immutable

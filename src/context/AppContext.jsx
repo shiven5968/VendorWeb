@@ -200,14 +200,21 @@ export const AppProvider = ({ children }) => {
       );
     }
 
-    // 3. POLLS: Active replacement poll
+    // 3. POLLS: Active replacement poll or most recent closed poll
     const unsubPolls = onSnapshot(
       collection(firestoreDb, 'polls'),
       (snapshot) => {
         const list = [];
         snapshot.forEach(doc => list.push(doc.data()));
-        const activePoll = list.find(p => p.status === 'ACTIVE') || list[0] || null;
-        if (activePoll) setPoll(activePoll);
+        const activePoll = list.find(p => p.status === 'ACTIVE');
+        if (activePoll) {
+          setPoll(activePoll);
+        } else if (list.length > 0) {
+          list.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+          setPoll(list[0]);
+        } else {
+          setPoll(null);
+        }
       },
       (err) => console.warn('Firestore polls listener:', err.message)
     );
@@ -635,12 +642,10 @@ export const AppProvider = ({ children }) => {
 
   const enrichedPoll = getEnrichedPoll();
 
-  // Scoped to current week so a new week unlocks the vote
+  // Scoped strictly to current active poll (userId + pollId)
   const userVotedOptionId = (currentUser && enrichedPoll)
     ? ((votesList || []).find(v => {
-        if (v.pollId !== enrichedPoll.id || v.userId !== (currentUser.uid || currentUser.id)) return false;
-        const vWeek = v.weekId || (v.timestamp ? getCollegeWeekInfo(new Date(v.timestamp)).weekId : null);
-        return vWeek === currentWeekInfo.weekId;
+        return v.pollId === enrichedPoll.id && v.userId === (currentUser.uid || currentUser.id);
       })?.optionId || null)
     : null;
 
@@ -660,11 +665,9 @@ export const AppProvider = ({ children }) => {
         const exists = prev.some(v => v.id === newVote.id);
         return exists ? prev : [newVote, ...prev];
       });
-      if (currentUser) {
-        currentUser.rewardPoints = (currentUser.rewardPoints || 0) + 10;
-      }
+      // Voting is strictly civic participation: 0 points awarded
       setPollsVersion(v => v + 1);
-      addNotification('Vote Recorded 🗳️', `+10 Health Points earned by ${currentUser.name}.`, 'success');
+      addNotification('Vote Recorded 🗳️', 'Your vote has been counted.', 'info');
       return newVote;
     } catch (err) {
       addNotification('Vote Failed', err.message, 'warning');
@@ -686,12 +689,10 @@ export const AppProvider = ({ children }) => {
     try {
       const uid = currentUser.uid || currentUser.id;
       const newVote = await db.castVote({
-        mealId,
-        mealName,
-        mealCategory,
+        pollId: mealId,
+        optionId: String(rating),
         userId: uid,
         userName: currentUser.name || 'Student',
-        rating,
         weekId: currentWeekInfo.weekId,
         weekStart: currentWeekInfo.weekStartStr,
         weekEnd: currentWeekInfo.weekEndStr
@@ -702,11 +703,8 @@ export const AppProvider = ({ children }) => {
         return exists ? prev : [newVote, ...prev];
       });
 
-      if (currentUser) {
-        currentUser.rewardPoints = (currentUser.rewardPoints || 0) + 10;
-      }
       setPollsVersion(v => v + 1);
-      addNotification('Weekly Feedback Recorded 🗳️', `+10 Health Points earned for reviewing ${mealName}!`, 'success');
+      addNotification('Vote Recorded 🗳️', 'Your response has been counted.', 'info');
       return newVote;
     } catch (err) {
       console.error('[castVote error]:', err);
