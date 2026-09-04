@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { WeeklyMenuReviewSection } from '../components/WeeklyMenuReviewSection';
 import { resolveMenuGroup } from '../config/menuGroups';
-import { formatCollegeDateDisplay } from '../utils/dateTime';
+import { formatCollegeDateDisplay, formatRatingRelativeTime } from '../utils/dateTime';
 
 const MEAL_IMAGES = {
   // Breakfasts
@@ -396,8 +396,16 @@ export const StudentDashboard = () => {
                     <ChevronRight className="w-3 h-3" />
                   </span>
 
-                  <span className="text-[10px] text-slate-400 font-bold">
-                    {myRating ? `Rated ${myRating.rating}★` : timing.isRatingAllowed ? 'Rating Open' : 'Rating Closed'}
+                  <span className="text-[10px] font-bold">
+                    {myRating ? (
+                      <span className="text-emerald-600 dark:text-emerald-400">
+                        {formatRatingRelativeTime(myRating.timestamp)} ({myRating.rating}★)
+                      </span>
+                    ) : (
+                      <span className="text-slate-400">
+                        {timing.isRatingAllowed ? 'Rating Open' : 'Rating Closed'}
+                      </span>
+                    )}
                   </span>
                 </div>
               </div>
@@ -445,12 +453,16 @@ export const StudentDashboard = () => {
 
           {/* Rating State Switch */}
           {currentMealUserRating ? (
-            <div className="p-4 rounded-2xl bg-slate-800/80 border border-slate-700 text-center space-y-1">
+            <div className="p-4 rounded-2xl bg-slate-800/80 border border-emerald-500/30 text-center space-y-1.5">
+              <div className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-bold border border-emerald-500/30">
+                <Check className="w-3 h-3" />
+                <span>Recorded · Locked</span>
+              </div>
               <p className="text-xs font-black text-emerald-400">
-                You have already submitted a rating for this meal ({currentMealUserRating.rating || currentMealUserRating}★).
+                {formatRatingRelativeTime(currentMealUserRating.timestamp)} ({currentMealUserRating.rating || currentMealUserRating}★).
               </p>
               <p className="text-[11px] text-slate-400">
-                Ratings are recorded to improve mess quality.
+                Ratings are recorded to improve mess quality and cannot be modified.
               </p>
             </div>
           ) : !isTargetRatingAllowed ? (

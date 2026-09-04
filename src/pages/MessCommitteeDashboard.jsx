@@ -19,7 +19,9 @@ import {
   Upload,
   Check,
   FileText,
-  Award
+  Award,
+  Vote,
+  X
 } from 'lucide-react';
 import { formatCollegeDateDisplay, getCollegeDateString } from '../utils/dateTime';
 import { DailyPhotosPage } from './DailyPhotosPage';
@@ -44,10 +46,22 @@ export const MessCommitteeDashboard = ({ initialTab = 'overview' }) => {
     hygieneChecks,
     currentTime,
     approveWeeklyMenu,
-    menuApproved
+    menuApproved,
+    poll,
+    createPoll,
+    closePoll
   } = useApp();
 
   const [activeTab, setActiveTab] = useState(initialTab);
+  const [showCreatePoll, setShowCreatePoll] = useState(false);
+  const [dishToReplace, setDishToReplace] = useState('');
+  const [opt1Name, setOpt1Name] = useState('');
+  const [opt1Protein, setOpt1Protein] = useState('');
+  const [opt2Name, setOpt2Name] = useState('');
+  const [opt2Protein, setOpt2Protein] = useState('');
+  const [opt3Name, setOpt3Name] = useState('');
+  const [opt3Protein, setOpt3Protein] = useState('');
+  const [isSubmittingPoll, setIsSubmittingPoll] = useState(false);
 
   useEffect(() => {
     if (initialTab) {
@@ -55,6 +69,41 @@ export const MessCommitteeDashboard = ({ initialTab = 'overview' }) => {
       else setActiveTab(initialTab);
     }
   }, [initialTab]);
+
+  const handleCreatePollSubmit = async (e) => {
+    e.preventDefault();
+    if (!dishToReplace.trim() || !opt1Name.trim() || !opt2Name.trim() || isSubmittingPoll) return;
+
+    try {
+      setIsSubmittingPoll(true);
+      const options = [
+        { name: opt1Name.trim(), protein: opt1Protein ? `${opt1Protein}g` : '12g' },
+        { name: opt2Name.trim(), protein: opt2Protein ? `${opt2Protein}g` : '14g' },
+      ];
+      if (opt3Name.trim()) {
+        options.push({ name: opt3Name.trim(), protein: opt3Protein ? `${opt3Protein}g` : '15g' });
+      }
+
+      await createPoll({
+        dishToReplace: dishToReplace.trim(),
+        options,
+        closingDate: 'End of Month'
+      });
+
+      setShowCreatePoll(false);
+      setDishToReplace('');
+      setOpt1Name('');
+      setOpt1Protein('');
+      setOpt2Name('');
+      setOpt2Protein('');
+      setOpt3Name('');
+      setOpt3Protein('');
+    } catch (err) {
+      console.error('Error creating poll:', err);
+    } finally {
+      setIsSubmittingPoll(false);
+    }
+  };
 
   const todayStr = getCollegeDateString(currentTime);
   const todayDateString = formatCollegeDateDisplay(currentTime);
@@ -72,6 +121,7 @@ export const MessCommitteeDashboard = ({ initialTab = 'overview' }) => {
     { id: 'menu', label: 'Menu Studio', icon: UtensilsCrossed },
     { id: 'photos', label: 'Daily Photos', icon: Camera, count: todayPhotos.length },
     { id: 'hygiene', label: 'Hygiene Reports', icon: ClipboardCheck },
+    { id: 'voting', label: 'Voting', icon: Vote, count: poll?.status === 'ACTIVE' ? 1 : 0 },
     { id: 'satisfaction', label: 'Student Satisfaction', icon: Award },
     { id: 'ratings', label: 'Ratings & Reviews', icon: Star },
     { id: 'complaints', label: 'Complaints', icon: MessageSquare, count: pendingComplaints.length }
@@ -475,6 +525,243 @@ export const MessCommitteeDashboard = ({ initialTab = 'overview' }) => {
           {activeTab === 'hygiene' && (
             <div>
               <HygieneCheckPage />
+            </div>
+          )}
+
+          {/* ========================================================================= */}
+          {/* TAB 5: DISH VOTING & POLL MANAGEMENT */}
+          {/* ========================================================================= */}
+          {activeTab === 'voting' && (
+            <div className="space-y-6">
+              
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm">
+                <div>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-8 h-8 rounded-xl bg-purple-600/10 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+                      <Vote className="w-4 h-4" />
+                    </div>
+                    <h2 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-tight">
+                      Dish Voting & Poll Management
+                    </h2>
+                  </div>
+                  <p className="text-xs text-slate-500 font-semibold mt-0.5">
+                    Launch democratic dish replacement polls and monitor live student votes
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => setShowCreatePoll(!showCreatePoll)}
+                  className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold shadow-md flex items-center space-x-1.5 self-start sm:self-auto cursor-pointer"
+                >
+                  {showCreatePoll ? <X className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
+                  <span>{showCreatePoll ? 'Cancel' : 'Launch New Poll'}</span>
+                </button>
+              </div>
+
+              {/* Poll Creation Form */}
+              {showCreatePoll && (
+                <form onSubmit={handleCreatePollSubmit} className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-purple-500/30 space-y-4 shadow-lg">
+                  <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                    <h3 className="text-sm font-black text-slate-900 dark:text-white">
+                      Create Dish Replacement Poll
+                    </h3>
+                    <span className="text-[10px] font-bold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/40 px-2.5 py-0.5 rounded-full">
+                      Student Democratization
+                    </span>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-black uppercase text-slate-500 dark:text-slate-400 mb-1">
+                      Current Dish to Replace
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Lauki Sabji (Sunday Dinner)"
+                      value={dishToReplace}
+                      onChange={e => setDishToReplace(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white outline-none focus:border-purple-500"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-black uppercase text-slate-500 dark:text-slate-400 mb-1">
+                        Option 1 Name
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. Paneer Bhurji"
+                        value={opt1Name}
+                        onChange={e => setOpt1Name(e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white outline-none focus:border-purple-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-black uppercase text-slate-500 dark:text-slate-400 mb-1">
+                        Option 1 Protein (g)
+                      </label>
+                      <input
+                        type="number"
+                        placeholder="18"
+                        value={opt1Protein}
+                        onChange={e => setOpt1Protein(e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white outline-none focus:border-purple-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-black uppercase text-slate-500 dark:text-slate-400 mb-1">
+                        Option 2 Name
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. Soya Chaap Masala"
+                        value={opt2Name}
+                        onChange={e => setOpt2Name(e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white outline-none focus:border-purple-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-black uppercase text-slate-500 dark:text-slate-400 mb-1">
+                        Option 2 Protein (g)
+                      </label>
+                      <input
+                        type="number"
+                        placeholder="22"
+                        value={opt2Protein}
+                        onChange={e => setOpt2Protein(e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white outline-none focus:border-purple-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-black uppercase text-slate-500 dark:text-slate-400 mb-1">
+                        Option 3 Name (Optional)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Aloo Gobhi Matar"
+                        value={opt3Name}
+                        onChange={e => setOpt3Name(e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white outline-none focus:border-purple-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-black uppercase text-slate-500 dark:text-slate-400 mb-1">
+                        Option 3 Protein (g)
+                      </label>
+                      <input
+                        type="number"
+                        placeholder="12"
+                        value={opt3Protein}
+                        onChange={e => setOpt3Protein(e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white outline-none focus:border-purple-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="pt-2 flex items-center justify-end space-x-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowCreatePoll(false)}
+                      className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isSubmittingPoll}
+                      className="px-6 py-2.5 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white rounded-xl text-xs font-black transition-all shadow-md cursor-pointer"
+                    >
+                      {isSubmittingPoll ? 'Publishing...' : 'Publish Poll to All Students'}
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {/* Active Poll Live Stats */}
+              {poll ? (
+                <div className="p-6 rounded-3xl bg-slate-900 text-white space-y-5 shadow-xl border border-purple-500/30">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
+                    <div className="flex items-center space-x-2 text-xs">
+                      <Clock className="w-3.5 h-3.5 text-purple-400" />
+                      <span className="text-slate-400">Status:</span>
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
+                        poll.status === 'CLOSED'
+                          ? 'bg-slate-800 text-slate-400 border border-slate-700'
+                          : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                      }`}>
+                        {poll.status === 'CLOSED' ? 'CLOSED' : 'ACTIVE POLL'}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center space-x-3">
+                      <span className="text-emerald-400 text-xs font-black">
+                        {poll.totalVotes || 0} Total Student Responses
+                      </span>
+                      {poll.status !== 'CLOSED' && (
+                        <button
+                          onClick={() => closePoll(poll.id)}
+                          className="px-3 py-1 rounded-xl bg-rose-600/20 text-rose-300 hover:bg-rose-600/30 border border-rose-500/30 text-xs font-bold transition-colors cursor-pointer"
+                        >
+                          Close Poll
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                      Proposed Dish Replacement
+                    </span>
+                    <h3 className="text-lg font-black text-white mt-0.5">
+                      Which dish should replace <span className="text-amber-400 underline">{poll.dishToReplace}</span>?
+                    </h3>
+                  </div>
+
+                  <div className="space-y-3">
+                    {poll.options.map(opt => (
+                      <div key={opt.id} className="p-4 rounded-2xl bg-slate-800/80 border border-slate-700 space-y-2">
+                        <div className="flex justify-between items-center text-xs sm:text-sm font-black">
+                          <div className="flex items-center space-x-2">
+                            <span>{opt.name}</span>
+                            <span className="text-xs text-emerald-400 font-bold">({opt.protein})</span>
+                          </div>
+                          <span className="text-purple-400 font-black">{opt.percent}% ({opt.votes} votes)</span>
+                        </div>
+
+                        <div className="w-full h-2.5 bg-slate-700 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-purple-500 rounded-full transition-all duration-500"
+                            style={{ width: `${opt.percent}%` }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {poll.closingDate && (
+                    <p className="text-[11px] text-slate-400 text-center pt-2 border-t border-slate-800">
+                      Poll closes: <strong className="text-slate-200">{poll.closingDate}</strong> · Results update in real-time as students cast votes.
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <div className="p-12 text-center text-xs font-bold text-slate-400 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 space-y-2">
+                  <p className="text-base font-black text-slate-700 dark:text-slate-200">
+                    No active dish replacement poll
+                  </p>
+                  <p>Click "Launch New Poll" above to gather student feedback on replacing unpopular mess items.</p>
+                </div>
+              )}
+
             </div>
           )}
 

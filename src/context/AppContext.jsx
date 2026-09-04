@@ -90,6 +90,7 @@ export const AppProvider = ({ children }) => {
   // Real-time collections / local state
   const [allMeals, setAllMeals] = useState(() => db.getAllMeals() || INITIAL_MEALS_DB);
   const [allRatings, setAllRatings] = useState(() => db.getAllRatings() || []);
+  const [userRatings, setUserRatings] = useState(() => []);
   const [allComplaints, setAllComplaints] = useState(() => db.getAllComplaints() || []);
   const [poll, setPoll] = useState(() => db.getPoll() || null);
   const [votesList, setVotesList] = useState(() => db.getItem('votes', []));
@@ -185,6 +186,21 @@ export const AppProvider = ({ children }) => {
       },
       (err) => console.warn('Firestore ratings listener:', err.message)
     );
+
+    // 2b. USER PERSONAL RATINGS: Listen to current student's full rating history
+    let unsubUserRatings = () => {};
+    if (currentUid) {
+      unsubUserRatings = onSnapshot(
+        query(collection(firestoreDb, 'ratings'), where('userId', '==', currentUid)),
+        (snapshot) => {
+          const list = [];
+          snapshot.forEach(doc => list.push(doc.data()));
+          list.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
+          setUserRatings(list);
+        },
+        (err) => console.warn('Firestore user ratings listener:', err.message)
+      );
+    }
 
     // 3. POLLS: Active replacement poll
     const unsubPolls = onSnapshot(
@@ -310,6 +326,7 @@ export const AppProvider = ({ children }) => {
     return () => {
       unsubMeals();
       unsubRatings();
+      unsubUserRatings();
       unsubPolls();
       unsubVotes();
       unsubComplaints();
@@ -479,6 +496,7 @@ export const AppProvider = ({ children }) => {
       });
 
       setAllRatings(prev => [ratingEntry, ...prev]);
+      setUserRatings(prev => [ratingEntry, ...prev.filter(r => r.id !== ratingEntry.id)]);
       setRatingsVersion(v => v + 1);
       addNotification('Rating Submitted 🌟', '+1 Health Point awarded to your account.', 'success');
       return ratingEntry;
@@ -491,7 +509,9 @@ export const AppProvider = ({ children }) => {
 
   const getUserRating = (mealId) => {
     if (!currentUser) return null;
-    return (allRatings || []).find(r => r.userId === (currentUser.uid || currentUser.id) && r.mealId === mealId) || null;
+    const uid = currentUser.uid || currentUser.id;
+    return (userRatings || []).find(r => r.userId === uid && r.mealId === mealId) ||
+           (allRatings || []).find(r => r.userId === uid && r.mealId === mealId) || null;
   };
 
   // 4. COMPLAINTS
@@ -598,6 +618,15 @@ export const AppProvider = ({ children }) => {
     }
     setPollsVersion(v => v + 1);
     addNotification('Poll Created', 'New dish replacement poll is now live.', 'success');
+  };
+
+  const closePoll = async (pollId) => {
+    await db.closePoll(pollId);
+    if (!isFirebaseConfigured && poll) {
+      setPoll(prev => prev ? { ...prev, status: 'CLOSED' } : null);
+    }
+    setPollsVersion(v => v + 1);
+    addNotification('Poll Closed', 'The dish replacement poll has been closed.', 'info');
   };
 
   // 6. PROTEIN & MUSCLE PASS
@@ -824,6 +853,7 @@ export const AppProvider = ({ children }) => {
         rateMeal,
         getUserRating,
         allRatings,
+        userRatings,
 
         // Gym Mode & Muscle Pass
         proteinTarget,
@@ -844,6 +874,7 @@ export const AppProvider = ({ children }) => {
         userVotedOptionId,
         voteDish,
         createPoll,
+        closePoll,
 
         // Complaints
         allComplaints,

@@ -35,7 +35,7 @@ export const ProfilePage = () => {
   const { currentUser, updateUserProfile, logout, rewardPoints } = useApp();
   const { role } = useAuth();
 
-  const [activeTab, setActiveTab] = useState('profile'); // 'profile' | 'about_us'
+  const [activeTab, setActiveTab] = useState('about_us'); // 'about_us' (Tab 1 default) | 'profile' (Tab 2)
   const [dietPreference, setDietPreference] = useState(currentUser?.dietPreference || 'Vegetarian');
   const [avatar, setAvatar] = useState(currentUser?.avatar || PRESET_AVATARS[0]);
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
@@ -88,35 +88,35 @@ export const ProfilePage = () => {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">Student Profile</h1>
+          <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">Account & Team</h1>
           <p className="text-xs text-slate-500 font-semibold">
-            Official Identity & Dining Preferences
+            About Us & Official Student Identity
           </p>
         </div>
 
-        {/* Clean Tab Switcher */}
+        {/* Tab Switcher: Tab 1 About Us, Tab 2 Profile */}
         <div className="flex items-center space-x-1 p-1 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 self-start sm:self-auto">
           <button
-            onClick={() => setActiveTab('profile')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center space-x-1 ${
-              activeTab === 'profile'
-                ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm'
-                : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
-            }`}
-          >
-            <UserCheck className="w-3.5 h-3.5" />
-            <span>Profile</span>
-          </button>
-          <button
             onClick={() => setActiveTab('about_us')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center space-x-1 ${
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center space-x-1.5 ${
               activeTab === 'about_us'
                 ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm'
                 : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
             }`}
           >
             <Users className="w-3.5 h-3.5" />
-            <span>About Us</span>
+            <span>1. About Us</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('profile')}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center space-x-1.5 ${
+              activeTab === 'profile'
+                ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm'
+                : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+            }`}
+          >
+            <UserCheck className="w-3.5 h-3.5" />
+            <span>2. Profile</span>
           </button>
         </div>
       </div>
@@ -129,7 +129,16 @@ export const ProfilePage = () => {
       )}
 
       {/* ========================================================================= */}
-      {/* 1. OFFICIAL STUDENT PROFILE & PREFERENCES */}
+      {/* 1. ABOUT US SECTION (CONCISE & DIGNIFIED - FOUNDERS & MISSION) */}
+      {/* ========================================================================= */}
+      {activeTab === 'about_us' && (
+        <div className="space-y-4">
+          <AboutUsSection />
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 2. OFFICIAL STUDENT PROFILE & PREFERENCES */}
       {/* ========================================================================= */}
       {activeTab === 'profile' && (
         <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-6">
@@ -320,15 +329,6 @@ export const ProfilePage = () => {
             </div>
           </form>
 
-        </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* 2. ABOUT US SECTION (CONCISE & DIGNIFIED) */}
-      {/* ========================================================================= */}
-      {activeTab === 'about_us' && (
-        <div className="space-y-4">
-          <AboutUsSection />
         </div>
       )}
 

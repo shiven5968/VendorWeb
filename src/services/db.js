@@ -695,6 +695,7 @@ class LaunchDatabase {
     this.updateComplaintStatus = this.updateComplaintStatus.bind(this);
     this.getPoll = this.getPoll.bind(this);
     this.createPoll = this.createPoll.bind(this);
+    this.closePoll = this.closePoll.bind(this);
     this.castVote = this.castVote.bind(this);
     this.hasUserVoted = this.hasUserVoted.bind(this);
     this.getTodayUserProtein = this.getTodayUserProtein.bind(this);
@@ -1119,6 +1120,27 @@ class LaunchDatabase {
 
     this.setItem('poll', newPoll);
     return newPoll;
+  }
+
+  async closePoll(pollId) {
+    if (!pollId) return;
+
+    if (isFirebaseConfigured) {
+      try {
+        await updateDoc(doc(firestoreDb, 'polls', pollId), {
+          status: 'CLOSED',
+          closedAt: new Date().toISOString()
+        });
+      } catch (e) {
+        console.error('Error closing poll in Firestore:', e);
+      }
+    }
+
+    const currentPoll = this.getItem('poll');
+    if (currentPoll && currentPoll.id === pollId) {
+      currentPoll.status = 'CLOSED';
+      this.setItem('poll', currentPoll);
+    }
   }
 
   async castVote({ pollId, userId, userName, optionId }) {

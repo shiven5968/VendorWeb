@@ -3,6 +3,7 @@ import { Clock, Flame, Dumbbell, Star } from 'lucide-react';
 import { clsx } from 'clsx';
 import { RatingStars } from './RatingStars';
 import { StatusBadge } from './StatusBadge';
+import { formatRatingRelativeTime } from '../../utils/dateTime';
 
 /**
  * MealCard — displays a single meal with image, nutrition, rating.
@@ -109,9 +110,21 @@ export const MealCard = ({
         {showRating && !isHolidayOff && (
           <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
             {userRating ? (
-              <div className="flex items-center gap-2">
-                <RatingStars value={typeof userRating === 'object' && userRating !== null ? (userRating.rating || 0) : (Number(userRating) || 0)} readonly size="sm" />
-                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">Rated</span>
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <RatingStars value={typeof userRating === 'object' && userRating !== null ? (userRating.rating || 0) : (Number(userRating) || 0)} readonly size="sm" />
+                    <span className="text-[11px] font-bold text-amber-500">
+                      {typeof userRating === 'object' && userRating !== null ? `${userRating.rating}★` : `${userRating}★`}
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-500/20">
+                    Recorded · Locked
+                  </span>
+                </div>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
+                  {formatRatingRelativeTime(typeof userRating === 'object' ? userRating?.timestamp : null)}
+                </p>
               </div>
             ) : onRate ? (
               <RatingStars value={0} onChange={(stars) => onRate(meal.id, stars)} size="sm" />

@@ -108,3 +108,53 @@ export function formatCollegeDateTime(date = new Date()) {
   });
   return `${formatter.format(date)} IST`;
 }
+
+/**
+ * Formats a rating timestamp into human-readable contextual wording in Asia/Kolkata.
+ * Rules:
+ * - Today (0 days ago in Asia/Kolkata): "You rated this meal today"
+ * - Yesterday (1 day ago in Asia/Kolkata): "You rated this meal yesterday"
+ * - 2-7 days ago: "You rated this meal last week · [Date]"
+ * - > 7 days ago: "You rated this meal on [Date]"
+ */
+export function formatRatingRelativeTime(timestamp) {
+  if (!timestamp) return 'You rated this meal';
+
+  try {
+    const ratingDate = new Date(timestamp);
+    if (isNaN(ratingDate.getTime())) return 'You rated this meal';
+
+    const ratingDateStr = getCollegeDateString(ratingDate);
+    const todayDateStr = getCollegeDateString(new Date());
+
+    const [rY, rM, rD] = ratingDateStr.split('-').map(Number);
+    const [tY, tM, tD] = todayDateStr.split('-').map(Number);
+
+    const rUtc = Date.UTC(rY, rM - 1, rD);
+    const tUtc = Date.UTC(tY, tM - 1, tD);
+    const diffDays = Math.round((tUtc - rUtc) / (1000 * 60 * 60 * 24));
+
+    if (diffDays <= 0) {
+      return 'You rated this meal today';
+    } else if (diffDays === 1) {
+      return 'You rated this meal yesterday';
+    } else if (diffDays <= 7) {
+      const dateFormatted = new Intl.DateTimeFormat('en-IN', {
+        timeZone: COLLEGE_TIMEZONE,
+        day: 'numeric',
+        month: 'short'
+      }).format(ratingDate);
+      return `You rated this meal last week · ${dateFormatted}`;
+    } else {
+      const dateFormatted = new Intl.DateTimeFormat('en-IN', {
+        timeZone: COLLEGE_TIMEZONE,
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric'
+      }).format(ratingDate);
+      return `You rated this meal on ${dateFormatted}`;
+    }
+  } catch (err) {
+    return 'You rated this meal';
+  }
+}
