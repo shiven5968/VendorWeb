@@ -74,9 +74,15 @@ service cloud.firestore {
                     && (request.resource.data.role == 'student' || isWarden() || (isCommittee() && request.resource.data.role in ['mess_committee', 'committee']));
 
       // Profile updates:
-      // - Students can update their own personal info, but are STRICTLY FORBIDDEN from modifying their 'role'
+      // - Students can update their own personal info (name, hostelBlock, gender, dietPreference)
+      // - Students are STRICTLY FORBIDDEN from modifying: role, rewardPoints, points, admissionNumber, email, uid, collegeId
       // - Warden can update any user profile including role management
-      allow update: if (isOwner(userId) && request.resource.data.role == resource.data.role && request.resource.data.uid == resource.data.uid)
+      allow update: if (isOwner(userId) 
+                        && request.resource.data.role == resource.data.role 
+                        && request.resource.data.uid == resource.data.uid
+                        && request.resource.data.admissionNumber == resource.data.admissionNumber
+                        && request.resource.data.email == resource.data.email
+                        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['rewardPoints', 'points', 'collegeId'])))
                     || isWarden();
 
       // Account deletion is strictly restricted to Chief Warden
@@ -231,10 +237,13 @@ service cloud.firestore {
       allow read: if true;
 
       // Creation and update allowed during authenticated registration or healing by account owner or staff
-      allow create, update: if isAuthenticated() 
-                            && (request.resource.data.uid == request.auth.uid 
-                                || request.resource.data.email == request.auth.token.email 
-                                || isStaff());
+      // ANTI-TAKEOVER: The authenticated user's OWN Firestore profile MUST authoritatively contain this exact admissionNumber
+      allow create, update: if (isAuthenticated() 
+                                && request.resource.data.uid == request.auth.uid 
+                                && request.resource.data.email == request.auth.token.email
+                                && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+                                && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.admissionNumber == admissionNumber)
+                            || isStaff();
 
       // Deletion strictly reserved for Chief Warden
       allow delete: if isWarden();

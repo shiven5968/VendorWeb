@@ -3,12 +3,13 @@ import { db as firestoreDb, storage, isFirebaseConfigured } from './firebase.js'
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 
 import { getCollegeDateString } from '../utils/dateTime.js';
+import { compressImage } from '../utils/imageCompressor.js';
 
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB limit
 const UPLOAD_TIMEOUT_MS = 60000; // 60-second watchdog for mobile resilience
 
 const uploadPhotoWithTimeout = async (file, path) => {
-  if (!isFirebaseConfigured || !storage) throw new Error("Firebase not configured");
+  if (!isFirebaseConfigured || !storage) throw new Error("Firebase Storage is not configured");
   const storageRef = ref(storage, path);
   const metadata = { contentType: file.type || 'image/jpeg' };
   
@@ -41,31 +42,38 @@ const uploadPhotoWithTimeout = async (file, path) => {
 };
 
 export const saveMessPhoto = async ({ date, mealCategory, photoCategory, uploadedBy, uploadedByName, notes, files }) => {
-  if (!isFirebaseConfigured) return null;
+  if (!isFirebaseConfigured) {
+    throw new Error('Database service is not configured. Please check your environment.');
+  }
   const targetDate = date || getCollegeDateString();
   
   try {
     const urls = [];
-    for (const file of files) {
-      if (file.size > MAX_FILE_SIZE_BYTES) {
-        throw new Error(`File ${file.name} is too large. Max 5MB.`);
+    for (const rawFile of files) {
+      if (rawFile.size > MAX_FILE_SIZE_BYTES) {
+        throw new Error(`File ${rawFile.name} exceeds 10MB limit.`);
       }
-      const timestamp = Date.now();
-      const safeName = file.name ? file.name.replace(/[^a-zA-Z0-9.-]/g, '_') : 'photo.jpg';
-      const path = `mess-photos/${targetDate}/${timestamp}_${safeName}`;
-      
-      let url;
+
+      // 1. Client-side compression (1200px max dimension, ~500KB target, JPEG/WEBP)
+      let fileToUpload = rawFile;
       try {
-        url = await uploadPhotoWithTimeout(file, path);
-      } catch (storageErr) {
-        console.warn('[saveMessPhoto] Storage notice (bucket unprovisioned or offline), using inline fallback:', storageErr.message);
-        url = await new Promise((resolve) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result);
-          reader.readAsDataURL(file);
-        });
+        fileToUpload = await compressImage(rawFile, { maxDimension: 1200, targetMaxBytes: 500 * 1024 });
+      } catch (compErr) {
+        console.warn('[saveMessPhoto] Client compression warning:', compErr.message);
       }
-      urls.push(url);
+
+      const timestamp = Date.now();
+      const safeName = fileToUpload.name ? fileToUpload.name.replace(/[^a-zA-Z0-9.-]/g, '_') : 'photo.jpg';
+      const storagePath = `mess-photos/${targetDate}/${timestamp}_${safeName}`;
+      
+      // 2. Upload to native Firebase Storage - NO silent inline data-URL fallback!
+      try {
+        const downloadUrl = await uploadPhotoWithTimeout(fileToUpload, storagePath);
+        urls.push(downloadUrl);
+      } catch (storageErr) {
+        console.error('[saveMessPhoto] Cloud Storage upload error:', storageErr);
+        throw new Error('Photo upload service is currently unavailable. Please check your connection or contact support.');
+      }
     }
     
     const photoData = {

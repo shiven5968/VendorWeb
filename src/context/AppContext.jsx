@@ -10,7 +10,7 @@ import {
   seedFirestoreData
 } from '../services/db';
 import { db as firestoreDb, isFirebaseConfigured } from '../services/firebase';
-import { collection, onSnapshot, query, where, doc } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, doc, limit } from 'firebase/firestore';
 import { seedPilotAccounts } from '../services/seedUsers';
 import { useAuth } from './AuthContext';
 import {
@@ -174,9 +174,9 @@ export const AppProvider = ({ children }) => {
       (err) => console.warn('Firestore meals listener:', err.message)
     );
 
-    // 2. RATINGS & FEEDBACK: All community ratings
+    // 2. RATINGS & FEEDBACK: Bounded query for scalability (max 50 recent ratings)
     const unsubRatings = onSnapshot(
-      collection(firestoreDb, 'ratings'),
+      query(collection(firestoreDb, 'ratings'), limit(50)),
       (snapshot) => {
         const list = [];
         snapshot.forEach(doc => list.push(doc.data()));
@@ -198,9 +198,9 @@ export const AppProvider = ({ children }) => {
       (err) => console.warn('Firestore polls listener:', err.message)
     );
 
-    // 4. VOTES: Poll voting numbers
+    // 4. VOTES: Bounded query for current poll votes
     const unsubVotes = onSnapshot(
-      collection(firestoreDb, 'votes'),
+      query(collection(firestoreDb, 'votes'), limit(100)),
       (snapshot) => {
         const list = [];
         snapshot.forEach(doc => list.push(doc.data()));
@@ -279,11 +279,11 @@ export const AppProvider = ({ children }) => {
       );
     }
 
-    // 10. MESS PHOTOS: Daily operational photos
+    // 10. MESS PHOTOS: Daily operational photos (bounded to 50 most recent)
     let unsubMessPhotos = () => {};
     if (isStaffUser) {
       unsubMessPhotos = onSnapshot(
-        collection(firestoreDb, 'mess_photos'),
+        query(collection(firestoreDb, 'mess_photos'), limit(50)),
         (snapshot) => {
           const list = [];
           snapshot.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
@@ -293,17 +293,17 @@ export const AppProvider = ({ children }) => {
       );
     }
 
-    // 11. HYGIENE CHECKS: Daily hygiene compliance reports
+    // 11. HYGIENE CHECKS: Daily hygiene compliance reports (bounded to 30 most recent)
     let unsubHygiene = () => {};
     if (isStaffUser) {
       unsubHygiene = onSnapshot(
-        collection(firestoreDb, 'hygiene_checks'),
+        query(collection(firestoreDb, 'hygiene_checks'), limit(30)),
         (snapshot) => {
           const list = [];
           snapshot.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
           setHygieneChecks(list);
         },
-        (err) => console.warn('Firestore hygiene_checks listener:', err.message)
+        (err) => console.warn('Firestore hygiene listener:', err.message)
       );
     }
 
