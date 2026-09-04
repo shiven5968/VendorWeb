@@ -709,11 +709,17 @@ export const AppProvider = ({ children }) => {
     addNotification('Menu Approved ✅', 'Weekly mess menu authorized by ABES Officials.', 'success');
   };
 
-  const uploadMessPhoto = async (photoData, files) => {
+  const uploadMessPhoto = async (photoData, files, onProgress) => {
     if (!currentUser) return;
     try {
       const { saveMessPhoto } = await import('../services/messOperations.js');
-      const result = await saveMessPhoto({ ...photoData, uploadedBy: currentUser.uid || currentUser.id, uploadedByName: currentUser.name, files });
+      const result = await saveMessPhoto({
+        ...photoData,
+        uploadedBy: currentUser.uid || currentUser.id,
+        uploadedByName: currentUser.name,
+        files,
+        onProgress
+      });
       setMessPhotos(prev => [result, ...prev]);
       addNotification('Photos Uploaded', 'Daily mess photos published successfully.', 'success');
       return result;

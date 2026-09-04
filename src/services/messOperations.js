@@ -8,7 +8,7 @@ import { compressImage } from '../utils/imageCompressor.js';
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB limit
 const UPLOAD_TIMEOUT_MS = 60000; // 60-second watchdog for mobile resilience
 
-const uploadPhotoWithTimeout = async (file, path) => {
+const uploadPhoto = async (file, path, onProgress) => {
   if (!isFirebaseConfigured || !storage) throw new Error("Firebase Storage is not configured");
   const storageRef = ref(storage, path);
   const metadata = { contentType: file.type || 'image/jpeg' };
@@ -16,20 +16,34 @@ const uploadPhotoWithTimeout = async (file, path) => {
   const uploadTask = uploadBytesResumable(storageRef, file, metadata);
 
   return new Promise((resolve, reject) => {
-    let timeoutTimer = setTimeout(() => {
-      uploadTask.cancel();
-      reject(new Error('Upload timed out. Please check your network connection and try again.'));
-    }, UPLOAD_TIMEOUT_MS);
-
     uploadTask.on(
       'state_changed',
-      () => {},
+      (snapshot) => {
+        const progress = snapshot.totalBytes > 0
+          ? Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100)
+          : 0;
+        onProgress?.({
+          stage: 'UPLOADING',
+          progress,
+          bytesTransferred: snapshot.bytesTransferred,
+          totalBytes: snapshot.totalBytes
+        });
+      },
       (error) => {
-        clearTimeout(timeoutTimer);
-        reject(error);
+        let msg = error.message || 'Storage upload error';
+        if (error.code === 'storage/bucket-not-found' || error.code === 'storage/unknown' || error.message?.includes('bucket')) {
+          msg = 'Firebase Cloud Storage bucket is not provisioned for this project. Please activate Storage in Firebase Console.';
+        } else if (error.code === 'storage/unauthorized') {
+          msg = 'Permission denied. Only authorized Mess Committee members can upload photos.';
+        } else if (error.code === 'storage/retry-limit-exceeded') {
+          msg = 'Upload failed: Storage service unreachable or bucket not provisioned.';
+        } else if (error.code === 'storage/canceled') {
+          msg = 'Upload was cancelled.';
+        }
+        reject(new Error(msg));
       },
       async () => {
-        clearTimeout(timeoutTimer);
+        onProgress?.({ stage: 'STORAGE_COMPLETE', progress: 100 });
         try {
           const downloadUrl = await getDownloadURL(uploadTask.snapshot.ref);
           resolve(downloadUrl);
@@ -41,7 +55,7 @@ const uploadPhotoWithTimeout = async (file, path) => {
   });
 };
 
-export const saveMessPhoto = async ({ date, mealCategory, photoCategory, uploadedBy, uploadedByName, notes, files }) => {
+export const saveMessPhoto = async ({ date, mealCategory, photoCategory, uploadedBy, uploadedByName, notes, files, onProgress }) => {
   if (!isFirebaseConfigured) {
     throw new Error('Database service is not configured. Please check your environment.');
   }
@@ -49,12 +63,16 @@ export const saveMessPhoto = async ({ date, mealCategory, photoCategory, uploade
   
   try {
     const urls = [];
-    for (const rawFile of files) {
+    const totalFiles = files.length;
+
+    for (let i = 0; i < totalFiles; i++) {
+      const rawFile = files[i];
       if (rawFile.size > MAX_FILE_SIZE_BYTES) {
         throw new Error(`File ${rawFile.name} exceeds 10MB limit.`);
       }
 
       // 1. Client-side compression (1200px max dimension, ~500KB target, JPEG/WEBP)
+      onProgress?.({ stage: 'COMPRESSING', progress: 0, currentFile: i + 1, totalFiles });
       let fileToUpload = rawFile;
       try {
         fileToUpload = await compressImage(rawFile, { maxDimension: 1200, targetMaxBytes: 500 * 1024 });
@@ -66,16 +84,15 @@ export const saveMessPhoto = async ({ date, mealCategory, photoCategory, uploade
       const safeName = fileToUpload.name ? fileToUpload.name.replace(/[^a-zA-Z0-9.-]/g, '_') : 'photo.jpg';
       const storagePath = `mess-photos/${targetDate}/${timestamp}_${safeName}`;
       
-      // 2. Upload to native Firebase Storage - NO silent inline data-URL fallback!
-      try {
-        const downloadUrl = await uploadPhotoWithTimeout(fileToUpload, storagePath);
-        urls.push(downloadUrl);
-      } catch (storageErr) {
-        console.error('[saveMessPhoto] Cloud Storage upload error:', storageErr);
-        throw new Error('Photo upload service is currently unavailable. Please check your connection or contact support.');
-      }
+      // 2. Upload to native Firebase Storage with real progress
+      const downloadUrl = await uploadPhoto(fileToUpload, storagePath, (progressData) => {
+        onProgress?.({ ...progressData, currentFile: i + 1, totalFiles });
+      });
+      urls.push(downloadUrl);
     }
     
+    // 3. Save metadata document to Firestore
+    onProgress?.({ stage: 'SAVING_METADATA', progress: 100 });
     const photoData = {
       date: targetDate,
       mealCategory,
@@ -89,6 +106,7 @@ export const saveMessPhoto = async ({ date, mealCategory, photoCategory, uploade
     };
     
     const docRef = await addDoc(collection(firestoreDb, 'mess_photos'), photoData);
+    onProgress?.({ stage: 'COMPLETE', progress: 100 });
     return { id: docRef.id, ...photoData };
   } catch (err) {
     console.error('Failed to save mess photo:', err);

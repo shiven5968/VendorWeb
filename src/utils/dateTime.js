@@ -82,3 +82,29 @@ export function isTodayInCollege(targetDate) {
     : getCollegeDateString(targetDate);
   return targetStr === getCollegeDateString();
 }
+
+/**
+ * Returns a college date string for N days in the past in Asia/Kolkata.
+ */
+export function getPastCollegeDateString(daysAgo = 0) {
+  const d = new Date();
+  d.setDate(d.getDate() - daysAgo);
+  return getCollegeDateString(d);
+}
+
+/**
+ * Formats a timestamp into full date and time string in Asia/Kolkata (IST).
+ * Example: "04 Sep 2026, 05:30 PM IST"
+ */
+export function formatCollegeDateTime(date = new Date()) {
+  const formatter = new Intl.DateTimeFormat('en-IN', {
+    timeZone: COLLEGE_TIMEZONE,
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true
+  });
+  return `${formatter.format(date)} IST`;
+}

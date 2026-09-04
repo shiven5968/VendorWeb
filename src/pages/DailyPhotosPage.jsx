@@ -16,6 +16,8 @@ export const DailyPhotosPage = () => {
   const [notes, setNotes] = useState('');
   
   const [submitting, setSubmitting] = useState(false);
+  const [uploadStage, setUploadStage] = useState('IDLE'); // 'IDLE' | 'COMPRESSING' | 'UPLOADING' | 'SAVING_METADATA' | 'COMPLETE' | 'FAILED'
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
 
@@ -31,17 +33,29 @@ export const DailyPhotosPage = () => {
     }
     setError('');
     setSubmitting(true);
+    setUploadStage('COMPRESSING');
+    setUploadProgress(0);
     
     try {
       await uploadMessPhoto(
         { date: selectedDate, mealCategory: selectedMealCategory, photoCategory: selectedPhotoCategory, notes },
-        selectedFiles
+        selectedFiles,
+        (progressInfo) => {
+          if (progressInfo.stage) setUploadStage(progressInfo.stage);
+          if (typeof progressInfo.progress === 'number') setUploadProgress(progressInfo.progress);
+        }
       );
+      setUploadStage('COMPLETE');
       setSubmitted(true);
       setSelectedFiles([]);
       setNotes('');
-      setTimeout(() => setSubmitted(false), 3000);
+      setTimeout(() => {
+        setSubmitted(false);
+        setUploadStage('IDLE');
+        setUploadProgress(0);
+      }, 3000);
     } catch (err) {
+      setUploadStage('FAILED');
       setError(err.message || 'Failed to upload photos.');
     } finally {
       setSubmitting(false);
@@ -102,7 +116,29 @@ export const DailyPhotosPage = () => {
           <div>
             <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Photos (Max 5)</label>
             <PhotoUpload maxFiles={5} onFilesSelected={setSelectedFiles} disabled={submitting} />
-            {error && <p className="text-rose-500 text-xs mt-2 font-medium">{error}</p>}
+            
+            {/* Live Progress Bar */}
+            {submitting && uploadStage === 'UPLOADING' && (
+              <div className="mt-3 space-y-1">
+                <div className="flex justify-between text-[11px] font-bold text-slate-600 dark:text-slate-300">
+                  <span>Uploading to Cloud Storage...</span>
+                  <span>{uploadProgress}%</span>
+                </div>
+                <div className="w-full bg-slate-200 dark:bg-slate-700 h-2 rounded-full overflow-hidden">
+                  <div
+                    className="bg-emerald-500 h-full rounded-full transition-all duration-300"
+                    style={{ width: `${uploadProgress}%` }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {error && (
+              <div className="mt-3 p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-300 text-xs font-semibold flex items-start space-x-2">
+                <span className="font-bold">Error:</span>
+                <span>{error}</span>
+              </div>
+            )}
           </div>
 
           <button
@@ -111,7 +147,12 @@ export const DailyPhotosPage = () => {
             className={`w-full py-2.5 rounded-xl text-xs font-bold flex items-center justify-center space-x-2 transition-all ${submitting ? 'bg-slate-200 dark:bg-slate-800 text-slate-500 cursor-not-allowed' : submitted ? 'bg-emerald-600 text-white' : 'bg-emerald-600 hover:bg-emerald-500 text-white'}`}
           >
             {submitting ? (
-              <span>Uploading...</span>
+              <span>
+                {uploadStage === 'COMPRESSING' ? 'Compressing image...' :
+                 uploadStage === 'UPLOADING' ? `Uploading... ${uploadProgress}%` :
+                 uploadStage === 'SAVING_METADATA' ? 'Saving photo details...' :
+                 'Processing...'}
+              </span>
             ) : submitted ? (
               <><CheckCircle2 className="w-4 h-4" /><span>Published!</span></>
             ) : (

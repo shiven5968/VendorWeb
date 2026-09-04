@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { 
   LayoutDashboard, UtensilsCrossed, Camera, ClipboardCheck, Star, FileText, 
-  BarChart3, CheckCircle, Check, Plus, Edit3, Trash2, Shield, AlertTriangle
+  BarChart3, CheckCircle, Check, Plus, Edit3, Trash2, Shield, AlertTriangle, Award
 } from 'lucide-react';
 import { 
   StatCard, StatusBadge, EmptyState, DashboardCard, 
@@ -12,6 +12,7 @@ import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGri
 import { clsx } from 'clsx';
 
 import { formatCollegeDateDisplay, getCollegeDateString } from '../utils/dateTime';
+import { StudentSatisfactionModule } from '../components/satisfaction/StudentSatisfactionModule';
 
 export const WardenDashboard = ({ initialTab = 'overview' }) => {
   const { 
@@ -102,6 +103,7 @@ export const WardenDashboard = ({ initialTab = 'overview' }) => {
     { id: 'menu', icon: UtensilsCrossed, label: 'Menu Oversight' },
     { id: 'photos', icon: Camera, label: 'Mess Photos' },
     { id: 'hygiene', icon: ClipboardCheck, label: 'Hygiene Reports' },
+    { id: 'satisfaction', icon: Award, label: 'Student Satisfaction' },
     { id: 'ratings', icon: Star, label: 'Ratings' },
     { id: 'complaints', icon: FileText, label: 'Complaints' },
     { id: 'analytics', icon: BarChart3, label: 'Analytics' }
@@ -524,6 +526,19 @@ export const WardenDashboard = ({ initialTab = 'overview' }) => {
               )}
             </div>
           </DashboardCard>
+        );
+
+      // ── TAB: STUDENT SATISFACTION ──────────────────────────────────────────
+      case 'satisfaction':
+        return (
+          <StudentSatisfactionModule
+            mode="officials"
+            allRatings={allRatings}
+            allComplaints={allComplaints}
+            allMeals={meals}
+            hygieneChecks={hygieneChecks}
+            onNavigate={(tab) => setActiveTab(tab)}
+          />
         );
 
       // ── TAB 5: RATINGS ──────────────────────────────────────────────────────

@@ -18,11 +18,13 @@ import {
   AlertTriangle,
   Upload,
   Check,
-  FileText
+  FileText,
+  Award
 } from 'lucide-react';
 import { formatCollegeDateDisplay, getCollegeDateString } from '../utils/dateTime';
 import { DailyPhotosPage } from './DailyPhotosPage';
 import { HygieneCheckPage } from './HygieneCheckPage';
+import { StudentSatisfactionModule } from '../components/satisfaction/StudentSatisfactionModule';
 
 export const MessCommitteeDashboard = ({ initialTab = 'overview' }) => {
   const { 
@@ -70,6 +72,7 @@ export const MessCommitteeDashboard = ({ initialTab = 'overview' }) => {
     { id: 'menu', label: 'Menu Studio', icon: UtensilsCrossed },
     { id: 'photos', label: 'Daily Photos', icon: Camera, count: todayPhotos.length },
     { id: 'hygiene', label: 'Hygiene Reports', icon: ClipboardCheck },
+    { id: 'satisfaction', label: 'Student Satisfaction', icon: Award },
     { id: 'ratings', label: 'Ratings & Reviews', icon: Star },
     { id: 'complaints', label: 'Complaints', icon: MessageSquare, count: pendingComplaints.length }
   ];
@@ -473,6 +476,20 @@ export const MessCommitteeDashboard = ({ initialTab = 'overview' }) => {
             <div>
               <HygieneCheckPage />
             </div>
+          )}
+
+          {/* ========================================================================= */}
+          {/* TAB: STUDENT SATISFACTION */}
+          {/* ========================================================================= */}
+          {activeTab === 'satisfaction' && (
+            <StudentSatisfactionModule
+              mode="committee"
+              allRatings={allRatings}
+              allComplaints={allComplaints}
+              allMeals={meals}
+              hygieneChecks={hygieneChecks}
+              onNavigate={(tab) => setActiveTab(tab)}
+            />
           )}
 
           {/* ========================================================================= */}

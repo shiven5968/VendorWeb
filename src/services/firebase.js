@@ -35,6 +35,14 @@ export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
 
+// Fast failure for storage operations to prevent indefinite hanging on unprovisioned buckets
+if (storage) {
+  try {
+    storage.maxUploadRetryTime = 15000;
+    storage.maxOperationRetryTime = 15000;
+  } catch (e) {}
+}
+
 // Enable local persistence so session persists across refreshes & tabs
 if (typeof window !== 'undefined') {
   try {
