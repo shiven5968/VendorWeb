@@ -261,5 +261,33 @@ service cloud.firestore {
       // Only serverless Admin SDK with verified Razorpay payment writes subscriptions
       allow write: if false;
     }
+
+    // ===============================================================
+    // 13. DAILY MESS PHOTOS (/mess_photos/{photoId})
+    // ===============================================================
+    match /mess_photos/{photoId} {
+      // Authenticated users can view daily meal and inspection photos
+      allow read: if isAuthenticated();
+
+      // ONLY authorized Mess Committee & Chief Warden can upload mess photo metadata
+      allow create, update: if isStaff();
+
+      // Only Chief Warden can delete photo records
+      allow delete: if isWarden();
+    }
+
+    // ===============================================================
+    // 14. HYGIENE & AUDIT CHECKS (/hygiene_checks/{checkId})
+    // ===============================================================
+    match /hygiene_checks/{checkId} {
+      // Authenticated users can view daily hygiene audit reports
+      allow read: if isAuthenticated();
+
+      // ONLY authorized Mess Committee & Chief Warden can submit hygiene checks
+      allow create, update: if isStaff();
+
+      // Only Chief Warden can delete hygiene audit logs
+      allow delete: if isWarden();
+    }
   }
 }

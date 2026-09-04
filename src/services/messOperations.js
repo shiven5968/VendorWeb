@@ -54,7 +54,17 @@ export const saveMessPhoto = async ({ date, mealCategory, photoCategory, uploade
       const safeName = file.name ? file.name.replace(/[^a-zA-Z0-9.-]/g, '_') : 'photo.jpg';
       const path = `mess-photos/${targetDate}/${timestamp}_${safeName}`;
       
-      const url = await uploadPhotoWithTimeout(file, path);
+      let url;
+      try {
+        url = await uploadPhotoWithTimeout(file, path);
+      } catch (storageErr) {
+        console.warn('[saveMessPhoto] Storage notice (bucket unprovisioned or offline), using inline fallback:', storageErr.message);
+        url = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.readAsDataURL(file);
+        });
+      }
       urls.push(url);
     }
     

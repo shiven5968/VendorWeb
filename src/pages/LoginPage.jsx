@@ -128,7 +128,7 @@ export const LoginPage = ({ initialRole = 'student', onBackToRoles }) => {
 
     const cleanIdentifier = (loginData.identifier || '').trim();
     if (!cleanIdentifier) {
-      setErrorMessage(activeRole === 'student' ? 'Please enter your Admission Number.' : 'Please enter your official college email.');
+      setErrorMessage(activeRole === 'student' ? 'Please enter your Admission Number or college email.' : 'Please enter your official college email.');
       return;
     }
     if (!loginData.password) {
@@ -136,10 +136,12 @@ export const LoginPage = ({ initialRole = 'student', onBackToRoles }) => {
       return;
     }
 
-    // Student validation: prevent email autofill confusion
+    // Student validation: allow Admission Number OR official @abes.ac.in email
     if (activeRole === 'student' && cleanIdentifier.includes('@')) {
-      setErrorMessage('Please enter your official Admission Number (e.g. 2025B01011362), not your email address.');
-      return;
+      if (!cleanIdentifier.toLowerCase().endsWith('@abes.ac.in')) {
+        setErrorMessage('Please enter a valid ABES college email ending with @abes.ac.in');
+        return;
+      }
     }
 
     // Role-specific pre-check for ABES Officials
@@ -447,7 +449,7 @@ export const LoginPage = ({ initialRole = 'student', onBackToRoles }) => {
           <form onSubmit={handleLoginSubmit} className="space-y-3.5">
             <div>
               <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
-                {activeRole === 'student' ? 'Admission Number' : 'Official College Email'}
+                {activeRole === 'student' ? 'Admission Number or College Email' : 'Official College Email'}
               </label>
               <div className="relative">
                 {activeRole === 'student' ? (
@@ -464,8 +466,7 @@ export const LoginPage = ({ initialRole = 'student', onBackToRoles }) => {
                     autoComplete="off"
                     autoCorrect="off"
                     spellCheck="false"
-                    autoCapitalize="characters"
-                    placeholder="e.g. 2025B01011362"
+                    placeholder="e.g. 2025B01011362 or student@abes.ac.in"
                     value={loginData.identifier}
                     onChange={handleLoginChange}
                     className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500/20"

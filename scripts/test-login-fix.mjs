@@ -7,25 +7,27 @@ console.log('--- Starting Student Login Bug Fix Verification Suite ---');
 function validateStudentLogin(identifier, password) {
   const cleanIdentifier = (identifier || '').trim();
   if (!cleanIdentifier) {
-    return { valid: false, error: 'Please enter your Admission Number.' };
+    return { valid: false, error: 'Please enter your Admission Number or college email.' };
   }
   if (!password) {
     return { valid: false, error: 'Please enter your password.' };
   }
   if (cleanIdentifier.includes('@')) {
-    return { 
-      valid: false, 
-      error: 'Please enter your official Admission Number (e.g. 2025B01011362), not your email address.' 
-    };
+    if (!cleanIdentifier.toLowerCase().endsWith('@abes.ac.in')) {
+      return { 
+        valid: false, 
+        error: 'Please enter a valid ABES college email ending with @abes.ac.in' 
+      };
+    }
   }
   return { valid: true, cleanIdentifier };
 }
 
-// Test D: Empty admission number
+// Test D: Empty admission number / email
 const resD = validateStudentLogin('', 'mypassword');
 assert.strictEqual(resD.valid, false);
-assert.strictEqual(resD.error, 'Please enter your Admission Number.');
-console.log('✓ Test D Passed: Empty admission number triggers required validation');
+assert.strictEqual(resD.error, 'Please enter your Admission Number or college email.');
+console.log('✓ Test D Passed: Empty identifier triggers required validation');
 
 // Test E: Empty password
 const resE = validateStudentLogin('2025B01011362', '');
@@ -33,11 +35,17 @@ assert.strictEqual(resE.valid, false);
 assert.strictEqual(resE.error, 'Please enter your password.');
 console.log('✓ Test E Passed: Empty password triggers required validation');
 
-// Test Issue 2: Email in admission number field
-const resEmail = validateStudentLogin('parth.25b15310212@abes.ac.in', 'password123');
-assert.strictEqual(resEmail.valid, false);
-assert(resEmail.error.includes('not your email address'));
-console.log('✓ Issue 2 Guard Passed: Email in student admission field is intercepted with clear guidance');
+// Test: Invalid non-ABES email in student login
+const resInvalidEmail = validateStudentLogin('student@gmail.com', 'password123');
+assert.strictEqual(resInvalidEmail.valid, false);
+assert(resInvalidEmail.error.includes('@abes.ac.in'));
+console.log('✓ Non-ABES email rejected: Intercepted with domain guidance');
+
+// Test: Valid ABES email in student login
+const resValidEmail = validateStudentLogin('parth.25b15310212@abes.ac.in', 'password123');
+assert.strictEqual(resValidEmail.valid, true);
+assert.strictEqual(resValidEmail.cleanIdentifier, 'parth.25b15310212@abes.ac.in');
+console.log('✓ Valid ABES email allowed: Both Admission Number and College Email permitted');
 
 // Test Valid Admission Number normalization
 const resValid = validateStudentLogin('  2025b01011362  ', 'password123');

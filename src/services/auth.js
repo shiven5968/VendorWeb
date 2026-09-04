@@ -521,31 +521,34 @@ export const signInUser = async (emailOrAdmission, password) => {
   }
 
   // ── STEP 5: Self-heal missing admission_map (safe — only for authenticated owner) ──
-  if (!isEmailLogin) {
-    const canonicalAdmission = normalizeAdmissionNumber(cleanInput);
-    const profileAdmission = normalizeAdmissionNumber(profile.admissionNumber || cleanInput);
+  const targetAdmission = normalizeAdmissionNumber(
+    !isEmailLogin ? cleanInput : (profile?.admissionNumber || '')
+  );
 
-    // Only self-heal if profile confirms same admission number
-    if (profileAdmission === canonicalAdmission) {
+  if (targetAdmission && (profile?.role === 'student' || !isEmailLogin)) {
+    const profileAdmission = normalizeAdmissionNumber(profile?.admissionNumber || cleanInput);
+
+    // Only self-heal if profile confirms same admission number or profile has no admissionNumber yet
+    if (profileAdmission === targetAdmission || !profile?.admissionNumber) {
       try {
-        const existingMap = await getDoc(doc(db, 'admission_map', canonicalAdmission));
+        const existingMap = await getDoc(doc(db, 'admission_map', targetAdmission));
         if (!existingMap.exists()) {
           // Map is missing — recreate safely (this user is authenticated, owns this UID)
-          await setDoc(doc(db, 'admission_map', canonicalAdmission), {
-            admissionNumber: canonicalAdmission,
+          await setDoc(doc(db, 'admission_map', targetAdmission), {
+            admissionNumber: targetAdmission,
             email: targetEmail,
             uid: firebaseUser.uid,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
           });
-          console.info('[signInUser] admission_map self-healed for', canonicalAdmission);
+          console.info('[signInUser] admission_map self-healed for', targetAdmission);
         } else {
           const mapData = existingMap.data();
           // Verify the map points to the right uid — if not, flag integrity issue
           if (mapData.uid !== firebaseUser.uid) {
             console.error(
               '[signInUser] INTEGRITY VIOLATION: admission_map uid mismatch for',
-              canonicalAdmission
+              targetAdmission
             );
             throw new Error(
               'Your account information needs verification. Please contact support.'

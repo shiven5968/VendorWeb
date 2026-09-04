@@ -20,8 +20,7 @@ service firebase.storage {
         getUserRole() == 'mess_committee' ||
         getUserRole() == 'committee' ||
         (request.auth.token.email != null && (
-          request.auth.token.email == 'warden@abes.ac.in' ||
-          request.auth.token.email == 'committee@abes.ac.in' ||
+          request.auth.token.email in ['anita@abes.ac.in', 'alok@abes.ac.in', 'warden@abes.ac.in', 'committee@abes.ac.in'] ||
           request.auth.token.email.matches('^warden.*@abes\\.ac\\.in$') ||
           request.auth.token.email.matches('^committee.*@abes\\.ac\\.in$')
         ))
@@ -45,6 +44,19 @@ service firebase.storage {
       allow read: if true;
       allow create, update: if isStaff()
                    && request.resource.size <= 5 * 1024 * 1024
+                   && request.resource.contentType.matches('image/(jpeg|jpg|png|webp)');
+      allow delete: if isStaff();
+    }
+
+    // SECTION 2: DAILY MESS PHOTOS (/mess-photos/{allPaths=**})
+    // - Public/Student/Staff read access for daily meal and kitchen inspection photos
+    // - ONLY authorized Mess Committee & Chief Warden can upload or manage mess photos
+    // - Maximum file size: 10 MB (10 * 1024 * 1024 bytes)
+    // - Allowed MIME formats: JPG, JPEG, PNG, WEBP
+    match /mess-photos/{allPaths=**} {
+      allow read: if true;
+      allow create, update: if isStaff()
+                   && request.resource.size <= 10 * 1024 * 1024
                    && request.resource.contentType.matches('image/(jpeg|jpg|png|webp)');
       allow delete: if isStaff();
     }
