@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { X, Star, ArrowLeft, Check, Send, Clock, ShieldAlert } from 'lucide-react';
+import { OFFICIAL_MEAL_TIMINGS } from '../services/mealTiming';
 
 export const MealDetailModal = () => {
   const { 
@@ -88,7 +89,7 @@ export const MealDetailModal = () => {
             <div className="absolute bottom-3 left-4 right-4 text-white flex items-end justify-between">
               <div>
                 <h2 className="text-lg sm:text-xl font-black">{meal.name}</h2>
-                <span className="text-xs text-slate-300 font-semibold">{meal.time}</span>
+                <span className="text-xs text-slate-300 font-semibold">{OFFICIAL_MEAL_TIMINGS[meal.category]?.label || meal.time}</span>
               </div>
 
               <div className="bg-black/70 backdrop-blur-md text-white px-3 py-1 rounded-xl text-xs font-black flex items-center space-x-1 shadow-md">
@@ -106,7 +107,7 @@ export const MealDetailModal = () => {
         ) : (
           <div className="p-6 bg-gradient-to-br from-slate-800 to-slate-900 text-white text-center">
             <h2 className="text-lg sm:text-xl font-black">{meal.name}</h2>
-            <span className="text-xs text-slate-300 font-semibold">{meal.time}</span>
+            <span className="text-xs text-slate-300 font-semibold">{OFFICIAL_MEAL_TIMINGS[meal.category]?.label || meal.time}</span>
           </div>
         )}
 

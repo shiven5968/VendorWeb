@@ -479,10 +479,11 @@ export const AppProvider = ({ children }) => {
       throw err;
     }
 
-    // Check if user already submitted a rating for this meal
-    const existing = getUserRating(mealId);
+    // Check if user already submitted a rating for this meal occurrence
+    const collegeDateToday = getCollegeDateString(currentTime || new Date());
+    const existing = getUserRating(mealId, collegeDateToday);
     if (existing) {
-      const err = new Error('Rating already submitted for this meal. Repeated or modified ratings are not allowed.');
+      const err = new Error('Rating already submitted for this meal occurrence. Repeated or modified ratings are not allowed.');
       addNotification('Already Rated', err.message, 'info');
       throw err;
     }
@@ -493,6 +494,10 @@ export const AppProvider = ({ children }) => {
         userName: currentUser.name,
         mealId,
         mealName: meal?.name || 'Mess Meal',
+        mealCategory: meal?.category || '',
+        hostelBlock: currentUser.hostelBlock || '',
+        occurrenceDate: collegeDateToday,
+        mealOccurrenceId: `${collegeDateToday}_${mealId}`,
         rating: stars,
         feedback,
         tags
@@ -510,11 +515,24 @@ export const AppProvider = ({ children }) => {
     }
   };
 
-  const getUserRating = (mealId) => {
+  const getUserRating = (mealId, targetDate = getCollegeDateString(currentTime || new Date())) => {
     if (!currentUser) return null;
     const uid = currentUser.uid || currentUser.id;
-    return (userRatings || []).find(r => r.userId === uid && r.mealId === mealId) ||
-           (allRatings || []).find(r => r.userId === uid && r.mealId === mealId) || null;
+
+    const findInList = (list) => (list || []).find(r => {
+      if (r.userId !== uid) return false;
+      const mealMatches = r.mealId === mealId || 
+        (r.mealOccurrenceId && r.mealOccurrenceId.endsWith(`_${mealId}`));
+      if (!mealMatches) return false;
+
+      if (targetDate) {
+        const rDate = r.date || r.occurrenceDate || (r.timestamp ? getCollegeDateString(new Date(r.timestamp)) : null);
+        return rDate === targetDate;
+      }
+      return true;
+    });
+
+    return findInList(userRatings) || findInList(allRatings) || null;
   };
 
   // 4. COMPLAINTS

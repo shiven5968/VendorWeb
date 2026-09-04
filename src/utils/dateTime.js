@@ -267,3 +267,18 @@ export function getPastCollegeWeeks(count = 4, referenceDate = new Date()) {
 
   return weeks;
 }
+
+/**
+ * Returns the YYYY-MM-DD date string for a specific weekday in the current college week.
+ * Example: getCollegeDateForDayInCurrentWeek('Friday') => '2026-09-04'
+ */
+export function getCollegeDateForDayInCurrentWeek(dayName, referenceDate = new Date()) {
+  const weekInfo = getCollegeWeekInfo(referenceDate);
+  const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+  const dayIdx = days.indexOf(dayName);
+  if (dayIdx === -1) return getCollegeDateString(referenceDate);
+  
+  const [y, m, d] = weekInfo.weekStartStr.split('-').map(Number);
+  const targetDate = new Date(Date.UTC(y, m - 1, d + dayIdx));
+  return targetDate.toISOString().split('T')[0];
+}

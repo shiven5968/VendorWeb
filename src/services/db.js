@@ -3,7 +3,8 @@
 
 import { doc, collection, setDoc, addDoc, updateDoc, deleteDoc, getDocs, increment } from 'firebase/firestore';
 import { db as firestoreDb, isFirebaseConfigured } from './firebase.js';
-import { getCollegeWeekInfo } from '../utils/dateTime.js';
+import { getCollegeWeekInfo, getCollegeDateString } from '../utils/dateTime.js';
+import { OFFICIAL_MEAL_TIMINGS } from './mealTiming.js';
 
 const DB_PREFIX = 'messmates_launch_';
 
@@ -134,7 +135,7 @@ export const INITIAL_MEALS_DB = [
     name: 'Veg Fried Idli & Sambhar',
     day: 'Monday',
     category: 'Breakfast',
-    time: '07:30 AM - 09:30 AM',
+    time: '07:20 AM - 08:30 AM',
     items: 'Veg Fried Idli, Plain Idli, Sambhar, Coconut Chutney, Tea, Milk, Fruit',
     servingUsed: '150g Idli (3 pcs), 150g Sambhar, 50g Coconut Chutney, 5g frying oil',
     image: '/meal-images/veg-fried-idli.jpg',
@@ -151,7 +152,7 @@ export const INITIAL_MEALS_DB = [
     name: 'Mix Veg & Rajma Masala',
     day: 'Monday',
     category: 'Lunch',
-    time: '12:30 PM - 02:30 PM',
+    time: '12:20 PM - 02:00 PM',
     items: 'Mix Veg, Rajma, Roti, Rice, Mix Salad, Boondi Raita, Lemon',
     servingUsed: '150g Rajma Masala, 150g Mix Veg, 200g Roti (4 pcs), 250g Steamed Rice, 50g Boondi Raita, 50g Salad',
     image: '/meal-images/rajma-masala.jpg',
@@ -185,7 +186,7 @@ export const INITIAL_MEALS_DB = [
     name: 'Arhar Dal & Aloo Gobhi',
     day: 'Monday',
     category: 'Dinner',
-    time: '07:30 PM - 09:30 PM',
+    time: '07:40 PM - 09:00 PM',
     items: 'Arhar Daal, Aloo Gobhi, Rice, Roti, Suji Halwa, Achar, Chhachh',
     servingUsed: '150g Arhar Dal, 150g Aloo Gobhi, 200g Roti (4 pcs), 250g Steamed Rice, 50g Suji Halwa, 15g Achar',
     image: '/meal-images/arhar-dal-aloo-gobhi.jpg',
@@ -204,7 +205,7 @@ export const INITIAL_MEALS_DB = [
     name: 'Matar Kulche',
     day: 'Tuesday',
     category: 'Breakfast',
-    time: '07:30 AM - 09:30 AM',
+    time: '07:20 AM - 08:30 AM',
     items: 'Matar Kulche, Pickle, Milk, Tea, Fruit',
     servingUsed: '120g Kulcha (2 pcs), 150g Matar Chaat Gravy, 20g Garnish/Pickle',
     image: '/meal-images/matar-kulche.jpg',
@@ -221,7 +222,7 @@ export const INITIAL_MEALS_DB = [
     name: 'Aloo Tamatar Sabji & Tahri',
     day: 'Tuesday',
     category: 'Lunch',
-    time: '12:30 PM - 02:30 PM',
+    time: '12:20 PM - 02:00 PM',
     items: 'Tahri, Aloo Tamatar Sabji, Roti, Salad, Curd, Lemon, Hari Chutney',
     servingUsed: '250g Vegetable Tahri, 150g Aloo Tamatar Sabji, 200g Roti (4 pcs), 50g Curd, 50g Salad & Chutney',
     image: '/meal-images/aloo-tamatar-tahri.jpg',
@@ -255,7 +256,7 @@ export const INITIAL_MEALS_DB = [
     name: 'Kali Masoor Dal & Aloo Beans',
     day: 'Tuesday',
     category: 'Dinner',
-    time: '07:30 PM - 09:30 PM',
+    time: '07:40 PM - 09:00 PM',
     items: 'Kali Masoor Dal, Aloo Beans, Rice, Roti, Ice Cream, Mix Salad, Achar',
     servingUsed: '150g Kali Masoor Dal, 150g Aloo Beans, 200g Roti (4 pcs), 250g Steamed Rice, 50g Vanilla Ice Cream',
     image: '/meal-images/kali-masoor-aloo-beans.jpg',
@@ -274,7 +275,7 @@ export const INITIAL_MEALS_DB = [
     name: 'Aloo Paratha',
     day: 'Wednesday',
     category: 'Breakfast',
-    time: '07:30 AM - 09:30 AM',
+    time: '07:20 AM - 08:30 AM',
     items: 'Aloo Paratha, Pickle, Tea, Fruit',
     servingUsed: '200g Aloo Stuffed Paratha (2 pcs), 10g Tawa Oil, 20g Pickle',
     image: '/meal-images/aloo-paratha.jpg',
@@ -291,7 +292,7 @@ export const INITIAL_MEALS_DB = [
     name: 'Kaabli Chhole & Kashifal',
     day: 'Wednesday',
     category: 'Lunch',
-    time: '12:30 PM - 02:30 PM',
+    time: '12:20 PM - 02:00 PM',
     items: 'Kaabli Chhole (Small), Kashifal, Roti, Jeera Rice, Mix Salad, Curd, Lemon',
     servingUsed: '150g Kaabli Chhole, 150g Kashifal (Kaddu), 200g Roti (4 pcs), 250g Jeera Rice, 50g Curd, 50g Salad',
     image: '/meal-images/kaabli-chhole.jpg',
@@ -325,7 +326,7 @@ export const INITIAL_MEALS_DB = [
     name: 'Butter Paneer Masala',
     day: 'Wednesday',
     category: 'Dinner',
-    time: '07:30 PM - 09:30 PM',
+    time: '07:40 PM - 09:00 PM',
     items: 'Butter Paneer Masala OR Kadhai Paneer, Aloo Jeera, Roti/Puri, Pulao, Mix Salad, Achar',
     servingUsed: '150g Butter Paneer Masala (50g paneer), 100g Aloo Jeera, 200g Roti (4 pcs), 250g Vegetable Pulao',
     image: '/meal-images/butter-paneer.jpg',
@@ -344,7 +345,7 @@ export const INITIAL_MEALS_DB = [
     name: 'Pav Bhaji',
     day: 'Thursday',
     category: 'Breakfast',
-    time: '07:30 AM - 09:30 AM',
+    time: '07:20 AM - 08:30 AM',
     items: 'Pav Bhaji, Hot Tea, Milk, Butter, Fruit',
     servingUsed: '100g Pav Breads (2 pcs), 200g Mashed Veggie Bhaji, 10g Total Butter',
     image: '/meal-images/pav-bhaji.jpg',
@@ -361,7 +362,7 @@ export const INITIAL_MEALS_DB = [
     name: 'Kadhi Rice & Aloo Pyaj Sabji',
     day: 'Thursday',
     category: 'Lunch',
-    time: '12:30 PM - 02:30 PM',
+    time: '12:20 PM - 02:00 PM',
     items: 'Aloo Pyaj Sabji, Kadhi, Rice, Roti, Salad, Papad Fried, Lemon',
     servingUsed: '150g Besan Kadhi with Pakodas, 150g Aloo Pyaj Sabji, 200g Roti (4 pcs), 250g Rice, 15g Fried Papad',
     image: '/meal-images/kadhi-rice.jpg',
@@ -395,7 +396,7 @@ export const INITIAL_MEALS_DB = [
     name: 'Daal Makhani & Mix Veg',
     day: 'Thursday',
     category: 'Dinner',
-    time: '07:30 PM - 09:30 PM',
+    time: '07:40 PM - 09:00 PM',
     items: 'Daal Makhani, Mix Veg, Roti, Rice, Gulab Jamun, Chhachh, Achar',
     servingUsed: '150g Dal Makhani, 150g Mix Veg, 200g Roti (4 pcs), 250g Steamed Rice, 45g Gulab Jamun (1 pc)',
     image: '/meal-images/dal-makhani-mix-veg.jpg',
@@ -414,7 +415,7 @@ export const INITIAL_MEALS_DB = [
     name: 'Gobhi Paratha',
     day: 'Friday',
     category: 'Breakfast',
-    time: '07:30 AM - 09:30 AM',
+    time: '07:20 AM - 08:30 AM',
     items: 'Gobhi Paratha, Pickle, Curd, Tea, Banana',
     servingUsed: '200g Gobhi Stuffed Paratha (2 pcs), 10g Tawa Oil, 20g Pickle',
     image: '/meal-images/aloo-paratha.jpg',
@@ -431,7 +432,7 @@ export const INITIAL_MEALS_DB = [
     name: 'Mix Daal, Tarohi & Roti',
     day: 'Friday',
     category: 'Lunch',
-    time: '12:30 PM - 02:30 PM',
+    time: '12:20 PM - 02:00 PM',
     items: 'Chana Dal, Shimla Soyabean, Roti, Rice, Mix Salad, Curd, Lemon',
     servingUsed: '150g Chana/Mix Dal, 150g Shimla Soyabean Sabzi, 200g Roti (4 pcs), 250g Rice, 50g Curd',
     image: '/meal-images/mix-dal-tarohi.jpg',
@@ -465,7 +466,7 @@ export const INITIAL_MEALS_DB = [
     name: 'Arhar Daal, Lauki',
     day: 'Friday',
     category: 'Dinner',
-    time: '07:30 PM - 09:30 PM',
+    time: '07:40 PM - 09:00 PM',
     items: 'Rice, Roti, Coconut Laddoo, Mix Salad, Achar',
     servingUsed: '150g Arhar Dal, 150g Lauki Sabzi, 200g Roti (4 pcs), 250g Steamed Rice, 35g Coconut Laddoo',
     image: '/meal-images/arhar-dal-lauki.jpg',
@@ -484,7 +485,7 @@ export const INITIAL_MEALS_DB = [
     name: 'Aloo Tamatar Sabji & Puri',
     day: 'Saturday',
     category: 'Breakfast',
-    time: '07:30 AM - 09:30 AM',
+    time: '07:20 AM - 08:30 AM',
     items: 'Puri, Aloo Tamatar Sabji, Jalebi, Curd, Watermelon, Tea',
     servingUsed: '120g Deep Fried Puri (4 pcs), 150g Aloo Tamatar Sabji, 40g Jalebi (2 pcs), 50g Curd',
     image: '/meal-images/puri-aloo-tamatar.jpg',
@@ -501,7 +502,7 @@ export const INITIAL_MEALS_DB = [
     name: 'Chhole Bhature & Cold Drink',
     day: 'Saturday',
     category: 'Lunch',
-    time: '12:30 PM - 02:30 PM',
+    time: '12:20 PM - 02:00 PM',
     items: 'Chhole Kabuli (Big), Bhature, Fry Mirch, Sirka Pyaz, Jeera Rice, Cold Drink, Pickle, Veg Raita',
     servingUsed: '140g Bhature (2 pcs), 150g Chhole Gravy, 100g Jeera Rice, 50g Veg Raita, 40g Pickled Onions',
     image: '/meal-images/chhole-bhature.jpg',
@@ -535,7 +536,7 @@ export const INITIAL_MEALS_DB = [
     name: 'Arhar Daal, Lauki',
     day: 'Saturday',
     category: 'Dinner',
-    time: '07:30 PM - 09:30 PM',
+    time: '07:40 PM - 09:00 PM',
     items: 'Arhar Daal, Lauki, Rice, Roti, Coconut Laddoo, Mix Salad, Achar',
     servingUsed: '150g Arhar Dal, 150g Lauki Sabzi, 200g Roti (4 pcs), 250g Steamed Rice, 35g Coconut Laddoo',
     image: '/meal-images/arhar-dal-lauki.jpg',
@@ -554,7 +555,7 @@ export const INITIAL_MEALS_DB = [
     name: 'Veg Sandwich & Cornflakes',
     day: 'Sunday',
     category: 'Breakfast',
-    time: '07:30 AM - 09:30 AM',
+    time: '07:20 AM - 08:30 AM',
     items: 'Veg. Sandwich, Tomato Sauce, Cornflakes, Milk, Tea, Mix Fruit, Chat Masala',
     servingUsed: '160g Veg Sandwich, 40g Cornflakes, 150ml Toned Warm Milk, 15g Sauce',
     image: '/meal-images/veg-sandwich.jpg',
@@ -571,7 +572,7 @@ export const INITIAL_MEALS_DB = [
     name: 'Chhole Bhature & Cold Drink',
     day: 'Sunday',
     category: 'Lunch',
-    time: '12:30 PM - 02:30 PM',
+    time: '12:20 PM - 02:00 PM',
     items: 'Chhole Kabuli (Big), Bhature, Fry Mirch, Sirka Pyaz, Jeera Rice, Cold Drink, Pickle, Veg Raita',
     servingUsed: '140g Bhature (2 pcs), 150g Chhole Gravy, 100g Jeera Rice, 50g Veg Raita, 40g Sirka Pyaz',
     image: '/meal-images/chhole-bhature.jpg',
@@ -605,7 +606,7 @@ export const INITIAL_MEALS_DB = [
     name: 'Lauki Kofta & Arabi',
     day: 'Sunday',
     category: 'Dinner',
-    time: '07:30 PM - 09:30 PM',
+    time: '07:40 PM - 09:00 PM',
     items: 'Lauki Kofta, Arabi, Rice, Roti, Rice Kheer OR Sewai, Chhachh, Achar',
     servingUsed: '150g Lauki Kofta (2 pcs), 150g Masala Arabi, 200g Roti (4 pcs), 250g Steamed Rice, 75g Rice Kheer',
     image: '/meal-images/lauki-kofta-arabi.jpg',
@@ -832,7 +833,14 @@ class LaunchDatabase {
 
   // MEALS & MENU
   getAllMeals() {
-    return this.getItem('meals', INITIAL_MEALS_DB);
+    const meals = this.getItem('meals', INITIAL_MEALS_DB);
+    return meals.map(m => {
+      const officialTiming = OFFICIAL_MEAL_TIMINGS[m.category]?.label;
+      if (officialTiming && (!m.time || m.time.includes('12:30') || m.time.includes('07:30'))) {
+        return { ...m, time: officialTiming };
+      }
+      return m;
+    });
   }
 
   getDayMeals(day) {
@@ -939,12 +947,47 @@ class LaunchDatabase {
     return { score: avg, scoreDisplay: `${avg} / 5.0`, count: ratings.length };
   }
 
-  async submitRating({ userId, userName, mealId, mealName, rating, feedback = '', tags = [] }) {
+  async submitRating({ 
+    userId, 
+    userName, 
+    mealId, 
+    mealName, 
+    rating, 
+    feedback = '', 
+    tags = [],
+    date = null,
+    occurrenceDate = null,
+    mealOccurrenceId = null,
+    mealCategory = null,
+    hostelBlock = null
+  }) {
     const ratings = this.getAllRatings();
-    const existingIdx = ratings.findIndex(r => r.userId === userId && r.mealId === mealId);
+    
+    // Determine the occurrence date in Asia/Kolkata timezone
+    const resolvedDate = occurrenceDate || date || getCollegeDateString();
+    const resolvedOccurrenceId = mealOccurrenceId || `${resolvedDate}_${mealId}`;
+    const weekInfo = getCollegeWeekInfo(new Date());
+
+    // Strict duplicate check: ONLY prevent if the student already rated this specific occurrence (same date and meal)
+    const existingIdx = ratings.findIndex(r => {
+      if (r.userId !== userId) return false;
+      
+      // If rating has an explicit mealOccurrenceId matching this occurrence
+      if (r.mealOccurrenceId && r.mealOccurrenceId === resolvedOccurrenceId) {
+        return true;
+      }
+
+      // Check meal match (by mealId or mealName)
+      const mealMatches = r.mealId === mealId || (mealName && r.mealName && r.mealName.toLowerCase() === mealName.toLowerCase());
+      if (!mealMatches) return false;
+
+      // Check date match
+      const rDate = r.date || r.occurrenceDate || (r.timestamp ? getCollegeDateString(new Date(r.timestamp)) : null);
+      return rDate === resolvedDate;
+    });
 
     if (existingIdx !== -1) {
-      throw new Error('Rating already submitted for this meal. Repeated ratings or edits are not allowed.');
+      throw new Error('Rating already submitted for this meal occurrence. Repeated ratings or edits are not allowed.');
     }
 
     const ratingId = 'rat_' + Date.now();
@@ -953,6 +996,12 @@ class LaunchDatabase {
       userId,
       userName: userName || 'Student',
       mealId,
+      mealOccurrenceId: resolvedOccurrenceId,
+      date: resolvedDate,
+      occurrenceDate: resolvedDate,
+      weekId: weekInfo.weekId,
+      mealCategory: mealCategory || '',
+      hostelBlock: hostelBlock || '',
       mealName,
       rating: Number(rating),
       feedback: feedback.trim(),
@@ -977,9 +1026,24 @@ class LaunchDatabase {
     return ratingEntry;
   }
 
-  getUserRatingForMeal(userId, mealId) {
+  getUserRatingForMeal(userId, mealId, targetDate = getCollegeDateString()) {
     const ratings = this.getAllRatings();
-    return ratings.find(r => r.userId === userId && r.mealId === mealId) || null;
+    return ratings.find(r => {
+      if (r.userId !== userId) return false;
+      
+      // Match meal by ID or occurrence ID suffix
+      const mealMatches = r.mealId === mealId || 
+        (r.mealOccurrenceId && r.mealOccurrenceId.endsWith(`_${mealId}`));
+      if (!mealMatches) return false;
+
+      // If targetDate is specified, check against occurrence date
+      if (targetDate) {
+        const rDate = r.date || r.occurrenceDate || (r.timestamp ? getCollegeDateString(new Date(r.timestamp)) : null);
+        return rDate === targetDate;
+      }
+
+      return true;
+    }) || null;
   }
 
   // COMPLAINTS

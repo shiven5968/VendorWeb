@@ -21,6 +21,7 @@ import {
 import { WeeklyMenuReviewSection } from '../components/WeeklyMenuReviewSection';
 import { resolveMenuGroup } from '../config/menuGroups';
 import { formatCollegeDateDisplay, formatRatingRelativeTime } from '../utils/dateTime';
+import { OFFICIAL_MEAL_TIMINGS } from '../services/mealTiming';
 
 const MEAL_IMAGES = {
   // Breakfasts
@@ -103,20 +104,10 @@ const FULL_WEEKLY_MENU = {
 };
 
 const getMealTiming = (mealType, selectedDay) => {
-  const isWeekend = ['Saturday', 'Sunday'].includes(selectedDay);
-  if (mealType === 'Breakfast') {
-    return isWeekend ? '08:00 AM - 09:00 AM' : '07:30 AM - 08:30 AM';
+  if (selectedDay === 'Sunday' && mealType === 'Snacks') {
+    return 'OFF';
   }
-  if (mealType === 'Lunch') {
-    return isWeekend ? '12:30 PM - 02:00 PM' : '12:20 PM - 02:00 PM';
-  }
-  if (mealType === 'Snacks') {
-    return selectedDay === 'Sunday' ? 'OFF' : '05:00 PM - 06:00 PM';
-  }
-  if (mealType === 'Dinner') {
-    return '07:30 PM - 09:00 PM';
-  }
-  return '';
+  return OFFICIAL_MEAL_TIMINGS[mealType]?.label || '';
 };
 
 export const StudentDashboard = () => {

@@ -12,6 +12,8 @@ import {
   Sparkles
 } from 'lucide-react';
 import { resolveMenuGroup, getMenuGroupOptions } from '../config/menuGroups';
+import { getCollegeDateForDayInCurrentWeek } from '../utils/dateTime';
+import { OFFICIAL_MEAL_TIMINGS } from '../services/mealTiming';
 
 export const MenuPage = () => {
   const { 
@@ -114,7 +116,8 @@ export const MenuPage = () => {
             const style = categoryStyles[meal.category] || categoryStyles.Lunch;
             const CategoryIcon = style.icon;
             const stats = getMealStats ? getMealStats(meal.id) : null;
-            const userRating = getUserRating ? getUserRating(meal.id) : null;
+            const selectedDayDate = getCollegeDateForDayInCurrentWeek(selectedDay);
+            const userRating = getUserRating ? getUserRating(meal.id, selectedDayDate) : null;
 
             return (
               <div
@@ -146,9 +149,9 @@ export const MenuPage = () => {
                     </span>
 
                     {/* Timing Pill */}
-                    {meal.time && (
+                    {(meal.time || OFFICIAL_MEAL_TIMINGS[meal.category]?.label) && (
                       <span className="absolute bottom-3 left-3 px-2.5 py-0.5 rounded-full bg-black/60 backdrop-blur-md text-white text-[10px] font-semibold">
-                        {meal.time}
+                        {OFFICIAL_MEAL_TIMINGS[meal.category]?.label || meal.time}
                       </span>
                     )}
 
