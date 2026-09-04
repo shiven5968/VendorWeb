@@ -118,9 +118,8 @@ export const AppProvider = ({ children }) => {
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [notifications, setNotifications] = useState([
-    { id: 'n_1', title: 'Welcome to MessMates', message: 'Know your meal before you eat it.', time: 'Today', type: 'info', read: false }
-  ]);
+  const [notifications, setNotifications] = useState(() => []);
+  const [rewardEvents, setRewardEvents] = useState(() => []);
   const [menuApproved, setMenuApproved] = useState(false);
 
   // Theme Sync
@@ -150,11 +149,7 @@ export const AppProvider = ({ children }) => {
   useEffect(() => {
     const studentUid = authUser?.uid || currentUser?.uid;
     if (studentUid && currentRole === 'student') {
-      db.awardDailyLoginReward(studentUid).then(res => {
-        if (res && res.awarded) {
-          addNotification('Daily Login Reward 🎁', '+2 Health Points awarded for logging in today!', 'success');
-        }
-      }).catch(err => console.warn('Daily login reward notice:', err.message));
+      db.awardDailyLoginReward(studentUid).catch(err => console.warn('Daily login reward notice:', err.message));
     }
   }, [authUser?.uid, currentUser?.uid, currentRole]);
 
@@ -326,6 +321,36 @@ export const AppProvider = ({ children }) => {
       );
     }
 
+    // 12. REWARD EVENTS: Current student ledger
+    let unsubRewardEvents = () => {};
+    if (currentUid) {
+      unsubRewardEvents = onSnapshot(
+        query(collection(firestoreDb, 'reward_events'), where('userId', '==', currentUid)),
+        (snapshot) => {
+          const list = [];
+          snapshot.forEach(doc => list.push(doc.data()));
+          list.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+          setRewardEvents(list);
+        },
+        (err) => console.warn('Firestore reward_events listener:', err.message)
+      );
+    }
+
+    // 13. NOTIFICATIONS: Current user real-time notifications
+    let unsubNotifications = () => {};
+    if (currentUid) {
+      unsubNotifications = onSnapshot(
+        query(collection(firestoreDb, 'notifications'), where('userId', '==', currentUid)),
+        (snapshot) => {
+          const list = [];
+          snapshot.forEach(doc => list.push(doc.data()));
+          list.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+          setNotifications(list);
+        },
+        (err) => console.warn('Firestore notifications listener:', err.message)
+      );
+    }
+
     return () => {
       unsubMeals();
       unsubRatings();
@@ -339,6 +364,8 @@ export const AppProvider = ({ children }) => {
       unsubUsers();
       unsubMessPhotos();
       unsubHygiene();
+      unsubRewardEvents();
+      unsubNotifications();
     };
   }, [authUser?.uid, currentRole]);
 
@@ -373,6 +400,8 @@ export const AppProvider = ({ children }) => {
 
   const logout = async () => {
     await authLogout();
+    setNotifications([]);
+    setRewardEvents([]);
     setCurrentPage('dashboard');
   };
 
@@ -957,21 +986,38 @@ export const AppProvider = ({ children }) => {
     }
   };
 
-  const addNotification = (title, message, type = 'info') => {
+  const markNotificationAsRead = async (notifId) => {
+    setNotifications(prev => prev.map(n => n.id === notifId ? { ...n, read: true } : n));
+    await db.markNotificationAsRead(notifId);
+  };
+
+  const markAllNotificationsRead = async () => {
+    const unreadList = notifications.filter(n => !n.read);
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    const uid = currentUser?.uid || currentUser?.id;
+    if (uid) {
+      await db.markAllUserNotificationsRead(uid, unreadList);
+    }
+  };
+
+  const unreadCount = (notifications || []).filter(n => !n.read).length;
+
+  const addNotification = async (title, message, type = 'info') => {
+    const uid = currentUser?.uid || currentUser?.id;
     const newNotif = {
-      id: 'n_' + Date.now(),
+      id: 'n_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+      userId: uid || '',
       title,
       message,
       time: 'Just now',
       type,
-      read: false
+      read: false,
+      createdAt: new Date().toISOString()
     };
     setNotifications(prev => [newNotif, ...prev]);
-  };
-
-  const unreadCount = notifications.filter(n => !n.read).length;
-  const markAllNotificationsRead = () => {
-    setNotifications(notifications.map(n => ({ ...n, read: true })));
+    if (uid) {
+      await db.createNotification({ userId: uid, title, message, type }).catch(() => {});
+    }
   };
 
   const userBlock = currentUser?.hostelBlock || 'DNB Block';
@@ -1095,8 +1141,10 @@ export const AppProvider = ({ children }) => {
         setEditingMeal,
         isNotificationOpen,
         setIsNotificationOpen,
+        rewardEvents,
         notifications,
         unreadCount,
+        markNotificationAsRead,
         markAllNotificationsRead,
         isSearchOpen,
         setIsSearchOpen,

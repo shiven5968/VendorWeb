@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
-import { auth, isFirebaseConfigured } from '../services/firebase';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { auth, db as firestoreDb, isFirebaseConfigured } from '../services/firebase';
 import {
   signUpStudent,
   signInUser,
@@ -70,7 +71,14 @@ export const AuthProvider = ({ children }) => {
       return;
     }
 
+    let unsubProfileDoc = null;
+
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (unsubProfileDoc) {
+        unsubProfileDoc();
+        unsubProfileDoc = null;
+      }
+
       if (firebaseUser) {
         setUser(firebaseUser);
         setIsProfileLoading(true);
@@ -123,6 +131,26 @@ export const AuthProvider = ({ children }) => {
         } finally {
           setIsProfileLoading(false);
         }
+
+        // Live Firestore listener on user profile document
+        try {
+          unsubProfileDoc = onSnapshot(
+            doc(firestoreDb, 'users', firebaseUser.uid),
+            (snapshot) => {
+              if (snapshot.exists()) {
+                const liveData = snapshot.data();
+                setProfile(prev => ({
+                  ...(prev || {}),
+                  ...liveData,
+                  uid: firebaseUser.uid
+                }));
+              }
+            },
+            (err) => console.warn('[AuthContext] Profile live listener notice:', err.message)
+          );
+        } catch (subErr) {
+          console.warn('[AuthContext] Snapshot subscribe notice:', subErr.message);
+        }
       } else {
         // Genuinely signed out
         setUser(null);
@@ -134,7 +162,10 @@ export const AuthProvider = ({ children }) => {
       setIsInitialAuthLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => {
+      if (unsubProfileDoc) unsubProfileDoc();
+      unsubscribe();
+    };
   }, []);
 
   // ── LOGIN ──────────────────────────────────────────────────────────────

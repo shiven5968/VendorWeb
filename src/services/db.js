@@ -1,7 +1,7 @@
 // MessMate Launch Data & Storage Engine
 // Clean Zero-Fluff Launch State for ABES College Mess
 
-import { doc, collection, setDoc, addDoc, updateDoc, deleteDoc, getDocs, increment } from 'firebase/firestore';
+import { doc, collection, setDoc, addDoc, updateDoc, deleteDoc, getDocs, getDoc, runTransaction, query, where, increment } from 'firebase/firestore';
 import { db as firestoreDb, isFirebaseConfigured } from './firebase.js';
 import { getCollegeWeekInfo, getCollegeDateString } from '../utils/dateTime.js';
 import { OFFICIAL_MEAL_TIMINGS } from './mealTiming.js';
@@ -706,6 +706,13 @@ class LaunchDatabase {
     this.getUserRedemptions = this.getUserRedemptions.bind(this);
     this.addRewardPoints = this.addRewardPoints.bind(this);
     this.redeemReward = this.redeemReward.bind(this);
+    this.awardRewardEvent = this.awardRewardEvent.bind(this);
+    this.awardDailyLoginReward = this.awardDailyLoginReward.bind(this);
+    this.getUserRewardEvents = this.getUserRewardEvents.bind(this);
+    this.getUserNotifications = this.getUserNotifications.bind(this);
+    this.markNotificationAsRead = this.markNotificationAsRead.bind(this);
+    this.markAllUserNotificationsRead = this.markAllUserNotificationsRead.bind(this);
+    this.createNotification = this.createNotification.bind(this);
     this.memoryStore = new Map();
     this.init();
   }
@@ -721,6 +728,8 @@ class LaunchDatabase {
         localStorage.setItem(DB_PREFIX + 'protein_logs', JSON.stringify(INITIAL_PROTEIN_LOGS_DB));
         localStorage.setItem(DB_PREFIX + 'redemptions', JSON.stringify(INITIAL_REDEMPTIONS_DB));
         localStorage.setItem(DB_PREFIX + 'rewards_catalog', JSON.stringify(INITIAL_REWARDS_CATALOG));
+        localStorage.setItem(DB_PREFIX + 'reward_events', JSON.stringify([]));
+        localStorage.setItem(DB_PREFIX + 'notifications', JSON.stringify([]));
         localStorage.setItem(DB_PREFIX + 'initialized_launch_v1', 'true');
       }
     } else {
@@ -732,6 +741,8 @@ class LaunchDatabase {
       this.memoryStore.set(DB_PREFIX + 'protein_logs', INITIAL_PROTEIN_LOGS_DB);
       this.memoryStore.set(DB_PREFIX + 'redemptions', INITIAL_REDEMPTIONS_DB);
       this.memoryStore.set(DB_PREFIX + 'rewards_catalog', INITIAL_REWARDS_CATALOG);
+      this.memoryStore.set(DB_PREFIX + 'reward_events', []);
+      this.memoryStore.set(DB_PREFIX + 'notifications', []);
     }
   }
 
@@ -1020,7 +1031,14 @@ class LaunchDatabase {
 
     ratings.unshift(ratingEntry);
     // Award strictly +1 reward point for valid submitted meal rating
-    await this.addRewardPoints(userId, 1);
+    await this.awardRewardEvent({
+      userId,
+      type: 'MEAL_RATING',
+      points: 1,
+      referenceId: resolvedOccurrenceId,
+      description: mealName,
+      date: resolvedDate
+    });
 
     this.setItem('ratings', ratings);
     return ratingEntry;
@@ -1114,14 +1132,34 @@ class LaunchDatabase {
       resolvedAt = new Date().toISOString();
     }
 
+    const complaint = idx !== -1 ? complaints[idx] : null;
+    const targetUserId = complaint?.userId;
+
     if (isFirebaseConfigured) {
       try {
         const updateData = { status: newStatus };
         if (resolvedAt) updateData.resolvedAt = resolvedAt;
         await updateDoc(doc(firestoreDb, 'complaints', complaintId), updateData);
+
+        if (targetUserId) {
+          const notifId = `notif_cmp_${complaintId}_${newStatus.replace(/\s+/g, '_')}`;
+          const notifData = {
+            id: notifId,
+            userId: targetUserId,
+            type: newStatus === 'RESOLVED' ? 'success' : 'info',
+            title: `Complaint ${newStatus === 'RESOLVED' ? 'Resolved ✅' : 'Status Updated 📋'}`,
+            message: `Your complaint regarding "${complaint.category || 'Mess'}" has been updated to ${newStatus}.`,
+            read: false,
+            referenceId: complaintId,
+            createdAt: new Date().toISOString(),
+            time: 'Today'
+          };
+          await setDoc(doc(firestoreDb, 'notifications', notifId), notifData).catch(err =>
+            console.warn('Firestore complaint notification notice:', err.message)
+          );
+        }
       } catch (e) {
-        console.error('Error updating complaint status in Firestore:', e);
-        throw e;
+        console.warn('Notice: Complaint status Firestore write notice:', e.message);
       }
     }
 
@@ -1129,6 +1167,27 @@ class LaunchDatabase {
       complaints[idx].status = newStatus;
       if (resolvedAt) complaints[idx].resolvedAt = resolvedAt;
       this.setItem('complaints', complaints);
+
+      // Local notification fallback
+      if (targetUserId) {
+        const notifId = `notif_cmp_${complaintId}_${newStatus.replace(/\s+/g, '_')}`;
+        const notifs = this.getItem('notifications', []);
+        if (!notifs.some(n => n.id === notifId)) {
+          notifs.unshift({
+            id: notifId,
+            userId: targetUserId,
+            type: newStatus === 'RESOLVED' ? 'success' : 'info',
+            title: `Complaint ${newStatus === 'RESOLVED' ? 'Resolved ✅' : 'Status Updated 📋'}`,
+            message: `Your complaint regarding "${complaint.category || 'Mess'}" has been updated to ${newStatus}.`,
+            read: false,
+            referenceId: complaintId,
+            createdAt: new Date().toISOString(),
+            time: 'Today'
+          });
+          this.setItem('notifications', notifs);
+        }
+      }
+
       return complaints[idx];
     }
     return null;
@@ -1268,40 +1327,278 @@ class LaunchDatabase {
     votes.push(newVote);
     this.setItem('votes', votes);
     // Award strictly +10 reward points for valid weekly vote
-    await this.addRewardPoints(userId, 10);
+    await this.awardRewardEvent({
+      userId,
+      type: 'VOTE',
+      points: 10,
+      referenceId: voteId,
+      description: mealName ? `Weekly Feedback: ${mealName}` : 'Weekly Feedback Vote',
+      date: getCollegeDateString()
+    });
     return newVote;
   }
 
   async awardDailyLoginReward(userId) {
     if (!userId) return { awarded: false, reason: 'NO_USER' };
+    const todayStr = getCollegeDateString();
+    return await this.awardRewardEvent({
+      userId,
+      type: 'LOGIN',
+      points: 2,
+      referenceId: todayStr,
+      description: 'Daily College Login',
+      date: todayStr
+    });
+  }
 
-    const todayStr = new Date().toLocaleDateString('en-CA'); // Local 'YYYY-MM-DD'
-    const user = this.getUserById(userId);
-
-    if (user && user.lastLoginRewardDate === todayStr) {
-      return { awarded: false, reason: 'ALREADY_CLAIMED_TODAY' };
+  async awardRewardEvent({ userId, type, points, referenceId = '', description = '', date = null }) {
+    if (!userId || !type || !points) {
+      return { awarded: false, reason: 'INVALID_PARAMS', points: 0 };
     }
+
+    const eventDate = date || getCollegeDateString();
+    let eventId = '';
+    let notifTitle = '';
+    let notifMessage = '';
+
+    if (type === 'LOGIN') {
+      eventId = `login_${userId}_${eventDate}`;
+      notifTitle = 'Daily Login Reward 🎉';
+      notifMessage = '+2 Health Points awarded for logging in today!';
+    } else if (type === 'MEAL_RATING') {
+      eventId = `rating_${userId}_${referenceId || eventDate}`;
+      notifTitle = 'Meal Rating Reward ⭐';
+      notifMessage = `+1 Health Point awarded for rating ${description || 'meal'}.`;
+    } else if (type === 'VOTE') {
+      eventId = `vote_${userId}_${referenceId || eventDate}`;
+      notifTitle = 'Weekly Feedback Reward 🗳️';
+      notifMessage = `+10 Health Points awarded for reviewing ${description || 'dish'}!`;
+    } else {
+      eventId = `event_${userId}_${type}_${Date.now()}`;
+      notifTitle = 'Reward Points Earned 🎉';
+      notifMessage = `+${points} Health Points awarded!`;
+    }
+
+    const isoNow = new Date().toISOString();
+    const eventData = {
+      id: eventId,
+      userId,
+      type,
+      points: Number(points),
+      referenceId: referenceId || '',
+      date: eventDate,
+      description: description || '',
+      createdAt: isoNow
+    };
+
+    const notifId = `notif_${eventId}`;
+    const notifData = {
+      id: notifId,
+      userId,
+      type: 'success',
+      title: notifTitle,
+      message: notifMessage,
+      read: false,
+      referenceId: eventId,
+      createdAt: isoNow,
+      time: 'Today'
+    };
+
+    let awarded = false;
+    let newBalance = null;
 
     if (isFirebaseConfigured) {
       try {
-        await updateDoc(doc(firestoreDb, 'users', userId), {
-          lastLoginRewardDate: todayStr,
-          rewardPoints: increment(2)
+        const result = await runTransaction(firestoreDb, async (transaction) => {
+          const eventRef = doc(firestoreDb, 'reward_events', eventId);
+          const eventSnap = await transaction.get(eventRef);
+          if (eventSnap.exists()) {
+            return { awarded: false, reason: 'ALREADY_AWARDED', points: 0 };
+          }
+
+          const userRef = doc(firestoreDb, 'users', userId);
+          const userSnap = await transaction.get(userRef);
+
+          let currentPoints = 0;
+          if (userSnap.exists()) {
+            currentPoints = Number(userSnap.data().rewardPoints || 0);
+          }
+
+          const calculatedPoints = currentPoints + Number(points);
+
+          // 1. Write immutable ledger entry
+          transaction.set(eventRef, eventData);
+
+          // 2. Update user profile
+          const userUpdates = {
+            rewardPoints: calculatedPoints,
+            updatedAt: isoNow
+          };
+          if (type === 'LOGIN') {
+            userUpdates.lastLoginRewardDate = eventDate;
+          }
+
+          if (userSnap.exists()) {
+            transaction.update(userRef, userUpdates);
+          } else {
+            transaction.set(userRef, {
+              uid: userId,
+              id: userId,
+              rewardPoints: calculatedPoints,
+              role: 'student',
+              createdAt: isoNow,
+              ...userUpdates
+            }, { merge: true });
+          }
+
+          // 3. Write user-scoped notification
+          const notifRef = doc(firestoreDb, 'notifications', notifId);
+          transaction.set(notifRef, notifData);
+
+          return { awarded: true, points: Number(points), newBalance: calculatedPoints };
         });
-      } catch (e) {
-        console.warn('Daily login reward Firestore update notice:', e.message);
+
+        if (!result.awarded) {
+          return result;
+        }
+        awarded = true;
+        newBalance = result.newBalance;
+      } catch (err) {
+        console.warn('[awardRewardEvent] Firestore transaction notice:', err.message);
       }
     }
 
+    // Local ledger sync
+    const events = this.getItem('reward_events', []);
+    const alreadyLogged = events.some(e => e.id === eventId);
+    if (!alreadyLogged) {
+      events.unshift(eventData);
+      this.setItem('reward_events', events);
+      awarded = true;
+    } else {
+      return { awarded: false, reason: 'ALREADY_AWARDED', points: 0 };
+    }
+
+    // Local notification sync
+    const notifs = this.getItem('notifications', []);
+    if (!notifs.some(n => n.id === notifId)) {
+      notifs.unshift(notifData);
+      this.setItem('notifications', notifs);
+    }
+
+    // Local user sync
     const users = this.getUsers();
-    const idx = users.findIndex(u => u.id === userId || u.uid === userId);
-    if (idx !== -1) {
-      users[idx].lastLoginRewardDate = todayStr;
-      users[idx].rewardPoints = (users[idx].rewardPoints || 0) + 2;
+    const uIdx = users.findIndex(u => u.id === userId || u.uid === userId);
+    if (uIdx !== -1) {
+      if (newBalance === null) {
+        newBalance = (users[uIdx].rewardPoints || 0) + Number(points);
+      }
+      users[uIdx].rewardPoints = newBalance;
+      if (type === 'LOGIN') {
+        users[uIdx].lastLoginRewardDate = eventDate;
+      }
       this.setItem('users', users);
     }
 
-    return { awarded: true, points: 2, date: todayStr };
+    return {
+      awarded: true,
+      points: Number(points),
+      newBalance: newBalance !== null ? newBalance : (points || 0),
+      eventEntry: eventData,
+      notification: notifData
+    };
+  }
+
+  getUserRewardEvents(userId) {
+    if (!userId) return [];
+    const events = this.getItem('reward_events', []);
+    return events.filter(e => e.userId === userId);
+  }
+
+  getUserNotifications(userId) {
+    if (!userId) return [];
+    const notifs = this.getItem('notifications', []);
+    return notifs.filter(n => n.userId === userId);
+  }
+
+  async markNotificationAsRead(notifId) {
+    if (!notifId) return;
+    if (isFirebaseConfigured) {
+      try {
+        await updateDoc(doc(firestoreDb, 'notifications', notifId), {
+          read: true,
+          updatedAt: new Date().toISOString()
+        });
+      } catch (e) {
+        console.warn('Firestore markNotificationAsRead notice:', e.message);
+      }
+    }
+    const notifs = this.getItem('notifications', []);
+    const idx = notifs.findIndex(n => n.id === notifId);
+    if (idx !== -1) {
+      notifs[idx].read = true;
+      notifs[idx].updatedAt = new Date().toISOString();
+      this.setItem('notifications', notifs);
+    }
+  }
+
+  async markAllUserNotificationsRead(userId, unreadList = []) {
+    if (!userId) return;
+    if (isFirebaseConfigured && unreadList.length > 0) {
+      try {
+        const batchPromises = unreadList.map(n =>
+          updateDoc(doc(firestoreDb, 'notifications', n.id), {
+            read: true,
+            updatedAt: new Date().toISOString()
+          }).catch(err => console.warn('Update notif error:', err.message))
+        );
+        await Promise.all(batchPromises);
+      } catch (e) {
+        console.warn('Firestore markAllUserNotificationsRead notice:', e.message);
+      }
+    }
+    const notifs = this.getItem('notifications', []);
+    let modified = false;
+    notifs.forEach(n => {
+      if (n.userId === userId && !n.read) {
+        n.read = true;
+        n.updatedAt = new Date().toISOString();
+        modified = true;
+      }
+    });
+    if (modified) {
+      this.setItem('notifications', notifs);
+    }
+  }
+
+  async createNotification({ userId, title, message, type = 'info', referenceId = null }) {
+    if (!userId) return null;
+    const notifId = 'notif_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
+    const isoNow = new Date().toISOString();
+    const notifData = {
+      id: notifId,
+      userId,
+      title,
+      message,
+      type,
+      read: false,
+      referenceId: referenceId || '',
+      createdAt: isoNow,
+      time: 'Today'
+    };
+
+    if (isFirebaseConfigured) {
+      try {
+        await setDoc(doc(firestoreDb, 'notifications', notifId), notifData);
+      } catch (e) {
+        console.warn('Firestore createNotification notice:', e.message);
+      }
+    }
+
+    const notifs = this.getItem('notifications', []);
+    notifs.unshift(notifData);
+    this.setItem('notifications', notifs);
+    return notifData;
   }
 
   hasUserVoted(pollId, userId) {
@@ -1355,57 +1652,118 @@ class LaunchDatabase {
   }
 
   async addRewardPoints(userId, points) {
+    if (!userId || !points) return;
+    const numPoints = Number(points);
+    const isoNow = new Date().toISOString();
+
     if (isFirebaseConfigured) {
       try {
-        await updateDoc(doc(firestoreDb, 'users', userId), {
-          rewardPoints: increment(points)
+        const userRef = doc(firestoreDb, 'users', userId);
+        const userSnap = await getDoc(userRef);
+        const currentPoints = userSnap.exists() ? Number(userSnap.data().rewardPoints || 0) : 0;
+        const newPoints = Math.max(0, currentPoints + numPoints);
+        await updateDoc(userRef, {
+          rewardPoints: newPoints,
+          updatedAt: isoNow
         });
       } catch (e) {
-        console.error('Error adjusting user points in Firestore:', e);
+        console.warn('Error adjusting user points in Firestore:', e.message);
       }
     }
 
     const users = this.getUsers();
     const idx = users.findIndex(u => u.id === userId || u.uid === userId);
     if (idx !== -1) {
-      users[idx].rewardPoints = Math.max(0, (users[idx].rewardPoints || 0) + Number(points));
+      users[idx].rewardPoints = Math.max(0, (users[idx].rewardPoints || 0) + numPoints);
       this.setItem('users', users);
     }
   }
 
-  redeemReward(userId, userName, rewardItem) {
+  async redeemReward(userId, userName, rewardItem) {
     const user = this.getUserById(userId);
-    if (!user || (user.rewardPoints || 0) < rewardItem.points) {
+    let userPoints = user ? (user.rewardPoints || 0) : 0;
+
+    if (isFirebaseConfigured) {
+      try {
+        const userSnap = await getDoc(doc(firestoreDb, 'users', userId));
+        if (userSnap.exists()) {
+          userPoints = Number(userSnap.data().rewardPoints || 0);
+        }
+      } catch (e) {
+        console.warn('Redemption user points fetch notice:', e.message);
+      }
+    }
+
+    if (userPoints < rewardItem.points) {
       throw new Error('Insufficient Health Points to claim this reward.');
     }
 
     const redemptionId = 'red_' + Date.now();
     const claimCode = 'HEALTHY-' + Math.random().toString(36).substring(2, 7).toUpperCase();
+    const isoNow = new Date().toISOString();
     const newRedemption = {
       id: redemptionId,
       userId,
-      userName: userName || user.name,
+      userName: userName || user?.name || 'Student',
       rewardId: rewardItem.id,
       rewardName: rewardItem.name,
       pointsSpent: rewardItem.points,
       claimCode,
       status: 'READY FOR COLLECTION',
-      timestamp: new Date().toISOString()
+      timestamp: isoNow
     };
+
+    const newPoints = Math.max(0, userPoints - rewardItem.points);
 
     if (isFirebaseConfigured) {
       try {
-        setDoc(doc(firestoreDb, 'redemptions', redemptionId), newRedemption);
+        await setDoc(doc(firestoreDb, 'redemptions', redemptionId), newRedemption);
+        await updateDoc(doc(firestoreDb, 'users', userId), {
+          rewardPoints: newPoints,
+          updatedAt: isoNow
+        });
       } catch (e) {
         console.error('Error redeeming reward in Firestore:', e);
       }
     }
 
-    this.addRewardPoints(userId, -rewardItem.points);
+    // Create redemption notification for student
+    const notifId = `notif_red_${redemptionId}`;
+    const notifData = {
+      id: notifId,
+      userId,
+      type: 'success',
+      title: 'Reward Claimed 🎁',
+      message: `You claimed ${rewardItem.name}! Show claim code ${claimCode} at mess counter.`,
+      read: false,
+      referenceId: redemptionId,
+      createdAt: isoNow,
+      time: 'Today'
+    };
+
+    if (isFirebaseConfigured) {
+      try {
+        await setDoc(doc(firestoreDb, 'notifications', notifId), notifData);
+      } catch (e) {
+        console.warn('Firestore create redemption notif notice:', e.message);
+      }
+    }
 
     const redemptions = this.getItem('redemptions', []);
     redemptions.unshift(newRedemption);
     this.setItem('redemptions', redemptions);
+
+    const notifs = this.getItem('notifications', []);
+    notifs.unshift(notifData);
+    this.setItem('notifications', notifs);
+
+    const users = this.getUsers();
+    const idx = users.findIndex(u => u.id === userId || u.uid === userId);
+    if (idx !== -1) {
+      users[idx].rewardPoints = newPoints;
+      this.setItem('users', users);
+    }
+
     return newRedemption;
   }
 }
