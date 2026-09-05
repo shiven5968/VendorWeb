@@ -1006,6 +1006,7 @@ class LaunchDatabase {
       id: ratingId,
       userId,
       userName: userName || 'Student',
+      hostelBlock: hostelBlock || 'DNB Block',
       mealId,
       mealOccurrenceId: resolvedOccurrenceId,
       date: resolvedDate,

@@ -3,7 +3,7 @@ import { Star, MessageSquare, Calendar, Sun, UtensilsCrossed, Coffee, Moon, X, C
 import { useApp } from '../context/AppContext';
 
 // Naina Caters (I & II Year Menu : ABES Boys' Hostel)
-const MENU_DATA = {
+const BOYS_MENU_DATA = {
   Monday: {
     Breakfast: ["Veg Fried Idli / Plain Idli / Sambhar Bada", "Sambhar", "Coconut Chutney", "Lal Chutney", "Tea", "Milk", "Banana"],
     Lunch: ["Mix Veg", "Rajma", "Roti", "Rice", "Mix Salad", "Boondi Raita", "Lemon 1/2"],
@@ -48,6 +48,51 @@ const MENU_DATA = {
   }
 };
 
+const GIRLS_MENU_DATA = {
+  Monday: {
+    Breakfast: ["Fried Idli & Sambar", "Nariyal Chatni", "Tea with Ginger", "Milk", "Banana"],
+    Lunch: ["Arhar Daal", "Mix Veg Paneer", "Boondi Raita", "Rice", "Chapati", "Salad (Onion)", "1/2 Lemon"],
+    Snacks: ["Bread Pakoda / Mix Pakodi", "Tomato Sauce", "Green Chatni", "Tea"],
+    Dinner: ["Butter Masala / Kadhai Paneer", "Aloo Chokha", "Chapati", "Rice", "Ice Cream", "Mix Salad"]
+  },
+  Tuesday: {
+    Breakfast: ["Aloo Onion Parantha", "Tea (Ginger)", "Milk", "Pickle", "Muskmelon / Seasonal Fruit"],
+    Lunch: ["Black Chana Gravy", "Aloo Beans", "Chapati", "Rice", "Curd (Beetroot)", "Salad", "1/2 Lemon"],
+    Snacks: ["Chowmein", "Tomato/Green Chilli Sauce", "Shikanji"],
+    Dinner: ["Aloo Tamatar", "Bhindi", "Plain Parantha", "Rice", "Gulab Jamun", "Chhachh"]
+  },
+  Wednesday: {
+    Breakfast: ["Bread Butter Jam & Cornflakes", "Amul Butter", "Tea (Ginger)", "Milk", "Banana"],
+    Lunch: ["Kadhi", "Aloo Jeera", "Chapati", "Rice", "Fried Mirchi", "Papad", "Masala Onion Laccha", "1/2 Lemon"],
+    Snacks: ["Poha / Namkeen Jave", "Tomato/Green Chilli Sauce", "Roohafza"],
+    Dinner: ["Manchoorian / Black Masoor Daal", "Aloo Tikki", "Curd", "Fried Rice / Plain Rice", "Fruit Custard", "Cold Drink (Monthly)"]
+  },
+  Thursday: {
+    Breakfast: ["Plain/Methi Parantha & Aloo Jeera Dry", "Tea (Ginger)", "Milk", "Papaya"],
+    Lunch: ["Arhar Daal", "Lauki", "Boondi Raita", "Chapati", "Rice", "Salad", "1/2 Lemon"],
+    Snacks: ["Macroni", "Tomato/Green Chilli Sauce", "Tang"],
+    Dinner: ["Chhole Masala & Aloo Shimla Mirch", "Chapati", "Rice", "Salad", "Sweet Sewai"]
+  },
+  Friday: {
+    Breakfast: ["Matar Kulcha / Aloo Sandwich", "Tomato Sauce", "Tea (Ginger)", "Milk", "Watermelon"],
+    Lunch: ["Rajma", "Aloo Jeera (Kasuri Methi)", "Chapati", "Rice", "Curd", "Beetroot Salad", "1/2 Lemon"],
+    Snacks: ["Papdi Chaat / Black Chana Chaat", "Tomato/Green Chilli Sauce", "Coffee"],
+    Dinner: ["Sabut Lal Masoor Daal", "Arbi Dry", "Matar Mushroom (Monthly)", "Chapati", "Rice", "Nariyal Laddoo / Moong Dal Halwa", "Mix Salad"]
+  },
+  Saturday: {
+    Breakfast: ["Aloo Tomato Sabji (Bhandara)", "Plain Poori / Palak Poori", "Tea (Ginger)", "Milk", "Pickle", "Papaya", "Jalebi"],
+    Lunch: ["Mix Daal", "Aloo Soyabean", "Chapati", "Rice", "Veg Raita", "Salad", "1/2 Lemon"],
+    Snacks: ["Samosa (1 Pc Big) & Tea", "Saunth", "Green Chatni", "Tea"],
+    Dinner: ["Rajma", "Aloo Baingan", "Chapati", "Rice", "Chhachh"]
+  },
+  Sunday: {
+    Breakfast: ["Aloo Onion Parantha", "Green Chatni", "Tea (Ginger)", "Milk", "Pickle", "Watermelon"],
+    Lunch: ["Chhole Bhature", "Jeera Rice", "Fried Mirchi", "Masala Onion Laccha", "Cold Drink"],
+    Snacks: ["OFF"],
+    Dinner: ["Chana Daal", "Kathal", "Chapati", "Rice", "Kheer", "Mix Salad"]
+  }
+};
+
 const MEAL_SLOTS = [
   { name: 'Breakfast', time: '07:20 AM - 08:30 AM', icon: Sun, color: 'text-amber-500 bg-amber-500/10' },
   { name: 'Lunch', time: '12:20 PM - 02:00 PM', icon: UtensilsCrossed, color: 'text-emerald-500 bg-emerald-500/10' },
@@ -57,6 +102,10 @@ const MEAL_SLOTS = [
 
 export const WeeklyMenuReviewSection = () => {
   const { currentUser } = useApp();
+  const girlsHostels = ["Block A (Girls)", "Block B (Girls)", "Block C (Girls)"];
+  const isGirlsHostel = currentUser && girlsHostels.includes(currentUser.hostelBlock);
+  const MENU_DATA = isGirlsHostel ? GIRLS_MENU_DATA : BOYS_MENU_DATA;
+
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
   
   // 1. Navigation States: Auto-select today
@@ -78,21 +127,23 @@ export const WeeklyMenuReviewSection = () => {
     const saved = localStorage.getItem('messmates_ratings');
     if (saved) return JSON.parse(saved);
     
-    // Seed default baseline ratings for a realistic look
+    // Seed default baseline ratings for a realistic look across both menus
     const initialDb = {};
-    Object.keys(MENU_DATA).forEach(day => {
-      Object.keys(MENU_DATA[day]).forEach(slot => {
-        MENU_DATA[day][slot].forEach(item => {
-          if (item !== 'OFF') {
-            // Seed a realistic random rating between 3.8 and 4.7
-            const seedRating = parseFloat((3.8 + Math.random() * 0.9).toFixed(1));
-            const seedCount = Math.floor(5 + Math.random() * 25);
-            initialDb[`${day}_${slot}_${item}`] = {
-              rating: seedRating,
-              count: seedCount,
-              reviews: []
-            };
-          }
+    const seedMenus = [BOYS_MENU_DATA, GIRLS_MENU_DATA];
+    seedMenus.forEach(menu => {
+      Object.keys(menu).forEach(day => {
+        Object.keys(menu[day]).forEach(slot => {
+          menu[day][slot].forEach(item => {
+            if (item !== 'OFF') {
+              const seedRating = parseFloat((3.8 + Math.random() * 0.9).toFixed(1));
+              const seedCount = Math.floor(5 + Math.random() * 25);
+              initialDb[`${day}_${slot}_${item}`] = {
+                rating: seedRating,
+                count: seedCount,
+                reviews: []
+              };
+            }
+          });
         });
       });
     });
@@ -138,6 +189,7 @@ export const WeeklyMenuReviewSection = () => {
     const newReview = {
       id: Math.random().toString(36).substr(2, 9),
       userName: currentUser?.name || 'Student',
+      hostelBlock: currentUser?.hostelBlock || 'DNB Block',
       rating: starRating,
       reviewText: reviewText.trim(),
       tag: selectedTag,
@@ -162,6 +214,7 @@ export const WeeklyMenuReviewSection = () => {
       rating: starRating,
       reviewText: reviewText.trim(),
       tag: selectedTag,
+      hostelBlock: currentUser?.hostelBlock || 'DNB Block',
       submittedBy: currentUser?.uid || 'anonymous_uid',
       timestamp: new Date()
     });
@@ -187,7 +240,7 @@ export const WeeklyMenuReviewSection = () => {
             <span>WEEKLY MENU EXPLORER</span>
           </h2>
           <p className="text-xs text-slate-500 font-semibold mt-0.5">
-            Browse day-wise menus & leave individual food item reviews
+            {isGirlsHostel ? "ABES Girls' Hostel Official Menu (w.e.f. 05 May 2026)" : "ABES Boys' Hostel Official Menu (Naina Caters)"} • Day-wise food item reviews
           </p>
         </div>
         <div className="flex items-center space-x-1.5 text-[10px] font-black uppercase bg-emerald-500/10 text-emerald-600 px-3 py-1 rounded-full">
