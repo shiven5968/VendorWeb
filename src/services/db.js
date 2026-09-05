@@ -985,7 +985,7 @@ class LaunchDatabase {
     return { score: avg, scoreDisplay: `${avg} / 5.0`, count: ratings.length };
   }
 
-  async submitRating({ userId, userName, mealId, mealName, rating, feedback = '', tags = [] }) {
+  async submitRating({ userId, userName, mealId, mealName, rating, feedback = '', tags = [], hostelBlock = '' }) {
     const ratings = this.getAllRatings();
     const existingIdx = ratings.findIndex(r => r.userId === userId && r.mealId === mealId);
 
@@ -998,6 +998,7 @@ class LaunchDatabase {
       id: ratingId,
       userId,
       userName: userName || 'Student',
+      hostelBlock: hostelBlock || 'DNB Block',
       mealId,
       mealName,
       rating: Number(rating),

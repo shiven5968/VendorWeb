@@ -430,6 +430,7 @@ export const AppProvider = ({ children }) => {
       const ratingEntry = await db.submitRating({
         userId: currentUser.uid || currentUser.id,
         userName: currentUser.name,
+        hostelBlock: currentUser.hostelBlock || 'DNB Block',
         mealId,
         mealName: meal?.name || 'Mess Meal',
         rating: stars,
