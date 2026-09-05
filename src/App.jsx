@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import QRCode from 'qrcode';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { AppProvider } from './context/AppContext';
 import { VendorNavbar } from './components/VendorNavbar';
@@ -20,14 +19,7 @@ const AppContent = () => {
 
   useEffect(() => {
     if (testModalVoucher?.voucherCode) {
-      QRCode.toDataURL(testModalVoucher.voucherCode, {
-        width: 180,
-        margin: 1,
-        color: {
-          dark: '#0f172a',
-          light: '#ffffff'
-        }
-      }).then(url => setQrDataUrl(url)).catch(console.error);
+      setQrDataUrl(`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(testModalVoucher.voucherCode)}`);
     } else {
       setQrDataUrl('');
     }
