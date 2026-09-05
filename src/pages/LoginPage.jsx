@@ -17,7 +17,8 @@ import {
   RotateCw,
   LogIn,
   UserPlus,
-  Edit3
+  Edit3,
+  Store
 } from 'lucide-react';
 import { isValidAbesEmail } from '../services/otp';
 
@@ -305,6 +306,12 @@ export const LoginPage = ({ initialRole = 'student', onBackToRoles }) => {
       subtitle: 'Menu management & student complaints studio',
       icon: ChefHat,
       color: 'purple'
+    },
+    partner: {
+      title: 'Vendor Partner Portal',
+      subtitle: 'Hotel, gym & restaurant voucher redemption and offer management',
+      icon: Store,
+      color: 'amber'
     }
   };
 
@@ -419,7 +426,7 @@ export const LoginPage = ({ initialRole = 'student', onBackToRoles }) => {
                   type="text"
                   required
                   name="identifier"
-                  placeholder={activeRole === 'student' ? 'e.g. 2100320100001' : 'staff@abes.ac.in'}
+                  placeholder={activeRole === 'student' ? 'e.g. 2100320100001' : activeRole === 'partner' ? 'partner@abes.ac.in' : 'staff@abes.ac.in'}
                   value={loginData.identifier}
                   onChange={handleLoginChange}
                   className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500/20"
@@ -468,6 +475,27 @@ export const LoginPage = ({ initialRole = 'student', onBackToRoles }) => {
                 <span>{activeRole === 'student' ? 'Sign In with Admission Number' : `Sign In to ${currentMeta.title}`}</span>
               )}
             </button>
+
+            {/* Quick Demo Autofill */}
+            <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => {
+                  if (activeRole === 'partner') {
+                    setLoginData({ identifier: 'partner@abes.ac.in', password: 'password123' });
+                  } else if (activeRole === 'warden') {
+                    setLoginData({ identifier: 'warden@abes.ac.in', password: 'password123' });
+                  } else if (activeRole === 'committee') {
+                    setLoginData({ identifier: 'committee@abes.ac.in', password: 'password123' });
+                  } else {
+                    setLoginData({ identifier: '2100320100001', password: 'password123' });
+                  }
+                }}
+                className="w-full py-2 px-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-[10px] font-bold text-slate-600 dark:text-slate-300 transition-colors flex items-center justify-center space-x-1 cursor-pointer"
+              >
+                <span>⚡ Quick Test Credentials ({currentMeta.title.replace(' Portal', '')})</span>
+              </button>
+            </div>
           </form>
         )}
 

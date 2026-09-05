@@ -10,7 +10,8 @@ import {
   ShieldAlert, 
   BarChart3, 
   Vote, 
-  Dumbbell 
+  Dumbbell,
+  Store
 } from 'lucide-react';
 
 export const BottomNav = () => {
@@ -44,6 +45,11 @@ export const BottomNav = () => {
         { id: 'analytics', label: 'Analytics', icon: BarChart3 },
         { id: 'activity', label: 'Complaints', icon: MessageSquare },
         { id: 'voting', label: 'Polls', icon: Vote },
+        { id: 'profile', label: 'Profile', icon: User },
+      ];
+    } else if (role === 'partner') {
+      return [
+        { id: 'dashboard', label: 'Vendor', icon: Store },
         { id: 'profile', label: 'Profile', icon: User },
       ];
     }

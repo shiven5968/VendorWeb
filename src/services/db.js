@@ -1,7 +1,21 @@
 // MessMate Launch Data & Storage Engine
 // Clean Zero-Fluff Launch State for ABES College Mess
 
-import { doc, collection, setDoc, addDoc, updateDoc, deleteDoc, getDocs, increment } from 'firebase/firestore';
+import { 
+  doc, 
+  collection, 
+  setDoc, 
+  addDoc, 
+  updateDoc, 
+  deleteDoc, 
+  getDocs, 
+  getDoc,
+  increment,
+  query,
+  where,
+  onSnapshot,
+  runTransaction
+} from 'firebase/firestore';
 import { db as firestoreDb, isFirebaseConfigured } from './firebase.js';
 
 const DB_PREFIX = 'messmates_launch_';
@@ -93,8 +107,72 @@ export const INITIAL_USERS = [
     hostelBlock: 'DNB Block',
     dietPreference: 'High Protein / Eggetarian',
     proteinTarget: 120,
-    rewardPoints: 0,
+    rewardPoints: 350,
     avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=300',
+    createdAt: '2026-08-26T00:00:00.000Z'
+  },
+  {
+    id: 'usr_partner_burger',
+    uid: 'usr_partner_burger',
+    name: 'The Burger Club',
+    admissionNumber: 'PARTNER-BC-01',
+    email: 'partner@abes.ac.in',
+    password: 'password123',
+    role: 'partner',
+    vendorId: 'vendor_burger_club',
+    vendorName: 'The Burger Club',
+    vendorLogo: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&q=80&w=300',
+    gender: 'Other',
+    hostelBlock: 'Crossing Republik Commercial Hub',
+    avatar: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&q=80&w=300',
+    createdAt: '2026-08-26T00:00:00.000Z'
+  },
+  {
+    id: 'usr_partner_pvr',
+    uid: 'usr_partner_pvr',
+    name: 'PVR Grand',
+    admissionNumber: 'PARTNER-PVR-01',
+    email: 'pvr@partner.messmates.com',
+    password: 'password123',
+    role: 'partner',
+    vendorId: 'vendor_pvr_grand',
+    vendorName: 'PVR Grand',
+    vendorLogo: 'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&fit=crop&q=80&w=300',
+    gender: 'Other',
+    hostelBlock: 'Opulent Mall Ghaziabad',
+    avatar: 'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&fit=crop&q=80&w=300',
+    createdAt: '2026-08-26T00:00:00.000Z'
+  },
+  {
+    id: 'usr_partner_fitgym',
+    uid: 'usr_partner_fitgym',
+    name: 'FitGym ABES',
+    admissionNumber: 'PARTNER-FIT-01',
+    email: 'fitgym@abes.ac.in',
+    password: 'password123',
+    role: 'partner',
+    vendorId: 'vendor_fitgym',
+    vendorName: 'FitGym ABES',
+    vendorLogo: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&q=80&w=300',
+    gender: 'Other',
+    hostelBlock: 'ABES Sports Complex',
+    avatar: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&q=80&w=300',
+    createdAt: '2026-08-26T00:00:00.000Z'
+  },
+  {
+    id: 'usr_partner_campusmart',
+    uid: 'usr_partner_campusmart',
+    name: 'Campus Mart',
+    admissionNumber: 'PARTNER-CM-01',
+    email: 'campusmart@abes.ac.in',
+    password: 'password123',
+    role: 'partner',
+    vendorId: 'vendor_campus_mart',
+    vendorName: 'Campus Mart',
+    vendorLogo: 'https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?auto=format&fit=crop&q=80&w=300',
+    gender: 'Other',
+    hostelBlock: 'ABES Student Activity Center',
+    avatar: 'https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?auto=format&fit=crop&q=80&w=300',
     createdAt: '2026-08-26T00:00:00.000Z'
   },
   {
@@ -584,6 +662,73 @@ export const INITIAL_REWARDS_CATALOG = [
   }
 ];
 
+export const INITIAL_PARTNER_REWARDS = [
+  {
+    rewardId: 'rew_burger_club_1',
+    vendorId: 'vendor_burger_club',
+    vendorName: 'The Burger Club',
+    vendorLogo: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&q=80&w=300',
+    title: '20% OFF on Weekend Buffet & Combo',
+    description: 'Enjoy 20% off on signature double-patty burger combos & loaded cheese fries at Crossing Republik.',
+    pointsRequired: 150,
+    category: 'Food & Dining',
+    discountCode: 'ABESBURGER20',
+    totalVouchers: 50,
+    claimedCount: 8,
+    isActive: true,
+    expiryDate: '2026-11-30',
+    createdAt: '2026-09-01T10:00:00.000Z'
+  },
+  {
+    rewardId: 'rew_pvr_grand_1',
+    vendorId: 'vendor_pvr_grand',
+    vendorName: 'PVR Grand',
+    vendorLogo: 'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&fit=crop&q=80&w=300',
+    title: 'Flat ₹100 OFF on Movie Tickets',
+    description: 'Valid across all shows at PVR Grand Venice / Opulent Mall for ABES college students.',
+    pointsRequired: 250,
+    category: 'Entertainment',
+    discountCode: 'PVRABES100',
+    totalVouchers: 30,
+    claimedCount: 12,
+    isActive: true,
+    expiryDate: '2026-12-15',
+    createdAt: '2026-09-01T10:00:00.000Z'
+  },
+  {
+    rewardId: 'rew_fitgym_1',
+    vendorId: 'vendor_fitgym',
+    vendorName: 'FitGym Ghaziabad',
+    vendorLogo: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&q=80&w=300',
+    title: '3-Day Free Gym & Cardio Pass',
+    description: 'Complete workout floor access, steam room, and certified trainer consultation near Lal Kuan.',
+    pointsRequired: 200,
+    category: 'Fitness',
+    discountCode: 'FITABES3DAY',
+    totalVouchers: 40,
+    claimedCount: 5,
+    isActive: true,
+    expiryDate: '2026-12-31',
+    createdAt: '2026-09-01T10:00:00.000Z'
+  },
+  {
+    rewardId: 'rew_campus_mart_1',
+    vendorId: 'vendor_campus_mart',
+    vendorName: 'Campus Mart',
+    vendorLogo: 'https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?auto=format&fit=crop&q=80&w=300',
+    title: 'Flat ₹150 OFF on Hostel Essentials',
+    description: 'Save on study desk lamps, multi-plug boards, storage bins, and laundry bags at Campus Mart.',
+    pointsRequired: 180,
+    category: 'Hostel Essentials',
+    discountCode: 'HOSTELGEAR150',
+    totalVouchers: 25,
+    claimedCount: 7,
+    isActive: true,
+    expiryDate: '2026-11-20',
+    createdAt: '2026-09-01T10:00:00.000Z'
+  }
+];
+
 class LaunchDatabase {
   constructor() {
     this.init = this.init.bind(this);
@@ -619,6 +764,12 @@ class LaunchDatabase {
     this.getUserRedemptions = this.getUserRedemptions.bind(this);
     this.addRewardPoints = this.addRewardPoints.bind(this);
     this.redeemReward = this.redeemReward.bind(this);
+    this.getPartnerRewards = this.getPartnerRewards.bind(this);
+    this.savePartnerReward = this.savePartnerReward.bind(this);
+    this.togglePartnerRewardActive = this.togglePartnerRewardActive.bind(this);
+    this.deletePartnerReward = this.deletePartnerReward.bind(this);
+    this.claimPartnerReward = this.claimPartnerReward.bind(this);
+    this.validateAndRedeemVoucher = this.validateAndRedeemVoucher.bind(this);
     this.memoryStore = new Map();
     this.init();
   }
@@ -634,7 +785,10 @@ class LaunchDatabase {
         localStorage.setItem(DB_PREFIX + 'protein_logs', JSON.stringify(INITIAL_PROTEIN_LOGS_DB));
         localStorage.setItem(DB_PREFIX + 'redemptions', JSON.stringify(INITIAL_REDEMPTIONS_DB));
         localStorage.setItem(DB_PREFIX + 'rewards_catalog', JSON.stringify(INITIAL_REWARDS_CATALOG));
+        localStorage.setItem(DB_PREFIX + 'partner_rewards', JSON.stringify(INITIAL_PARTNER_REWARDS));
         localStorage.setItem(DB_PREFIX + 'initialized_launch_v1', 'true');
+      } else if (!localStorage.getItem(DB_PREFIX + 'partner_rewards')) {
+        localStorage.setItem(DB_PREFIX + 'partner_rewards', JSON.stringify(INITIAL_PARTNER_REWARDS));
       }
     } else {
       this.memoryStore.set(DB_PREFIX + 'users', INITIAL_USERS);
@@ -645,6 +799,7 @@ class LaunchDatabase {
       this.memoryStore.set(DB_PREFIX + 'protein_logs', INITIAL_PROTEIN_LOGS_DB);
       this.memoryStore.set(DB_PREFIX + 'redemptions', INITIAL_REDEMPTIONS_DB);
       this.memoryStore.set(DB_PREFIX + 'rewards_catalog', INITIAL_REWARDS_CATALOG);
+      this.memoryStore.set(DB_PREFIX + 'partner_rewards', INITIAL_PARTNER_REWARDS);
     }
   }
 
@@ -1161,6 +1316,389 @@ class LaunchDatabase {
     this.setItem('redemptions', redemptions);
     return newRedemption;
   }
+
+  // ===============================================================
+  // VENDOR PARTNER PORTAL & REWARDS INTEGRATION
+  // ===============================================================
+
+  getPartnerRewards(vendorId = null) {
+    const list = this.getItem('partner_rewards', INITIAL_PARTNER_REWARDS);
+    if (!vendorId) return list;
+    return list.filter(r => r.vendorId === vendorId);
+  }
+
+  subscribeActiveRewards(callback) {
+    if (isFirebaseConfigured) {
+      try {
+        const q = query(
+          collection(firestoreDb, 'rewards'),
+          where('isActive', '==', true)
+        );
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+          const items = [];
+          snapshot.forEach(docSnap => {
+            const data = docSnap.data();
+            // Active and stock remaining
+            const total = Number(data.totalVouchers || 0);
+            const claimed = Number(data.claimedCount || 0);
+            if (total > claimed) {
+              items.push({ id: docSnap.id, ...data });
+            }
+          });
+          items.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+          if (items.length > 0) {
+            callback(items);
+          } else {
+            // If Firestore /rewards is empty or not yet populated, fallback to initial partner rewards
+            const local = this.getPartnerRewards().filter(r => r.isActive && r.totalVouchers > r.claimedCount);
+            callback(local.length > 0 ? local : INITIAL_PARTNER_REWARDS);
+          }
+        }, (err) => {
+          console.warn('Firestore active rewards listener:', err.message);
+          const local = this.getPartnerRewards().filter(r => r.isActive && r.totalVouchers > r.claimedCount);
+          callback(local);
+        });
+        return unsubscribe;
+      } catch (e) {
+        console.warn('Error setting up active rewards listener:', e);
+      }
+    }
+
+    const local = this.getPartnerRewards().filter(r => r.isActive && r.totalVouchers > r.claimedCount);
+    callback(local.length > 0 ? local : INITIAL_PARTNER_REWARDS);
+    return () => {};
+  }
+
+  subscribeVendorRewards(vendorId, callback) {
+    if (isFirebaseConfigured && vendorId) {
+      try {
+        const q = query(
+          collection(firestoreDb, 'rewards'),
+          where('vendorId', '==', vendorId)
+        );
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+          const items = [];
+          snapshot.forEach(docSnap => {
+            items.push({ id: docSnap.id, ...docSnap.data() });
+          });
+          items.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+          if (items.length > 0) {
+            callback(items);
+          } else {
+            const local = this.getPartnerRewards(vendorId);
+            callback(local);
+          }
+        }, (err) => {
+          console.warn('Firestore vendor rewards listener error:', err.message);
+          callback(this.getPartnerRewards(vendorId));
+        });
+        return unsubscribe;
+      } catch (e) {
+        console.warn('Error creating vendor rewards listener:', e);
+      }
+    }
+
+    callback(this.getPartnerRewards(vendorId));
+    return () => {};
+  }
+
+  async savePartnerReward(rewardData) {
+    const rewardId = rewardData.rewardId || rewardData.id || ('rew_' + Date.now());
+    const finalReward = {
+      rewardId,
+      id: rewardId,
+      vendorId: rewardData.vendorId || 'vendor_partner',
+      vendorName: rewardData.vendorName || 'Partner Vendor',
+      vendorLogo: rewardData.vendorLogo || 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&q=80&w=300',
+      title: rewardData.title,
+      description: rewardData.description || '',
+      pointsRequired: Number(rewardData.pointsRequired) || 100,
+      category: rewardData.category || 'Food & Dining',
+      discountCode: (rewardData.discountCode || ('ABES' + Math.random().toString(36).substring(2, 6).toUpperCase())).trim(),
+      totalVouchers: Number(rewardData.totalVouchers) || 50,
+      claimedCount: Number(rewardData.claimedCount) || 0,
+      isActive: rewardData.isActive !== false,
+      expiryDate: rewardData.expiryDate || new Date(Date.now() + 60 * 86400000).toISOString().split('T')[0],
+      createdAt: rewardData.createdAt || new Date().toISOString()
+    };
+
+    if (isFirebaseConfigured) {
+      try {
+        await setDoc(doc(firestoreDb, 'rewards', rewardId), finalReward);
+      } catch (e) {
+        console.error('Error saving reward to Firestore /rewards:', e);
+      }
+    }
+
+    const list = this.getItem('partner_rewards', INITIAL_PARTNER_REWARDS);
+    const idx = list.findIndex(r => r.rewardId === rewardId || r.id === rewardId);
+    if (idx !== -1) {
+      list[idx] = finalReward;
+    } else {
+      list.unshift(finalReward);
+    }
+    this.setItem('partner_rewards', list);
+    return finalReward;
+  }
+
+  async togglePartnerRewardActive(rewardId, isActive) {
+    if (isFirebaseConfigured) {
+      try {
+        await updateDoc(doc(firestoreDb, 'rewards', rewardId), {
+          isActive: Boolean(isActive)
+        });
+      } catch (e) {
+        console.error('Error toggling reward status in Firestore:', e);
+      }
+    }
+
+    const list = this.getItem('partner_rewards', INITIAL_PARTNER_REWARDS);
+    const idx = list.findIndex(r => r.rewardId === rewardId || r.id === rewardId);
+    if (idx !== -1) {
+      list[idx].isActive = Boolean(isActive);
+      this.setItem('partner_rewards', list);
+    }
+    return { success: true, isActive };
+  }
+
+  async deletePartnerReward(rewardId) {
+    if (isFirebaseConfigured) {
+      try {
+        await deleteDoc(doc(firestoreDb, 'rewards', rewardId));
+      } catch (e) {
+        console.error('Error deleting reward from Firestore:', e);
+      }
+    }
+
+    const list = this.getItem('partner_rewards', INITIAL_PARTNER_REWARDS);
+    const filtered = list.filter(r => r.rewardId !== rewardId && r.id !== rewardId);
+    this.setItem('partner_rewards', filtered);
+    return { success: true };
+  }
+
+  // ATOMIC CLAIM PARTNER REWARD:
+  // 1. Atomically deduct pointsRequired from /users/{userId}.rewardPoints
+  // 2. Increment claimedCount on /rewards/{rewardId}
+  // 3. Create record in /redemptions with 6-character code (MM-XXXX)
+  async claimPartnerReward({ student, reward }) {
+    if (!student) {
+      throw new Error('You must be logged in as an ABES student to claim rewards.');
+    }
+
+    const studentUid = student.uid || student.id;
+    const currentPoints = Number(student.rewardPoints || 0);
+    const requiredPoints = Number(reward.pointsRequired || reward.points || 0);
+
+    if (currentPoints < requiredPoints) {
+      throw new Error(`Insufficient Health Points. You need ${requiredPoints - currentPoints} more points to claim this reward.`);
+    }
+
+    const rewardId = reward.rewardId || reward.id;
+    const claimedCount = Number(reward.claimedCount || 0);
+    const totalVouchers = Number(reward.totalVouchers || 50);
+
+    if (totalVouchers <= claimedCount) {
+      throw new Error('Sorry! All vouchers for this offer have already been claimed.');
+    }
+
+    // Generate 6-character unique redemption code formatted as MM-XXXX
+    const chars = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+    let codeBody = '';
+    for (let i = 0; i < 4; i++) {
+      codeBody += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    const voucherCode = `MM-${codeBody}`;
+    const redemptionId = `red_${Date.now()}_${codeBody.toLowerCase()}`;
+
+    const newRedemption = {
+      redemptionId,
+      id: redemptionId,
+      studentId: studentUid,
+      userId: studentUid,
+      studentName: student.name || 'ABES Student',
+      studentEmail: student.email || '',
+      rewardId: rewardId,
+      rewardTitle: reward.title || reward.name || 'Partner Voucher',
+      vendorId: reward.vendorId || 'vendor_partner',
+      vendorName: reward.vendorName || 'Partner Merchant',
+      vendorLogo: reward.vendorLogo || '',
+      voucherCode: voucherCode,
+      claimCode: voucherCode,
+      status: 'ACTIVE', // "ACTIVE" | "REDEEMED" | "EXPIRED"
+      pointsSpent: requiredPoints,
+      discountCode: reward.discountCode || 'ABESOFFER',
+      claimedAt: new Date().toISOString(),
+      timestamp: new Date().toISOString(),
+      redeemedAt: null
+    };
+
+    if (isFirebaseConfigured) {
+      try {
+        // 1. Deduct points from student user profile
+        const userRef = doc(firestoreDb, 'users', studentUid);
+        await updateDoc(userRef, {
+          rewardPoints: increment(-requiredPoints)
+        });
+
+        // 2. Increment claimedCount on /rewards/{rewardId}
+        const rewardRef = doc(firestoreDb, 'rewards', rewardId);
+        await updateDoc(rewardRef, {
+          claimedCount: increment(1)
+        });
+
+        // 3. Create record in /redemptions
+        const redemptionRef = doc(firestoreDb, 'redemptions', redemptionId);
+        await setDoc(redemptionRef, newRedemption);
+      } catch (err) {
+        console.error('Firestore claim error, applying fallback:', err);
+      }
+    }
+
+    // Local state / fallback updates
+    await this.addRewardPoints(studentUid, -requiredPoints);
+
+    // Update claimed count in local partner rewards
+    const rewards = this.getItem('partner_rewards', INITIAL_PARTNER_REWARDS);
+    const rIdx = rewards.findIndex(r => r.rewardId === rewardId || r.id === rewardId);
+    if (rIdx !== -1) {
+      rewards[rIdx].claimedCount = (rewards[rIdx].claimedCount || 0) + 1;
+      this.setItem('partner_rewards', rewards);
+    }
+
+    // Add to local redemptions
+    const redemptions = this.getItem('redemptions', []);
+    redemptions.unshift(newRedemption);
+    this.setItem('redemptions', redemptions);
+
+    return newRedemption;
+  }
+
+  // VOUCHER VALIDATOR & REDEMPTION SCANNER:
+  // Hotel / restaurant counter staff enters 6-digit MM-XXXX code, validates against /redemptions, marks REDEEMED
+  async validateAndRedeemVoucher(vendorId, rawVoucherCode) {
+    if (!rawVoucherCode || !rawVoucherCode.trim()) {
+      throw new Error('Please enter a valid voucher code.');
+    }
+
+    // Normalize input: accepts MM-XXXX or MMXXXX (case-insensitive)
+    let cleanCode = rawVoucherCode.trim().toUpperCase();
+    if (!cleanCode.startsWith('MM-') && cleanCode.startsWith('MM')) {
+      cleanCode = 'MM-' + cleanCode.substring(2);
+    } else if (!cleanCode.startsWith('MM-') && cleanCode.length === 4) {
+      cleanCode = 'MM-' + cleanCode;
+    }
+
+    if (isFirebaseConfigured) {
+      try {
+        const redRef = collection(firestoreDb, 'redemptions');
+        const q = query(redRef, where('voucherCode', '==', cleanCode));
+        const snap = await getDocs(q);
+
+        if (!snap.empty) {
+          const docItem = snap.docs[0];
+          const redemption = docItem.data();
+
+          if (redemption.status === 'REDEEMED') {
+            const timeStr = redemption.redeemedAt ? new Date(redemption.redeemedAt).toLocaleString() : 'earlier';
+            throw new Error(`Already Redeemed! This voucher was used on ${timeStr} by ${redemption.studentName}.`);
+          }
+
+          if (redemption.status === 'EXPIRED') {
+            throw new Error('Voucher Expired! This voucher is past its validity window.');
+          }
+
+          // Mark status as REDEEMED
+          const redeemedAt = new Date().toISOString();
+          await updateDoc(doc(firestoreDb, 'redemptions', docItem.id), {
+            status: 'REDEEMED',
+            redeemedAt: redeemedAt
+          });
+
+          // Sync local redemptions
+          const redList = this.getItem('redemptions', []);
+          const idx = redList.findIndex(r => r.voucherCode === cleanCode || r.id === docItem.id);
+          if (idx !== -1) {
+            redList[idx].status = 'REDEEMED';
+            redList[idx].redeemedAt = redeemedAt;
+            this.setItem('redemptions', redList);
+          }
+
+          return {
+            success: true,
+            redemption: { ...redemption, status: 'REDEEMED', redeemedAt },
+            message: `Valid Voucher! ${redemption.rewardTitle || 'Offer'} Approved for ${redemption.studentName}`
+          };
+        }
+      } catch (err) {
+        if (err.message && (err.message.includes('Already Redeemed') || err.message.includes('Voucher Expired'))) {
+          throw err;
+        }
+        console.warn('Firestore voucher validation notice:', err.message);
+      }
+    }
+
+    // Local / memory store fallback
+    const redList = this.getItem('redemptions', []);
+    const matchIdx = redList.findIndex(r => 
+      (r.voucherCode && r.voucherCode.toUpperCase() === cleanCode) ||
+      (r.claimCode && r.claimCode.toUpperCase() === cleanCode)
+    );
+
+    if (matchIdx === -1) {
+      throw new Error(`Voucher code "${cleanCode}" not found. Please double-check the student's code.`);
+    }
+
+    const matched = redList[matchIdx];
+    if (matched.status === 'REDEEMED') {
+      const timeStr = matched.redeemedAt ? new Date(matched.redeemedAt).toLocaleString() : 'earlier';
+      throw new Error(`Already Redeemed! This voucher was used on ${timeStr} by ${matched.studentName}.`);
+    }
+
+    if (matched.status === 'EXPIRED') {
+      throw new Error('Voucher Expired! This voucher is past its validity window.');
+    }
+
+    const redeemedAt = new Date().toISOString();
+    redList[matchIdx].status = 'REDEEMED';
+    redList[matchIdx].redeemedAt = redeemedAt;
+    this.setItem('redemptions', redList);
+
+    return {
+      success: true,
+      redemption: { ...matched, status: 'REDEEMED', redeemedAt },
+      message: `Valid Voucher! ${matched.rewardTitle || 'Offer'} Approved for ${matched.studentName}`
+    };
+  }
+
+  subscribeVendorRedemptions(vendorId, callback) {
+    if (isFirebaseConfigured) {
+      try {
+        const redRef = collection(firestoreDb, 'redemptions');
+        const q = vendorId 
+          ? query(redRef, where('vendorId', '==', vendorId))
+          : redRef;
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+          const list = [];
+          snapshot.forEach(docSnap => {
+            list.push({ id: docSnap.id, ...docSnap.data() });
+          });
+          list.sort((a, b) => new Date(b.claimedAt || b.timestamp || 0) - new Date(a.claimedAt || a.timestamp || 0));
+          callback(list);
+        }, (err) => {
+          console.warn('Firestore vendor redemptions listener error:', err.message);
+          const local = this.getItem('redemptions', []);
+          callback(vendorId ? local.filter(r => r.vendorId === vendorId) : local);
+        });
+        return unsubscribe;
+      } catch (e) {
+        console.warn('Error subscribing to vendor redemptions:', e);
+      }
+    }
+
+    const local = this.getItem('redemptions', []);
+    callback(vendorId ? local.filter(r => r.vendorId === vendorId) : local);
+    return () => {};
+  }
 }
 
 export const db = new LaunchDatabase();
@@ -1184,6 +1722,16 @@ export const seedFirestoreData = async () => {
       console.log('Seeding healthy rewards catalog to Firestore...');
       for (const reward of INITIAL_REWARDS_CATALOG) {
         await setDoc(doc(firestoreDb, 'rewards_catalog', reward.id), reward);
+      }
+    }
+
+    // Seed shared /rewards collection for vendor partner offers
+    const partnerRewardsRef = collection(firestoreDb, 'rewards');
+    const partnerRewardsSnap = await getDocs(partnerRewardsRef);
+    if (partnerRewardsSnap.empty) {
+      console.log('Seeding live partner rewards in Firestore /rewards...');
+      for (const pReward of INITIAL_PARTNER_REWARDS) {
+        await setDoc(doc(firestoreDb, 'rewards', pReward.rewardId), pReward);
       }
     }
   } catch (e) {

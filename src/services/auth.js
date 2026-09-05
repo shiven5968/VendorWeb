@@ -221,7 +221,11 @@ export const signInUser = async (emailOrAdmission, password) => {
           name: user.displayName || targetEmail.split('@')[0],
           email: targetEmail,
           admissionNumber: !cleanInput.includes('@') ? cleanInput : '',
-          role: targetEmail.includes('warden') ? 'warden' : targetEmail.includes('committee') ? 'mess_committee' : 'student',
+          role: (targetEmail.includes('partner') || targetEmail.includes('vendor') || targetEmail.includes('pvr') || targetEmail.includes('fitgym') || targetEmail.includes('campusmart') || targetEmail.includes('burger')) 
+            ? 'partner' 
+            : targetEmail.includes('warden') ? 'warden' : targetEmail.includes('committee') ? 'mess_committee' : 'student',
+          vendorId: targetEmail.includes('burger') ? 'vendor_burger_club' : targetEmail.includes('pvr') ? 'vendor_pvr_grand' : targetEmail.includes('fitgym') ? 'vendor_fitgym' : targetEmail.includes('campusmart') ? 'vendor_campus_mart' : (targetEmail.includes('partner') ? 'vendor_partner' : undefined),
+          vendorName: targetEmail.includes('burger') ? 'The Burger Club' : targetEmail.includes('pvr') ? 'PVR Grand' : targetEmail.includes('fitgym') ? 'FitGym ABES' : targetEmail.includes('campusmart') ? 'Campus Mart' : (targetEmail.includes('partner') ? 'Partner Merchant' : undefined),
           hostelBlock: 'DNB Block',
           emailVerified: true,
           createdAt: new Date().toISOString()

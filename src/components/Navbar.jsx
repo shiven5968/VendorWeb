@@ -18,7 +18,8 @@ import {
   MessageSquare,
   Gift,
   User,
-  Vote
+  Vote,
+  Store
 } from 'lucide-react';
 
 export const Navbar = () => {
@@ -63,6 +64,11 @@ export const Navbar = () => {
         { id: 'activity', label: 'Complaints', icon: MessageSquare },
         { id: 'voting', label: 'Student Polls', icon: Vote },
         { id: 'reports', label: 'Governance', icon: FileText },
+      ];
+    } else if (role === 'partner') {
+      return [
+        { id: 'dashboard', label: 'Vendor Portal', icon: Store },
+        { id: 'profile', label: 'Merchant Profile', icon: User },
       ];
     }
     return [];

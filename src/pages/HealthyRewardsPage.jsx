@@ -13,6 +13,7 @@ import {
   Vote,
   CalendarCheck
 } from 'lucide-react';
+import { RewardsSection } from '../components/RewardsSection';
 
 export const HealthyRewardsPage = () => {
   const { 
@@ -143,59 +144,7 @@ export const HealthyRewardsPage = () => {
 
       {/* Tab: Catalog */}
       {activeTab === 'catalog' && (
-        <div>
-          {catalogList.length === 0 ? (
-            <div className="p-12 text-center text-xs font-bold text-slate-400 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 space-y-2">
-              <Gift className="w-8 h-8 mx-auto text-slate-300 dark:text-slate-600" />
-              <p className="text-base font-black text-slate-700 dark:text-slate-200">No rewards available yet.</p>
-              <p>Active mess nutrition perks and reward vouchers will appear here once published.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {catalogList.map(item => {
-                const canAfford = rewardPoints >= item.points;
-
-                return (
-                  <div
-                    key={item.id}
-                    className="glass-card rounded-3xl overflow-hidden border border-slate-200/80 dark:border-slate-800 flex flex-col justify-between hover:shadow-lg transition-all"
-                  >
-                    <div>
-                      <div className="relative h-40 w-full overflow-hidden">
-                        <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
-                        <span className="absolute top-3 left-3 px-2.5 py-0.5 rounded-full bg-black/60 backdrop-blur-md text-white text-[10px] font-bold">
-                          {item.category}
-                        </span>
-                        <span className="absolute bottom-3 right-3 px-3 py-1 rounded-xl bg-emerald-600 text-white text-xs font-black shadow-md">
-                          {item.points} pts
-                        </span>
-                      </div>
-
-                      <div className="p-4 space-y-1.5">
-                        <h3 className="text-sm font-black text-slate-900 dark:text-white">{item.name}</h3>
-                        <p className="text-xs text-slate-500 line-clamp-2">{item.description}</p>
-                      </div>
-                    </div>
-
-                    <div className="p-4 pt-0">
-                      <button
-                        onClick={() => handleClaim(item)}
-                        disabled={!canAfford || claiming}
-                        className={`w-full py-2.5 rounded-xl text-xs font-black transition-all ${
-                          canAfford
-                            ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-md cursor-pointer'
-                            : 'bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-not-allowed border border-slate-200 dark:border-slate-700'
-                        }`}
-                      >
-                        {canAfford ? 'CLAIM REWARD' : `Need ${item.points - rewardPoints} more pts`}
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
+        <RewardsSection />
       )}
 
       {/* Tab: History */}
@@ -203,28 +152,41 @@ export const HealthyRewardsPage = () => {
         <div className="space-y-3">
           {(userRedemptions || []).length === 0 ? (
             <div className="p-12 text-center text-xs font-bold text-slate-400 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800">
-              You have not claimed any rewards yet.
+              You have not claimed any rewards yet. Browse the rewards catalog above to claim partner discounts.
             </div>
           ) : (
             <div className="space-y-3">
               {userRedemptions.map((red) => (
                 <div
-                  key={red.id}
-                  className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between shadow-sm"
+                  key={red.id || red.redemptionId}
+                  className="p-4 sm:p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between shadow-sm hover:shadow-md transition-all"
                 >
-                  <div className="space-y-0.5">
-                    <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase">
-                      Code: {red.claimCode}
-                    </span>
-                    <h4 className="text-sm font-black text-slate-900 dark:text-white">{red.rewardName}</h4>
-                    <span className="text-[10px] text-slate-400">
-                      Claimed on {new Date(red.timestamp).toLocaleDateString()}
+                  <div className="space-y-1">
+                    <div className="flex items-center space-x-2">
+                      <span className="font-mono font-black text-xs text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                        Code: {red.voucherCode || red.claimCode}
+                      </span>
+                      {red.vendorName && (
+                        <span className="text-[10px] font-bold text-slate-400">
+                          @ {red.vendorName}
+                        </span>
+                      )}
+                    </div>
+                    <h4 className="text-sm font-black text-slate-900 dark:text-white">
+                      {red.rewardTitle || red.rewardName || 'Reward Voucher'}
+                    </h4>
+                    <span className="text-[10px] text-slate-400 block">
+                      Claimed on {new Date(red.claimedAt || red.timestamp || Date.now()).toLocaleDateString()}
                     </span>
                   </div>
 
                   <div className="text-right space-y-1">
-                    <span className="px-2.5 py-1 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 text-[10px] font-black border border-emerald-500/20 block">
-                      {red.status}
+                    <span className={`px-2.5 py-1 rounded-xl text-[10px] font-black border block ${
+                      red.status === 'REDEEMED'
+                        ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                        : 'bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border-amber-500/20'
+                    }`}>
+                      {red.status || 'ACTIVE'}
                     </span>
                     <span className="text-xs text-slate-400 font-bold">-{red.pointsSpent} pts</span>
                   </div>

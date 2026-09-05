@@ -1,26 +1,29 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
+import QRCode from 'qrcode';
 import { useApp } from '../context/AppContext';
 import { X, Tag, QrCode, Clock, CheckCircle } from 'lucide-react';
-import confetti from 'canvas-confetti';
 
 export const RewardClaimModal = () => {
   const { claimedRewardModal, setClaimedRewardModal } = useApp();
-
-  useEffect(() => {
-    if (claimedRewardModal) {
-      try {
-        confetti({
-          particleCount: 80,
-          spread: 70,
-          origin: { y: 0.6 }
-        });
-      } catch (e) {}
-    }
-  }, [claimedRewardModal]);
-
-  if (!claimedRewardModal) return null;
+  const [qrUrl, setQrUrl] = useState('');
 
   const voucher = claimedRewardModal;
+  const code = voucher?.voucherCode || voucher?.claimCode || voucher?.code || '';
+
+  useEffect(() => {
+    if (code) {
+      QRCode.toDataURL(code, {
+        width: 200,
+        margin: 1,
+        color: {
+          dark: '#0f172a',
+          light: '#ffffff'
+        }
+      }).then(url => setQrUrl(url)).catch(console.error);
+    }
+  }, [code]);
+
+  if (!claimedRewardModal) return null;
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-md flex items-center justify-center p-4">
@@ -41,19 +44,25 @@ export const RewardClaimModal = () => {
           <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-300 mb-2">
             Reward Claimed
           </span>
-          <h2 className="text-xl font-extrabold text-slate-900 dark:text-white">{voucher.rewardName || 'Mess Reward'}</h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Show this claim code at the mess counter for redemption.</p>
+          <h2 className="text-xl font-extrabold text-slate-900 dark:text-white">{voucher.rewardTitle || voucher.rewardName || 'Mess Reward'}</h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            Show this claim code at the {voucher.vendorName ? `${voucher.vendorName} / mess counter` : 'mess counter'} for redemption.
+          </p>
         </div>
 
         {/* Voucher Promo Pass */}
         <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 space-y-3">
-          <div className="w-32 h-32 mx-auto bg-white p-2 rounded-xl shadow-inner border flex items-center justify-center">
-            <QrCode className="w-28 h-28 text-slate-900" />
+          <div className="w-36 h-36 mx-auto bg-white p-2 rounded-xl shadow-inner border flex items-center justify-center">
+            {qrUrl ? (
+              <img src={qrUrl} alt={`QR for ${code}`} className="w-full h-full object-contain" />
+            ) : (
+              <QrCode className="w-28 h-28 text-slate-900" />
+            )}
           </div>
           
           <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-emerald-500/30 text-center">
             <span className="text-[10px] text-slate-400 uppercase font-semibold block">Claim Code</span>
-            <p className="text-lg font-mono font-black text-emerald-600 dark:text-emerald-400 tracking-wider select-all">{voucher.claimCode || voucher.code}</p>
+            <p className="text-lg font-mono font-black text-emerald-600 dark:text-emerald-400 tracking-wider select-all">{code}</p>
           </div>
         </div>
 

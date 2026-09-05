@@ -28,6 +28,18 @@ service cloud.firestore {
       return isAuthenticated() && getUserRole() == 'student';
     }
 
+    // Role check: Partner (Hotels, Gyms, Restaurants, Vendors)
+    function isPartner() {
+      return isAuthenticated() && (
+        getUserRole() == 'partner' ||
+        (request.auth.token.email != null && (
+          request.auth.token.email == 'partner@abes.ac.in' ||
+          request.auth.token.email.matches('^partner.*@abes\\.ac\\.in$') ||
+          request.auth.token.email.matches('.*@partner\\.messmates\\.com$')
+        ))
+      );
+    }
+
     // Role check: Chief Warden
     function isWarden() {
       return isAuthenticated() && (
@@ -69,7 +81,7 @@ service cloud.firestore {
       allow create: if isAuthenticated() 
                     && request.auth.uid == userId 
                     && request.resource.data.uid == userId 
-                    && (request.resource.data.role == 'student' || isWarden() || (isCommittee() && request.resource.data.role in ['mess_committee', 'committee']));
+                    && (request.resource.data.role in ['student', 'partner'] || isWarden() || (isCommittee() && request.resource.data.role in ['mess_committee', 'committee']));
 
       // Profile updates:
       // - Students can update their own personal info, but are STRICTLY FORBIDDEN from modifying their 'role'
@@ -171,8 +183,24 @@ service cloud.firestore {
 
 
     // ===============================================================
-    // 7. REWARDS CATALOG COLLECTION (/rewards_catalog/{rewardId})
+    // 7. REWARDS CATALOG & VENDOR REWARDS (/rewards/{rewardId} & /rewards_catalog/{rewardId})
     // ===============================================================
+    match /rewards/{rewardId} {
+      // Authenticated users and students can view active rewards; Partners and Staff can view all
+      allow read: if isAuthenticated();
+
+      // Partners and Staff can create and delete vendor offers
+      allow create, delete: if isPartner() || isStaff();
+
+      // Updates:
+      // - Partners and Staff can update offer details, stock, status
+      // - Authenticated students can atomically increment claimedCount when redeeming
+      allow update: if isPartner() || isStaff() || (
+        isAuthenticated() &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['claimedCount'])
+      );
+    }
+
     match /rewards_catalog/{rewardId} {
       // Authenticated users can browse the healthy rewards catalog
       allow read: if isAuthenticated();
@@ -186,16 +214,21 @@ service cloud.firestore {
     // 8. REDEMPTIONS COLLECTION (/redemptions/{redemptionId})
     // ===============================================================
     match /redemptions/{redemptionId} {
-      // Students can read ONLY their own redemptions; Staff can view all redemptions
-      allow read: if (isStudent() && resource.data.userId == request.auth.uid) || isStaff();
+      // Students can read their own redemptions; Partners and Staff can view redemptions
+      allow read: if (isAuthenticated() && (
+                    resource.data.studentId == request.auth.uid || 
+                    resource.data.userId == request.auth.uid
+                  )) || isPartner() || isStaff();
 
-      // ONLY verified students can create a reward redemption
-      allow create: if isStudent() 
-                    && request.resource.data.userId == request.auth.uid;
+      // Verified students can create a reward redemption
+      allow create: if isAuthenticated() && (
+        request.resource.data.studentId == request.auth.uid ||
+        request.resource.data.userId == request.auth.uid
+      );
 
-      // ONLY Mess Committee and Warden can update redemption status (marking collected / fulfilled)
-      // Students CANNOT modify redemption status or alter points
-      allow update: if isStaff();
+      // Partners can validate and mark voucher as REDEEMED
+      // Staff / Warden can also update status
+      allow update: if isPartner() || isStaff();
 
       // Only Chief Warden can delete redemption audit logs
       allow delete: if isWarden();

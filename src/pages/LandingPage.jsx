@@ -1,5 +1,5 @@
 import React from 'react';
-import { UtensilsCrossed, GraduationCap, Shield, ChefHat, ArrowRight } from 'lucide-react';
+import { UtensilsCrossed, GraduationCap, Shield, ChefHat, Store, ArrowRight } from 'lucide-react';
 
 export const LandingPage = ({ onSelectRole }) => {
   return (
@@ -30,7 +30,7 @@ export const LandingPage = ({ onSelectRole }) => {
           Select Your Role to Continue
         </p>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           
           {/* STUDENT ROLE */}
           <button
@@ -51,6 +51,29 @@ export const LandingPage = ({ onSelectRole }) => {
               </div>
               <p className="text-xs text-slate-500 font-semibold mt-0.5">
                 Daily menus, nutrition & feedback
+              </p>
+            </div>
+          </button>
+
+          {/* VENDOR PARTNER ROLE */}
+          <button
+            type="button"
+            onClick={() => onSelectRole('partner')}
+            className="group p-6 rounded-3xl bg-white dark:bg-slate-900 border-2 border-slate-200/80 dark:border-slate-800 hover:border-amber-500 text-left transition-all hover:shadow-xl hover:-translate-y-1 flex flex-col justify-between min-h-[160px]"
+          >
+            <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+              <Store className="w-6 h-6" />
+            </div>
+
+            <div className="pt-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-black text-slate-900 dark:text-white group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
+                  Vendor Partner
+                </h3>
+                <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-amber-500 group-hover:translate-x-1 transition-all" />
+              </div>
+              <p className="text-xs text-slate-500 font-semibold mt-0.5">
+                Hotels, cafes & student perks
               </p>
             </div>
           </button>

@@ -23,10 +23,11 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState('');
 
-  // Normalize role string (supports both 'committee' and 'mess_committee')
+  // Normalize role string (supports 'student', 'mess_committee', 'warden', and 'partner')
   const normalizeRole = (rawRole) => {
     if (!rawRole) return 'student';
     const lower = rawRole.toLowerCase();
+    if (lower === 'partner' || lower === 'vendor') return 'partner';
     if (lower === 'mess_committee' || lower === 'committee') return 'mess_committee';
     if (lower === 'warden') return 'warden';
     return 'student';
@@ -42,12 +43,17 @@ export const AuthProvider = ({ children }) => {
             let userProfile = await getUserProfile(firebaseUser.uid);
             if (!userProfile) {
               const email = firebaseUser.email || '';
-              const role = email.includes('warden') ? 'warden' : email.includes('committee') ? 'mess_committee' : 'student';
+              const isPartner = email.includes('partner') || email.includes('vendor') || email.includes('pvr') || email.includes('burger') || email.includes('fitgym') || email.includes('campusmart');
+              const role = isPartner ? 'partner' : email.includes('warden') ? 'warden' : email.includes('committee') ? 'mess_committee' : 'student';
+              const vendorId = email.includes('burger') ? 'vendor_burger_club' : email.includes('pvr') ? 'vendor_pvr_grand' : email.includes('fitgym') ? 'vendor_fitgym' : email.includes('campusmart') ? 'vendor_campus_mart' : (isPartner ? 'vendor_partner' : undefined);
+              const vendorName = email.includes('burger') ? 'The Burger Club' : email.includes('pvr') ? 'PVR Grand' : email.includes('fitgym') ? 'FitGym ABES' : email.includes('campusmart') ? 'Campus Mart' : (isPartner ? 'Partner Merchant' : undefined);
               userProfile = {
                 uid: firebaseUser.uid,
-                name: firebaseUser.displayName || email.split('@')[0] || 'Student',
+                name: vendorName || firebaseUser.displayName || email.split('@')[0] || 'Partner Merchant',
                 email: email,
                 role: role,
+                vendorId: vendorId,
+                vendorName: vendorName,
                 gender: 'Male',
                 hostelBlock: 'DNB Block',
                 dietPreference: 'High Protein / Eggetarian',

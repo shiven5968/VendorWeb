@@ -622,6 +622,36 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  const claimPartnerReward = async (rewardItem) => {
+    if (!currentUser) {
+      addNotification('Authentication Required', 'Please log in to claim partner offers.', 'warning');
+      return null;
+    }
+    try {
+      const claimed = await db.claimPartnerReward({
+        student: currentUser,
+        reward: rewardItem
+      });
+      setClaimedRewardModal(claimed);
+      addNotification('Voucher Claimed 🎉', `Claim code: ${claimed.voucherCode || claimed.claimCode}`, 'success');
+      return claimed;
+    } catch (e) {
+      addNotification('Cannot Claim Offer ⚠️', e.message, 'warning');
+      throw e;
+    }
+  };
+
+  const validateAndRedeemVoucher = async (vendorId, voucherCode) => {
+    try {
+      const res = await db.validateAndRedeemVoucher(vendorId, voucherCode);
+      addNotification('Voucher Redeemed ✅', res.message, 'success');
+      return res;
+    } catch (e) {
+      addNotification('Validation Failed ❌', e.message, 'error');
+      throw e;
+    }
+  };
+
   // 8. WARDEN METRICS & GOVERNANCE
   const getWardenMetrics = () => {
     const overallCount = (allRatings || []).length;
@@ -760,6 +790,8 @@ export const AppProvider = ({ children }) => {
         rewardsCatalog,
         userRedemptions,
         redeemReward,
+        claimPartnerReward,
+        validateAndRedeemVoucher,
 
         // Voting & Polls
         poll: enrichedPoll,
