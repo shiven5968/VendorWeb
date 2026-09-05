@@ -11,8 +11,10 @@ import {
   ShieldCheck,
   Star,
   Vote,
-  CalendarCheck
+  CalendarCheck,
+  Store
 } from 'lucide-react';
+import { RewardsSection } from '../components/RewardsSection';
 
 export const HealthyRewardsPage = () => {
   const { 
@@ -24,7 +26,7 @@ export const HealthyRewardsPage = () => {
     rewardEvents 
   } = useApp();
 
-  const [activeTab, setActiveTab] = useState('catalog');
+  const [activeTab, setActiveTab] = useState('partner');
   const [selectedReward, setSelectedReward] = useState(null);
   const [claiming, setClaiming] = useState(false);
   const [claimNotice, setClaimNotice] = useState(null);
@@ -108,6 +110,21 @@ export const HealthyRewardsPage = () => {
       {/* Tabs */}
       <div className="flex space-x-2 border-b border-slate-200 dark:border-slate-800 pb-2 overflow-x-auto scrollbar-none">
         <button
+          onClick={() => setActiveTab('partner')}
+          className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all flex items-center space-x-1.5 flex-shrink-0 ${
+            activeTab === 'partner'
+              ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-sm'
+              : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+          }`}
+        >
+          <Store className="w-4 h-4 text-emerald-500" />
+          <span>Live Partner Deals</span>
+          <span className="px-1.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[9px] font-black uppercase">
+            Live
+          </span>
+        </button>
+
+        <button
           onClick={() => setActiveTab('catalog')}
           className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all flex items-center space-x-1.5 flex-shrink-0 ${
             activeTab === 'catalog'
@@ -116,7 +133,7 @@ export const HealthyRewardsPage = () => {
           }`}
         >
           <Gift className="w-4 h-4" />
-          <span>Mess Rewards Catalog</span>
+          <span>Mess Rewards</span>
         </button>
 
         <button
@@ -143,6 +160,11 @@ export const HealthyRewardsPage = () => {
           <span>My Redemptions ({(userRedemptions || []).length})</span>
         </button>
       </div>
+
+      {/* Tab: Live Partner Deals (Real-time Firestore) */}
+      {activeTab === 'partner' && (
+        <RewardsSection />
+      )}
 
       {/* Tab: Catalog */}
       {activeTab === 'catalog' && (
