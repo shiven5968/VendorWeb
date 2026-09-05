@@ -14,7 +14,8 @@ import {
   query,
   where,
   onSnapshot,
-  runTransaction
+  runTransaction,
+  serverTimestamp
 } from 'firebase/firestore';
 import { db as firestoreDb, isFirebaseConfigured } from './firebase.js';
 
@@ -1343,10 +1344,18 @@ class LaunchDatabase {
             const total = Number(data.totalVouchers || 0);
             const claimed = Number(data.claimedCount || 0);
             if (total > claimed) {
-              items.push({ id: docSnap.id, ...data });
+              items.push({ id: docSnap.id, rewardId: docSnap.id, ...data });
             }
           });
-          items.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+          const toTime = (val) => {
+            if (!val) return 0;
+            if (typeof val.toMillis === 'function') return val.toMillis();
+            if (typeof val.toDate === 'function') return val.toDate().getTime();
+            if (val.seconds) return val.seconds * 1000;
+            const t = new Date(val).getTime();
+            return isNaN(t) ? 0 : t;
+          };
+          items.sort((a, b) => toTime(b.createdAt) - toTime(a.createdAt));
           if (items.length > 0) {
             callback(items);
           } else {
@@ -1380,9 +1389,17 @@ class LaunchDatabase {
         const unsubscribe = onSnapshot(q, (snapshot) => {
           const items = [];
           snapshot.forEach(docSnap => {
-            items.push({ id: docSnap.id, ...docSnap.data() });
+            items.push({ id: docSnap.id, rewardId: docSnap.id, ...docSnap.data() });
           });
-          items.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+          const toTime = (val) => {
+            if (!val) return 0;
+            if (typeof val.toMillis === 'function') return val.toMillis();
+            if (typeof val.toDate === 'function') return val.toDate().getTime();
+            if (val.seconds) return val.seconds * 1000;
+            const t = new Date(val).getTime();
+            return isNaN(t) ? 0 : t;
+          };
+          items.sort((a, b) => toTime(b.createdAt) - toTime(a.createdAt));
           if (items.length > 0) {
             callback(items);
           } else {
@@ -1425,7 +1442,11 @@ class LaunchDatabase {
 
     if (isFirebaseConfigured) {
       try {
-        await setDoc(doc(firestoreDb, 'rewards', rewardId), finalReward);
+        const firestorePayload = {
+          ...finalReward,
+          createdAt: rewardData.createdAt ? rewardData.createdAt : serverTimestamp()
+        };
+        await setDoc(doc(firestoreDb, 'rewards', rewardId), firestorePayload);
       } catch (e) {
         console.error('Error saving reward to Firestore /rewards:', e);
       }

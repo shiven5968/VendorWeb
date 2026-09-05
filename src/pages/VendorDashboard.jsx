@@ -36,6 +36,7 @@ import {
   Camera
 } from 'lucide-react';
 import { QrCameraScannerModal } from '../components/QrCameraScannerModal';
+import { createRewardOffer } from '../components/CreateOffer';
 
 const CATEGORY_OPTIONS = [
   'Food & Dining',
@@ -194,7 +195,27 @@ export const VendorDashboard = () => {
         createdAt: new Date().toISOString()
       };
 
-      await db.savePartnerReward(rewardPayload);
+      if (!editingRewardId) {
+        const createRes = await createRewardOffer({
+          vendorId,
+          vendorName,
+          vendorLogo: formData.vendorLogo || vendorLogo,
+          title: formData.title.trim(),
+          description: formData.description.trim(),
+          pointsRequired: Number(formData.pointsRequired),
+          category: formData.category,
+          discountCode: (formData.discountCode || ('ABES' + Math.random().toString(36).substring(2, 6).toUpperCase())).trim().toUpperCase(),
+          totalVouchers: Number(formData.totalVouchers),
+          expiryDate: formData.expiryDate,
+          imageUrl: formData.imageUrl,
+          image: formData.imageUrl
+        });
+        if (!createRes.success) {
+          throw new Error(createRes.error || 'Failed to publish offer to Firestore');
+        }
+      } else {
+        await db.savePartnerReward(rewardPayload);
+      }
       setIsModalOpen(false);
       showToast(editingRewardId ? 'Offer updated successfully!' : 'New offer published live to MessMates students!');
     } catch (err) {
