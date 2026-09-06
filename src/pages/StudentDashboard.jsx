@@ -245,11 +245,11 @@ export const StudentDashboard = () => {
     return {
       id: matchingDbMeal?.id || `${todayDay.toLowerCase().substring(0, 3)}_${cat.toLowerCase().substring(0, 1)}`,
       category: cat,
-      name: matchingDbMeal?.name || staticMeal.title,
-      items: matchingDbMeal?.items || (staticMeal.items || []).join(', '),
-      image: matchingDbMeal?.image || staticMeal.image,
-      protein: matchingDbMeal?.protein || (staticMeal.protein || '14g').replace('g', ''),
-      calories: matchingDbMeal?.calories || (staticMeal.calories || '520 kcal').replace(' kcal', ''),
+      name: staticMeal.title || matchingDbMeal?.name,
+      items: (staticMeal.items && staticMeal.items.length > 0 ? staticMeal.items.join(', ') : matchingDbMeal?.items) || '',
+      image: staticMeal.image || matchingDbMeal?.image,
+      protein: (staticMeal.protein || matchingDbMeal?.protein || '14g').replace('g', ''),
+      calories: (staticMeal.calories || matchingDbMeal?.calories || '520 kcal').replace(' kcal', ''),
       ...(matchingDbMeal || {})
     };
   });
