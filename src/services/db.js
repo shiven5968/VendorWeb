@@ -1345,6 +1345,11 @@ class LaunchDatabase {
       return { awarded: false, reason: 'INVALID_PARAMS', points: 0 };
     }
 
+    // Business Rule: Voting awards strictly 0 points and generates no reward event
+    if (type === 'VOTE') {
+      return { awarded: false, reason: 'VOTING_AWARDS_ZERO_POINTS', points: 0 };
+    }
+
     const eventDate = date || getCollegeDateString();
     let eventId = '';
     let notifTitle = '';
@@ -1358,12 +1363,8 @@ class LaunchDatabase {
       eventId = `rating_${userId}_${referenceId || eventDate}`;
       notifTitle = 'Meal Rating Reward ⭐';
       notifMessage = `+1 Health Point awarded for rating ${description || 'meal'}.`;
-    } else if (type === 'VOTE') {
-      eventId = `vote_${userId}_${referenceId || eventDate}`;
-      notifTitle = 'Weekly Feedback Reward 🗳️';
-      notifMessage = `+10 Health Points awarded for reviewing ${description || 'dish'}!`;
     } else {
-      eventId = `event_${userId}_${type}_${Date.now()}`;
+      eventId = `event_${userId}_${type}_${referenceId || Date.now()}`;
       notifTitle = 'Reward Points Earned 🎉';
       notifMessage = `+${points} Health Points awarded!`;
     }
@@ -1400,14 +1401,15 @@ class LaunchDatabase {
       try {
         const result = await runTransaction(firestoreDb, async (transaction) => {
           const eventRef = doc(firestoreDb, 'reward_events', eventId);
+          const userRef = doc(firestoreDb, 'users', userId);
+
+          // All reads strictly precede all writes
           const eventSnap = await transaction.get(eventRef);
           if (eventSnap.exists()) {
             return { awarded: false, reason: 'ALREADY_AWARDED', points: 0 };
           }
 
-          const userRef = doc(firestoreDb, 'users', userId);
           const userSnap = await transaction.get(userRef);
-
           let currentPoints = 0;
           if (userSnap.exists()) {
             currentPoints = Number(userSnap.data().rewardPoints || 0);
@@ -1440,10 +1442,6 @@ class LaunchDatabase {
             }, { merge: true });
           }
 
-          // 3. Write user-scoped notification
-          const notifRef = doc(firestoreDb, 'notifications', notifId);
-          transaction.set(notifRef, notifData);
-
           return { awarded: true, points: Number(points), newBalance: calculatedPoints };
         });
 
@@ -1452,8 +1450,17 @@ class LaunchDatabase {
         }
         awarded = true;
         newBalance = result.newBalance;
+
+        // 3. Write user-scoped notification (deterministic notifId prevents duplicate alerts)
+        try {
+          const notifRef = doc(firestoreDb, 'notifications', notifId);
+          await setDoc(notifRef, notifData);
+        } catch (notifErr) {
+          console.warn('[awardRewardEvent] Notification write notice:', notifErr.message);
+        }
       } catch (err) {
-        console.warn('[awardRewardEvent] Firestore transaction notice:', err.message);
+        console.error('[awardRewardEvent] Firestore transaction failed:', err.message);
+        return { awarded: false, reason: 'TRANSACTION_FAILED', error: err.message, points: 0 };
       }
     }
 
@@ -1464,7 +1471,7 @@ class LaunchDatabase {
       events.unshift(eventData);
       this.setItem('reward_events', events);
       awarded = true;
-    } else {
+    } else if (!isFirebaseConfigured) {
       return { awarded: false, reason: 'ALREADY_AWARDED', points: 0 };
     }
 
@@ -1641,31 +1648,13 @@ class LaunchDatabase {
   }
 
   async addRewardPoints(userId, points) {
-    if (!userId || !points) return;
-    const numPoints = Number(points);
-    const isoNow = new Date().toISOString();
-
-    if (isFirebaseConfigured) {
-      try {
-        const userRef = doc(firestoreDb, 'users', userId);
-        const userSnap = await getDoc(userRef);
-        const currentPoints = userSnap.exists() ? Number(userSnap.data().rewardPoints || 0) : 0;
-        const newPoints = Math.max(0, currentPoints + numPoints);
-        await updateDoc(userRef, {
-          rewardPoints: newPoints,
-          updatedAt: isoNow
-        });
-      } catch (e) {
-        console.warn('Error adjusting user points in Firestore:', e.message);
-      }
-    }
-
-    const users = this.getUsers();
-    const idx = users.findIndex(u => u.id === userId || u.uid === userId);
-    if (idx !== -1) {
-      users[idx].rewardPoints = Math.max(0, (users[idx].rewardPoints || 0) + numPoints);
-      this.setItem('users', users);
-    }
+    console.warn('[addRewardPoints] Direct point manipulation is deprecated. Routing through canonical awardRewardEvent.');
+    return await this.awardRewardEvent({
+      userId,
+      type: 'MEAL_RATING',
+      points: Number(points),
+      description: 'Point Adjustment'
+    });
   }
 
   async redeemReward(userId, userName, rewardItem) {

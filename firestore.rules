@@ -91,25 +91,25 @@ service cloud.firestore {
       // - Students CANNOT set arbitrary large reward balances
       // - Warden can update any user profile including role management
       allow update: if (isOwner(userId) 
-                        && request.resource.data.role == resource.data.role 
-                        && request.resource.data.uid == resource.data.uid
-                        && request.resource.data.admissionNumber == resource.data.admissionNumber
-                        && request.resource.data.email == resource.data.email
+                        && request.resource.data.get('role', 'student') == resource.data.get('role', 'student') 
+                        && request.resource.data.get('uid', userId) == resource.data.get('uid', userId)
+                        && request.resource.data.get('admissionNumber', '') == resource.data.get('admissionNumber', '')
+                        && request.resource.data.get('email', '') == resource.data.get('email', '')
                         && (
                           (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['rewardPoints', 'points', 'collegeId', 'role']))
                           ||
                           (
                             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['rewardPoints', 'lastLoginRewardDate', 'updatedAt'])
                             && request.resource.data.rewardPoints is number
-                            && request.resource.data.rewardPoints >= resource.data.rewardPoints
-                            && (request.resource.data.rewardPoints - resource.data.rewardPoints) <= 10
+                            && request.resource.data.rewardPoints >= resource.data.get('rewardPoints', 0)
+                            && (request.resource.data.rewardPoints - resource.data.get('rewardPoints', 0)) <= 10
                           )
                           ||
                           (
                             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['rewardPoints', 'updatedAt'])
                             && request.resource.data.rewardPoints is number
                             && request.resource.data.rewardPoints >= 0
-                            && request.resource.data.rewardPoints < resource.data.rewardPoints
+                            && request.resource.data.rewardPoints < resource.data.get('rewardPoints', 0)
                           )
                         ))
                     || isWarden();
@@ -354,8 +354,8 @@ service cloud.firestore {
     // Additive, immutable audit log of earned points
     // ===============================================================
     match /reward_events/{eventId} {
-      // Students can read ONLY their own reward events; Staff can audit
-      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isStaff());
+      // Students can read ONLY their own reward events; Staff can audit; null-safe for existence checks
+      allow read: if isAuthenticated() && (resource == null || resource.data.userId == request.auth.uid || isStaff());
 
       // Creation allowed strictly for authenticated students with valid event types and point values (<= 10)
       allow create: if isAuthenticated() 
@@ -377,20 +377,14 @@ service cloud.firestore {
     // Real-time user-scoped notifications
     // ===============================================================
     match /notifications/{notifId} {
-      // Students can read ONLY their own notifications; Staff can audit
-      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isStaff());
+      // Students can read ONLY their own notifications; Staff can audit; null-safe for existence checks
+      allow read: if isAuthenticated() && (resource == null || resource.data.userId == request.auth.uid || isStaff());
 
-      // Creation allowed by student for their own events (e.g. rewards) or by Staff (e.g. complaint updates)
-      allow create: if isAuthenticated() && (request.resource.data.userId == request.auth.uid || isStaff());
-
-      // Students can update ONLY their own read status
-      allow update: if isAuthenticated() 
-                    && resource.data.userId == request.auth.uid 
-                    && request.resource.data.userId == request.auth.uid
-                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read', 'updatedAt']);
+      // Creation & update allowed by student for their own events (e.g. rewards) or by Staff (e.g. complaint updates)
+      allow create, update: if isAuthenticated() && (request.resource.data.userId == request.auth.uid || isStaff());
 
       // Students can dismiss/delete their own notifications
-      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow delete: if isAuthenticated() && (resource == null || resource.data.userId == request.auth.uid);
     }
   }
 }

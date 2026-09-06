@@ -230,7 +230,7 @@ export const HealthyRewardsPage = () => {
             <div className="p-12 text-center text-xs font-bold text-slate-400 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 space-y-2">
               <Award className="w-8 h-8 mx-auto text-slate-300 dark:text-slate-600" />
               <p className="text-base font-black text-slate-700 dark:text-slate-200">No reward events logged yet.</p>
-              <p>Earn points by logging in daily (+2 pts), rating today's meals (+1 pt), and voting in monthly polls (+10 pts)!</p>
+              <p>Earn points by logging in daily (+2 pts) and rating today's meals (+1 pt)!</p>
             </div>
           ) : (
             <div className="space-y-3">

@@ -13,7 +13,8 @@ export const isFirebaseConfigured = Boolean(
   projectId &&
   !apiKey.includes('Placeholder') &&
   !apiKey.includes('your-api-key') &&
-  apiKey.trim().length > 15
+  apiKey.trim().length > 15 &&
+  !metaEnv.MESSMATES_DISABLE_FIREBASE
 );
 
 // Firebase configuration with live production fallback for cloud deployments (e.g. Vercel)

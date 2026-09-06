@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Automated Verification Script: MessMates Real Rewards & Notification Engine
  *
  * Verifies:
@@ -16,9 +16,12 @@
  * 12. Reward redemption: points safely deducted, claim code issued, and redemption notification created.
  */
 
+// Enable offline test environment for reliable in-memory database assertions
+process.env.MESSMATES_DISABLE_FIREBASE = 'true';
+
 import assert from 'node:assert';
-import { db } from '../src/services/db.js';
-import { getCollegeDateString } from '../src/utils/dateTime.js';
+const { db } = await import('../src/services/db.js');
+const { getCollegeDateString } = await import('../src/utils/dateTime.js');
 
 console.log('===============================================================');
 console.log('  MESSMATES — REWARDS & NOTIFICATION ENGINE VERIFICATION');
@@ -44,6 +47,14 @@ async function runTests() {
       name: 'Rohit Kumar',
       email: 'rohit.25b15310299@abes.ac.in',
       rewardPoints: 10,
+      role: 'student'
+    },
+    {
+      id: 'test_student_ananya_003',
+      uid: 'test_student_ananya_003',
+      name: 'Ananya Gupta',
+      email: 'ananya.25b15310300@abes.ac.in',
+      rewardPoints: 0,
       role: 'student'
     }
   ];
@@ -151,24 +162,71 @@ async function runTests() {
   assert.strictEqual(userAAfterNextWeekRating.rewardPoints, 56, 'Balance must be 55 + 1 = 56');
   console.log(`  ✓ Recurring dish next week (${occurrenceNextWeek}) awarded +1 point. New balance: 56 pts\n`);
 
-  console.log('[TEST 8] Weekly Dish Feedback / Vote (+10 points)');
-  const voteId = `vote_${studentA}_2026-W36_paneer_butter_masala`;
+  console.log('[TEST 8] Voting: STRICTLY 0 POINTS (No reward points, no ledger events)');
   const voteRes = await db.awardRewardEvent({
     userId: studentA,
     type: 'VOTE',
     points: 10,
-    referenceId: voteId,
-    description: 'Weekly Feedback: Paneer Butter Masala',
+    referenceId: 'poll_123',
+    description: 'Weekly Poll: Paneer Butter Masala',
     date: todayDate
   });
-  assert.strictEqual(voteRes.awarded, true, 'Vote must be awarded');
-  assert.strictEqual(voteRes.points, 10, 'Vote must award strictly 10 points');
+  assert.strictEqual(voteRes.awarded, false, 'Voting reward event must be rejected');
+  assert.strictEqual(voteRes.points, 0, 'Voting must award strictly 0 points');
+  assert.strictEqual(voteRes.reason, 'VOTING_AWARDS_ZERO_POINTS');
+
+  // Also test db.castVote directly
+  await db.createPoll({
+    question: 'Sunday Special Dessert?',
+    options: ['Gulab Jamun', 'Rasgulla', 'Ice Cream'],
+    closingDate: 'Sunday 10 PM'
+  });
+  const activePoll = db.getPoll();
+  assert.ok(activePoll, 'Active poll must exist');
+
+  await db.castVote({
+    pollId: activePoll.id,
+    optionId: 'opt_1',
+    userId: studentA,
+    userName: 'Parth Sharma'
+  });
 
   const userAAfterVote = db.getUserById(studentA);
-  assert.strictEqual(userAAfterVote.rewardPoints, 66, 'Balance must be 56 + 10 = 66');
-  console.log(`  ✓ Dish vote awarded +10 points. New balance: 66 pts\n`);
+  assert.strictEqual(userAAfterVote.rewardPoints, 56, 'Balance must remain 56 pts after voting (+0 points)');
 
-  console.log('[TEST 9] User Isolation (Student A vs Student B)');
+  const studentAEventsAfterVote = db.getUserRewardEvents(studentA);
+  assert.ok(!studentAEventsAfterVote.some(e => e.type === 'VOTE'), 'No VOTE event should exist in ledger');
+  console.log('  ✓ Voting strictly awards 0 points and generates 0 reward events. Balance: 56 pts\n');
+
+  console.log('[TEST 9] Concurrency & Race Condition Handling');
+  // Student C (0 points) logs in with 5 concurrent requests simultaneously
+  const studentC = 'test_student_ananya_003';
+  const concurrentLogins = await Promise.all([
+    db.awardDailyLoginReward(studentC),
+    db.awardDailyLoginReward(studentC),
+    db.awardDailyLoginReward(studentC),
+    db.awardDailyLoginReward(studentC),
+    db.awardDailyLoginReward(studentC)
+  ]);
+
+  const awardedCount = concurrentLogins.filter(r => r.awarded).length;
+  assert.strictEqual(awardedCount, 1, 'Exactly ONE concurrent login attempt must succeed');
+
+  const userCAfterConcurrent = db.getUserById(studentC);
+  assert.strictEqual(userCAfterConcurrent.rewardPoints, 2, 'Student C balance must be exactly 2 pts (not 2 * 5)');
+
+  // Concurrent ratings on the same occurrence
+  const concurrentRatings = await Promise.all([
+    db.awardRewardEvent({ userId: studentC, type: 'MEAL_RATING', points: 1, referenceId: `${todayDate}_meal_concurrent`, date: todayDate }),
+    db.awardRewardEvent({ userId: studentC, type: 'MEAL_RATING', points: 1, referenceId: `${todayDate}_meal_concurrent`, date: todayDate }),
+    db.awardRewardEvent({ userId: studentC, type: 'MEAL_RATING', points: 1, referenceId: `${todayDate}_meal_concurrent`, date: todayDate })
+  ]);
+  const ratingAwardedCount = concurrentRatings.filter(r => r.awarded).length;
+  assert.strictEqual(ratingAwardedCount, 1, 'Exactly ONE concurrent rating on same occurrence must succeed');
+  assert.strictEqual(db.getUserById(studentC).rewardPoints, 3, 'Student C balance must be exactly 2 + 1 = 3 pts');
+  console.log('  ✓ Concurrent requests safely serialized: exactly +2 login and +1 rating awarded once\n');
+
+  console.log('[TEST 10] User Isolation (Student A vs Student B)');
   // Student B logs in
   const loginB = await db.awardDailyLoginReward(studentB);
   assert.strictEqual(loginB.awarded, true);
@@ -179,16 +237,19 @@ async function runTests() {
   const studentAEvents = db.getUserRewardEvents(studentA);
   const studentBEvents = db.getUserRewardEvents(studentB);
   assert.strictEqual(studentBEvents.length, 1, 'Student B must have exactly 1 event');
-  assert.strictEqual(studentAEvents.length, 5, 'Student A must have exactly 5 events');
+  assert.strictEqual(studentAEvents.length, 4, 'Student A must have exactly 4 events (2 logins + 2 ratings)');
   assert.ok(studentAEvents.every(e => e.userId === studentA), 'All student A events must belong to Student A');
   assert.ok(studentBEvents.every(e => e.userId === studentB), 'All student B events must belong to Student B');
   console.log('  ✓ Strict ledger isolation verified: Student A and Student B data never cross-leak\n');
 
-  console.log('[TEST 10] Real-time Notifications & Read Transitions');
+  console.log('[TEST 11] Real-time Notifications & Deduplication');
   const studentANotifs = db.getUserNotifications(studentA);
-  assert.strictEqual(studentANotifs.length, 5, 'Student A must have 5 notifications from events');
+  assert.strictEqual(studentANotifs.length, 4, 'Student A must have exactly 4 notifications matching the 4 events');
+  const uniqueNotifIds = new Set(studentANotifs.map(n => n.id));
+  assert.strictEqual(uniqueNotifIds.size, 4, 'All notification IDs must be unique and deterministic');
+
   const unreadCountBefore = studentANotifs.filter(n => !n.read).length;
-  assert.strictEqual(unreadCountBefore, 5, 'All 5 must initially be unread');
+  assert.strictEqual(unreadCountBefore, 4, 'All 4 must initially be unread');
 
   // Mark single notification as read
   const firstNotifId = studentANotifs[0].id;
@@ -196,17 +257,17 @@ async function runTests() {
 
   const studentANotifsAfterSingle = db.getUserNotifications(studentA);
   const unreadAfterSingle = studentANotifsAfterSingle.filter(n => !n.read).length;
-  assert.strictEqual(unreadAfterSingle, 4, 'Unread count must decrease to 4');
-  console.log('  ✓ Single notification mark-as-read verified (unread count 5 -> 4)');
+  assert.strictEqual(unreadAfterSingle, 3, 'Unread count must decrease to 3');
+  console.log('  ✓ Single notification mark-as-read verified (unread count 4 -> 3)');
 
   // Mark all as read
   await db.markAllUserNotificationsRead(studentA, studentANotifsAfterSingle.filter(n => !n.read));
   const studentANotifsAfterAll = db.getUserNotifications(studentA);
   const unreadAfterAll = studentANotifsAfterAll.filter(n => !n.read).length;
   assert.strictEqual(unreadAfterAll, 0, 'Unread count must be 0 after Mark All Read');
-  console.log('  ✓ Batch mark-all-read verified (unread count 4 -> 0)\n');
+  console.log('  ✓ Batch mark-all-read verified (unread count 3 -> 0)\n');
 
-  console.log('[TEST 11] Complaint Status Update Notification');
+  console.log('[TEST 12] Complaint Status Update Notification');
   // Seed a complaint for Student A
   const testComplaint = {
     id: 'cmp_test_101',
@@ -232,14 +293,14 @@ async function runTests() {
   assert.ok(cmpResolvedNotif, 'Must create notification when complaint is RESOLVED');
   console.log('  ✓ Complaint status transitions (PENDING -> IN REVIEW -> RESOLVED) notify student\n');
 
-  console.log('[TEST 12] Reward Redemption with Safety & Notifications');
+  console.log('[TEST 13] Reward Redemption with Safety & Notifications');
   const rewardItem = {
     id: 'rew_curd_cup',
     name: 'Extra Amul Curd Cup',
     points: 15
   };
 
-  const currentPointsBefore = db.getUserById(studentA).rewardPoints; // 66
+  const currentPointsBefore = db.getUserById(studentA).rewardPoints; // 56
   const redemption = await db.redeemReward(studentA, 'Parth Sharma', rewardItem);
   assert.ok(redemption.claimCode.startsWith('HEALTHY-'), 'Claim code must start with HEALTHY-');
 
@@ -249,10 +310,20 @@ async function runTests() {
   const redNotif = db.getUserNotifications(studentA).find(n => n.referenceId === redemption.id);
   assert.ok(redNotif, 'Redemption notification must exist in student drawer');
   assert.strictEqual(redNotif.title, 'Reward Claimed 🎁');
-  console.log(`  ✓ Redemption claimed "${rewardItem.name}" with code ${redemption.claimCode}. Balance: 66 -> 51 pts\n`);
+
+  // Insufficient balance rejection
+  let failedAsExpected = false;
+  try {
+    await db.redeemReward(studentA, 'Parth Sharma', { id: 'expensive', name: 'Expensive Item', points: 9999 });
+  } catch (e) {
+    failedAsExpected = true;
+    assert.strictEqual(e.message, 'Insufficient Health Points to claim this reward.');
+  }
+  assert.strictEqual(failedAsExpected, true, 'Redemption must be rejected when points are insufficient');
+  console.log(`  ✓ Redemption claimed "${rewardItem.name}" with code ${redemption.claimCode}. Balance: 56 -> 41 pts\n`);
 
   console.log('===============================================================');
-  console.log('  ALL 12 TESTS PASSED! REWARDS & NOTIFICATIONS ARE ROCK-SOLID!');
+  console.log('  ALL 13 TESTS PASSED! REWARDS & NOTIFICATIONS ARE ROCK-SOLID!');
   console.log('===============================================================\n');
   process.exit(0);
 }

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { 
   db, 
   MESS_BLOCK_MAP, 
@@ -118,8 +118,8 @@ export const AppProvider = ({ children }) => {
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [notifications, setNotifications] = useState(() => []);
-  const [rewardEvents, setRewardEvents] = useState(() => []);
+  const [notifications, setNotifications] = useState(() => db.getItem('notifications', []));
+  const [rewardEvents, setRewardEvents] = useState(() => db.getItem('reward_events', []));
   const [menuApproved, setMenuApproved] = useState(false);
 
   // Theme Sync
@@ -145,12 +145,21 @@ export const AppProvider = ({ children }) => {
     }
   }, []);
 
-  // DAILY LOGIN REWARD: Award +2 Points ONCE per calendar day
+  // DAILY LOGIN REWARD: Award +2 Points ONCE per calendar day (Asia/Kolkata)
+  // Guaranteed idempotent: event ID login_${userId}_${todayStr} prevents duplicate awards
+  const dailyLoginAttemptedRef = useRef({});
   useEffect(() => {
     const studentUid = authUser?.uid || currentUser?.uid;
-    if (studentUid && currentRole === 'student') {
-      db.awardDailyLoginReward(studentUid).catch(err => console.warn('Daily login reward notice:', err.message));
-    }
+    if (!studentUid || currentRole !== 'student') return;
+
+    const todayStr = getCollegeDateString();
+    const sessionKey = `${studentUid}_${todayStr}`;
+    if (dailyLoginAttemptedRef.current[sessionKey]) return;
+
+    dailyLoginAttemptedRef.current[sessionKey] = true;
+    db.awardDailyLoginReward(studentUid).catch(err => {
+      console.warn('Daily login reward notice:', err.message);
+    });
   }, [authUser?.uid, currentUser?.uid, currentRole]);
 
   // Live Firestore Real-Time Subscriptions (Synchronized upon login & role change)
@@ -542,7 +551,6 @@ export const AppProvider = ({ children }) => {
       setAllRatings(prev => [ratingEntry, ...prev]);
       setUserRatings(prev => [ratingEntry, ...prev.filter(r => r.id !== ratingEntry.id)]);
       setRatingsVersion(v => v + 1);
-      addNotification('Rating Submitted 🌟', '+1 Health Point awarded to your account.', 'success');
       return ratingEntry;
     } catch (e) {
       console.error('[Firebase Error in rateMeal]:', e);
@@ -671,44 +679,6 @@ export const AppProvider = ({ children }) => {
       return newVote;
     } catch (err) {
       addNotification('Vote Failed', err.message, 'warning');
-      throw err;
-    }
-  };
-
-  const voteWeeklyMeal = async ({ mealId, mealName, mealCategory, rating }) => {
-    if (!currentUser) {
-      const err = new Error('You must be logged in to submit a vote.');
-      addNotification('Authentication Required', err.message, 'warning');
-      throw err;
-    }
-    if (currentRole !== 'student') {
-      const err = new Error('Only students can participate in mess voting.');
-      addNotification('Permission Denied', err.message, 'warning');
-      throw err;
-    }
-    try {
-      const uid = currentUser.uid || currentUser.id;
-      const newVote = await db.castVote({
-        pollId: mealId,
-        optionId: String(rating),
-        userId: uid,
-        userName: currentUser.name || 'Student',
-        weekId: currentWeekInfo.weekId,
-        weekStart: currentWeekInfo.weekStartStr,
-        weekEnd: currentWeekInfo.weekEndStr
-      });
-
-      setVotesList(prev => {
-        const exists = prev.some(v => v.id === newVote.id);
-        return exists ? prev : [newVote, ...prev];
-      });
-
-      setPollsVersion(v => v + 1);
-      addNotification('Vote Recorded 🗳️', 'Your response has been counted.', 'info');
-      return newVote;
-    } catch (err) {
-      console.error('[castVote error]:', err);
-      addNotification('Vote Failed', err.message || 'Could not record vote.', 'warning');
       throw err;
     }
   };
@@ -1102,7 +1072,6 @@ export const AppProvider = ({ children }) => {
         poll: enrichedPoll,
         userVotedOptionId,
         voteDish,
-        voteWeeklyMeal,
         hasUserVotedThisWeek,
         getStudentVotingHistory,
         getOverallMealPerformance,
