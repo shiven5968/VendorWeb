@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   collection, 
   query, 
@@ -55,80 +55,67 @@ export const RewardsSection = () => {
   const [claimedVoucher, setClaimedVoucher] = useState(null);
   const [copiedCode, setCopiedCode] = useState(false);
 
-  // Real-time Firestore subscription to /rewards
+  const [retryKey, setRetryKey] = useState(0);
+
+  // Real-time Firestore subscription to /rewards (live Partner Hub integration)
   useEffect(() => {
     setLoading(true);
     setError(null);
 
     let unsubscribe = null;
 
-    const setupListener = () => {
-      try {
-        // Preferred query with orderBy
-        const primaryQuery = query(
-          collection(db, 'rewards'),
-          where('isActive', '==', true),
-          orderBy('createdAt', 'desc')
-        );
+    try {
+      const rewardsCol = collection(db, 'rewards');
 
-        unsubscribe = onSnapshot(
-          primaryQuery,
-          (snapshot) => {
-            const items = [];
-            snapshot.forEach((docSnap) => {
-              items.push({ id: docSnap.id, ...docSnap.data() });
-            });
-            setRewards(items);
-            setLoading(false);
-          },
-          (err) => {
-            console.warn('Primary /rewards query notice (index pending or permission):', err.message);
-            
-            // Graceful fallback query without orderBy (in case Firestore composite index is building)
-            try {
-              const fallbackQuery = query(
-                collection(db, 'rewards'),
-                where('isActive', '==', true)
-              );
+      unsubscribe = onSnapshot(
+        rewardsCol,
+        (snapshot) => {
+          const items = [];
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
 
-              unsubscribe = onSnapshot(
-                fallbackQuery,
-                (fallbackSnap) => {
-                  const fallbackItems = [];
-                  fallbackSnap.forEach((docSnap) => {
-                    fallbackItems.push({ id: docSnap.id, ...docSnap.data() });
-                  });
-                  // Sort client-side by createdAt descending
-                  fallbackItems.sort((a, b) => toMillis(b.createdAt) - toMillis(a.createdAt));
-                  setRewards(fallbackItems);
-                  setLoading(false);
-                },
-                (fallbackErr) => {
-                  console.error('Fallback /rewards query error:', fallbackErr);
-                  setError('Unable to load live vendor rewards at this time.');
-                  setLoading(false);
+          snapshot.forEach((docSnap) => {
+            const data = docSnap.data();
+            // Filter: deal must be active and not expired
+            const isExplicitlyInactive = data.isActive === false || data.status === 'INACTIVE';
+            if (isExplicitlyInactive) return;
+
+            if (data.expiryDate) {
+              try {
+                const exp = new Date(data.expiryDate);
+                if (!isNaN(exp.getTime()) && exp < today) {
+                  return; // Expired
                 }
-              );
-            } catch (fallbackEx) {
-              console.error('Fallback listener exception:', fallbackEx);
-              setLoading(false);
+              } catch (e) {}
             }
-          }
-        );
-      } catch (e) {
-        console.error('Setup listener exception:', e);
-        setLoading(false);
-      }
-    };
 
-    setupListener();
+            items.push({ id: docSnap.id, ...data });
+          });
+
+          // Sort client-side by createdAt descending (newest deals first)
+          items.sort((a, b) => toMillis(b.createdAt) - toMillis(a.createdAt));
+          setRewards(items);
+          setLoading(false);
+          setError(null);
+        },
+        (err) => {
+          console.warn('Firestore /rewards live listener notice:', err.message);
+          setError('Unable to load live vendor rewards at this time.');
+          setLoading(false);
+        }
+      );
+    } catch (e) {
+      console.error('Setup listener exception:', e);
+      setError('Unable to load live vendor rewards at this time.');
+      setLoading(false);
+    }
 
     return () => {
       if (typeof unsubscribe === 'function') {
         unsubscribe();
       }
     };
-  }, []);
+  }, [retryKey]);
 
   // Claim offer handler
   const handleClaimOffer = async (offer) => {
@@ -178,13 +165,17 @@ export const RewardsSection = () => {
         studentAdmissionNumber: currentUser.admissionNumber || '',
         rewardId: offer.id,
         rewardTitle: offer.title,
+        rewardName: offer.title, // Backward compatibility
         vendorId: offer.vendorId || 'vendor_partner',
         vendorName: offer.vendorName || 'Partner Vendor',
         discountCode: offer.discountCode || voucherCode,
         voucherCode,
+        claimCode: voucherCode,  // Backward compatibility
         pointsSpent: pointsCost,
         status: 'ACTIVE',
         claimedAt: serverTimestamp(),
+        createdAt: new Date().toISOString(),
+        timestamp: Date.now(),
         expiryDate: offer.expiryDate || new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0]
       };
       await setDoc(redemptionRef, redemptionData);
@@ -193,10 +184,24 @@ export const RewardsSection = () => {
       try {
         const userRef = doc(db, 'users', studentId);
         await updateDoc(userRef, {
-          rewardPoints: increment(-pointsCost)
+          rewardPoints: increment(-pointsCost),
+          updatedAt: serverTimestamp()
         });
       } catch (userPointsErr) {
         console.warn('Student points deduction notice:', userPointsErr.message);
+      }
+
+      // 4. Update local state and offline persistence
+      try {
+        const localReds = (typeof window !== 'undefined' && JSON.parse(localStorage.getItem('messmates_launch_redemptions') || '[]')) || [];
+        localReds.unshift(redemptionData);
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem('messmates_launch_redemptions', JSON.stringify(localReds));
+        }
+      } catch (e) {}
+
+      if (currentUser) {
+        currentUser.rewardPoints = Math.max(0, (currentUser.rewardPoints || 0) - pointsCost);
       }
 
       // Show voucher dialog
@@ -288,9 +293,17 @@ export const RewardsSection = () => {
 
       {/* Error Notice */}
       {!loading && error && (
-        <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200 text-xs font-semibold flex items-center space-x-2">
-          <AlertCircle className="w-4 h-4 flex-shrink-0" />
-          <span>{error}</span>
+        <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200 text-xs font-semibold flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            <span>{error}</span>
+          </div>
+          <button
+            onClick={() => setRetryKey(k => k + 1)}
+            className="px-3 py-1 rounded-xl bg-amber-200 dark:bg-amber-900 text-amber-900 dark:text-amber-100 font-bold hover:opacity-90 transition-opacity"
+          >
+            Retry
+          </button>
         </div>
       )}
 

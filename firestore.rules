@@ -211,8 +211,8 @@ service cloud.firestore {
     // 7. REWARDS CATALOG & VENDOR REWARDS (/rewards/{rewardId} & /rewards_catalog/{rewardId})
     // ===============================================================
     match /rewards/{rewardId} {
-      // Authenticated users and students can view active rewards; Partners and Staff can view all
-      allow read: if isAuthenticated();
+      // Vendor rewards: Active deals publicly browseable by all students and guests
+      allow read: if true;
 
       // Partners and Staff can create and delete vendor offers
       allow create, delete: if isPartner() || isStaff();
@@ -241,6 +241,7 @@ service cloud.firestore {
     match /redemptions/{redemptionId} {
       // Students can read their own redemptions; Partners and Staff can view redemptions
       allow read: if (isAuthenticated() && (
+                    resource == null ||
                     resource.data.studentId == request.auth.uid || 
                     resource.data.userId == request.auth.uid
                   )) || isPartner() || isStaff();

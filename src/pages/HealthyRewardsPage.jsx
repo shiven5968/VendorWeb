@@ -3,16 +3,14 @@ import { useApp } from '../context/AppContext';
 import { 
   Award, 
   Sparkles, 
-  Check, 
-  Gift, 
-  Flame, 
   History, 
   ChevronRight,
   ShieldCheck,
   Star,
   Vote,
   CalendarCheck,
-  Store
+  Store,
+  Ticket
 } from 'lucide-react';
 import { RewardsSection } from '../components/RewardsSection';
 
@@ -20,35 +18,21 @@ export const HealthyRewardsPage = () => {
   const { 
     currentUser, 
     rewardPoints, 
-    rewardsCatalog, 
     userRedemptions, 
-    redeemReward,
     rewardEvents 
   } = useApp();
 
   const [activeTab, setActiveTab] = useState('partner');
-  const [selectedReward, setSelectedReward] = useState(null);
-  const [claiming, setClaiming] = useState(false);
-  const [claimNotice, setClaimNotice] = useState(null);
 
-  const handleClaim = async (reward) => {
-    if (claiming || rewardPoints < reward.points) return;
+  const formatRedemptionDate = (red) => {
     try {
-      setClaiming(true);
-      setClaimNotice(null);
-      const ok = await redeemReward(reward);
-      if (ok) {
-        setClaimNotice({ type: 'success', text: `Claimed ${reward.name}! Show claim code at mess counter.` });
-        setSelectedReward(null);
-      }
-    } catch (e) {
-      setClaimNotice({ type: 'error', text: e.message });
-    } finally {
-      setClaiming(false);
-    }
+      if (red.claimedAt?.toDate) return red.claimedAt.toDate().toLocaleDateString();
+      if (red.claimedAt) return new Date(red.claimedAt).toLocaleDateString();
+      if (red.timestamp) return new Date(red.timestamp).toLocaleDateString();
+      if (red.createdAt) return new Date(red.createdAt).toLocaleDateString();
+    } catch (e) {}
+    return 'Recently';
   };
-
-  const catalogList = rewardsCatalog && rewardsCatalog.length > 0 ? rewardsCatalog : [];
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 pb-24 md:pb-12">
@@ -96,17 +80,6 @@ export const HealthyRewardsPage = () => {
         </div>
       </div>
 
-      {claimNotice && (
-        <div className={`p-4 rounded-2xl text-xs font-bold flex items-center space-x-2 ${
-          claimNotice.type === 'success'
-            ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30'
-            : 'bg-rose-500/20 text-rose-700 dark:text-rose-300 border border-rose-500/30'
-        }`}>
-          <Check className="w-4 h-4" />
-          <span>{claimNotice.text}</span>
-        </div>
-      )}
-
       {/* Tabs */}
       <div className="flex space-x-2 border-b border-slate-200 dark:border-slate-800 pb-2 overflow-x-auto scrollbar-none">
         <button
@@ -122,18 +95,6 @@ export const HealthyRewardsPage = () => {
           <span className="px-1.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[9px] font-black uppercase">
             Live
           </span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('catalog')}
-          className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all flex items-center space-x-1.5 flex-shrink-0 ${
-            activeTab === 'catalog'
-              ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-sm'
-              : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
-          }`}
-        >
-          <Gift className="w-4 h-4" />
-          <span>Mess Rewards</span>
         </button>
 
         <button
@@ -164,63 +125,6 @@ export const HealthyRewardsPage = () => {
       {/* Tab: Live Partner Deals (Real-time Firestore) */}
       {activeTab === 'partner' && (
         <RewardsSection />
-      )}
-
-      {/* Tab: Catalog */}
-      {activeTab === 'catalog' && (
-        <div>
-          {catalogList.length === 0 ? (
-            <div className="p-12 text-center text-xs font-bold text-slate-400 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 space-y-2">
-              <Gift className="w-8 h-8 mx-auto text-slate-300 dark:text-slate-600" />
-              <p className="text-base font-black text-slate-700 dark:text-slate-200">No rewards available yet.</p>
-              <p>Active mess nutrition perks and reward vouchers will appear here once published.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {catalogList.map(item => {
-                const canAfford = rewardPoints >= item.points;
-
-                return (
-                  <div
-                    key={item.id}
-                    className="glass-card rounded-3xl overflow-hidden border border-slate-200/80 dark:border-slate-800 flex flex-col justify-between hover:shadow-lg transition-all"
-                  >
-                    <div>
-                      <div className="relative h-40 w-full overflow-hidden">
-                        <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
-                        <span className="absolute top-3 left-3 px-2.5 py-0.5 rounded-full bg-black/60 backdrop-blur-md text-white text-[10px] font-bold">
-                          {item.category}
-                        </span>
-                        <span className="absolute bottom-3 right-3 px-3 py-1 rounded-xl bg-emerald-600 text-white text-xs font-black shadow-md">
-                          {item.points} pts
-                        </span>
-                      </div>
-
-                      <div className="p-4 space-y-1.5">
-                        <h3 className="text-sm font-black text-slate-900 dark:text-white">{item.name}</h3>
-                        <p className="text-xs text-slate-500 line-clamp-2">{item.description}</p>
-                      </div>
-                    </div>
-
-                    <div className="p-4 pt-0">
-                      <button
-                        onClick={() => handleClaim(item)}
-                        disabled={!canAfford || claiming}
-                        className={`w-full py-2.5 rounded-xl text-xs font-black transition-all ${
-                          canAfford
-                            ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-md cursor-pointer'
-                            : 'bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-not-allowed border border-slate-200 dark:border-slate-700'
-                        }`}
-                      >
-                        {canAfford ? 'CLAIM REWARD' : `Need ${item.points - rewardPoints} more pts`}
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
       )}
 
       {/* Tab: Points Ledger */}
@@ -291,29 +195,50 @@ export const HealthyRewardsPage = () => {
             </div>
           ) : (
             <div className="space-y-3">
-              {userRedemptions.map((red) => (
-                <div
-                  key={red.id}
-                  className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between shadow-sm"
-                >
-                  <div className="space-y-0.5">
-                    <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase">
-                      Code: {red.claimCode}
-                    </span>
-                    <h4 className="text-sm font-black text-slate-900 dark:text-white">{red.rewardName}</h4>
-                    <span className="text-[10px] text-slate-400">
-                      Claimed on {new Date(red.timestamp).toLocaleDateString()}
-                    </span>
-                  </div>
+              {userRedemptions.map((red) => {
+                const code = red.voucherCode || red.claimCode || red.code || red.id;
+                const title = red.rewardTitle || red.rewardName || 'Vendor Reward';
+                const dateStr = formatRedemptionDate(red);
+                const points = red.pointsSpent ?? red.points ?? 0;
 
-                  <div className="text-right space-y-1">
-                    <span className="px-2.5 py-1 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 text-[10px] font-black border border-emerald-500/20 block">
-                      {red.status}
-                    </span>
-                    <span className="text-xs text-slate-400 font-bold">-{red.pointsSpent} pts</span>
+                return (
+                  <div
+                    key={red.id}
+                    className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between shadow-sm hover:border-emerald-500/30 transition-all"
+                  >
+                    <div className="flex items-center space-x-3 min-w-0">
+                      <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0">
+                        <Ticket className="w-5 h-5" />
+                      </div>
+                      <div className="space-y-0.5 min-w-0">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider font-mono">
+                            {code}
+                          </span>
+                          {red.vendorName && (
+                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 font-bold truncate">
+                              {red.vendorName}
+                            </span>
+                          )}
+                        </div>
+                        <h4 className="text-sm font-black text-slate-900 dark:text-white truncate">
+                          {title}
+                        </h4>
+                        <span className="text-[10px] text-slate-400 block font-medium">
+                          Claimed on {dateStr}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="text-right space-y-1 flex-shrink-0 pl-3">
+                      <span className="px-2.5 py-1 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 text-[10px] font-black border border-emerald-500/20 block">
+                        {red.status || 'ACTIVE'}
+                      </span>
+                      <span className="text-xs text-slate-400 font-bold block">-{points} pts</span>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
