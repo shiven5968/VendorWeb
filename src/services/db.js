@@ -16,7 +16,7 @@ export const MESS_BLOCK_MAP = {
       Breakfast: '07:20 AM - 08:30 AM',
       Lunch: '12:20 PM - 02:00 PM',
       Snacks: '05:00 PM - 06:00 PM',
-      Dinner: '07:40 PM - 09:00 PM',
+      Dinner: '07:30 PM - 09:00 PM',
     }
   },
   'VKB Block': {
@@ -26,7 +26,7 @@ export const MESS_BLOCK_MAP = {
       Breakfast: '07:20 AM - 08:30 AM',
       Lunch: '12:20 PM - 02:00 PM',
       Snacks: '05:00 PM - 06:00 PM',
-      Dinner: '07:40 PM - 09:00 PM',
+      Dinner: '07:30 PM - 09:00 PM',
     }
   },
   'RKB Block': {
@@ -36,7 +36,7 @@ export const MESS_BLOCK_MAP = {
       Breakfast: '07:20 AM - 08:30 AM',
       Lunch: '12:20 PM - 02:00 PM',
       Snacks: '05:00 PM - 06:00 PM',
-      Dinner: '07:40 PM - 09:00 PM',
+      Dinner: '07:30 PM - 09:00 PM',
     }
   },
   'ABB Block': {
@@ -46,7 +46,7 @@ export const MESS_BLOCK_MAP = {
       Breakfast: '07:20 AM - 08:30 AM',
       Lunch: '12:20 PM - 02:00 PM',
       Snacks: '05:00 PM - 06:00 PM',
-      Dinner: '07:40 PM - 09:00 PM',
+      Dinner: '07:30 PM - 09:00 PM',
     }
   },
   'Block A (Girls)': {
@@ -56,7 +56,7 @@ export const MESS_BLOCK_MAP = {
       Breakfast: '07:20 AM - 08:30 AM',
       Lunch: '12:20 PM - 02:00 PM',
       Snacks: '05:00 PM - 06:00 PM',
-      Dinner: '07:40 PM - 09:00 PM',
+      Dinner: '07:30 PM - 09:00 PM',
     }
   },
   'Block B (Girls)': {
@@ -66,7 +66,7 @@ export const MESS_BLOCK_MAP = {
       Breakfast: '07:20 AM - 08:30 AM',
       Lunch: '12:20 PM - 02:00 PM',
       Snacks: '05:00 PM - 06:00 PM',
-      Dinner: '07:40 PM - 09:00 PM',
+      Dinner: '07:30 PM - 09:00 PM',
     }
   },
   'Block C (Girls)': {
@@ -76,7 +76,7 @@ export const MESS_BLOCK_MAP = {
       Breakfast: '07:20 AM - 08:30 AM',
       Lunch: '12:20 PM - 02:00 PM',
       Snacks: '05:00 PM - 06:00 PM',
-      Dinner: '07:40 PM - 09:00 PM',
+      Dinner: '07:30 PM - 09:00 PM',
     }
   }
 };
