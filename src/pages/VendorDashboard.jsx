@@ -33,10 +33,44 @@ import {
   Film,
   ShoppingBag,
   RefreshCw,
-  Camera
+  Camera,
+  Upload,
+  Image as ImageIcon
 } from 'lucide-react';
 import { QrCameraScannerModal } from '../components/QrCameraScannerModal';
 import { createRewardOffer } from '../components/CreateOffer';
+
+// Client-side image compression to lightweight web JPEG dataUrl
+const compressImageFile = (file, maxWidth = 900, quality = 0.82) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (readerEvent) => {
+      const img = new window.Image();
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        const dataUrl = canvas.toDataURL('image/jpeg', quality);
+        resolve(dataUrl);
+      };
+      img.onerror = () => reject(new Error('Failed to load image for processing'));
+      img.src = readerEvent.target.result;
+    };
+    reader.onerror = () => reject(new Error('Failed to read file'));
+    reader.readAsDataURL(file);
+  });
+};
 
 const CATEGORY_OPTIONS = [
   'Food & Dining',
@@ -48,10 +82,13 @@ const CATEGORY_OPTIONS = [
 
 const PRESET_IMAGES = [
   { label: 'Gourmet Burger', url: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&q=80&w=600' },
+  { label: 'Crispy Pizza', url: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&q=80&w=600' },
+  { label: 'Fresh Coffee & Cafe', url: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&q=80&w=600' },
   { label: 'Cinema & Popcorn', url: 'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&fit=crop&q=80&w=600' },
   { label: 'Fitness & Gym', url: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&q=80&w=600' },
   { label: 'Campus Mart', url: 'https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?auto=format&fit=crop&q=80&w=600' },
-  { label: 'Fresh Coffee & Cafe', url: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&q=80&w=600' }
+  { label: 'Rolls & Street Food', url: 'https://images.unsplash.com/photo-1626777552726-4a6b54c97e46?auto=format&fit=crop&q=80&w=600' },
+  { label: 'Dessert & Shakes', url: 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&q=80&w=600' }
 ];
 
 export const VendorDashboard = () => {
@@ -96,12 +133,41 @@ export const VendorDashboard = () => {
     description: ''
   };
   const [formData, setFormData] = useState(initialForm);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [showUrlInput, setShowUrlInput] = useState(false);
 
   // Toast / Notification banner
   const [toast, setToast] = useState(null);
   const showToast = (message, type = 'success') => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 4000);
+  };
+
+  // Upload and compress image file directly from user device / camera
+  const handleImageFileUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      showToast('Please select a valid photo or image file.', 'error');
+      return;
+    }
+
+    setUploadingImage(true);
+    try {
+      const compressedDataUrl = await compressImageFile(file, 900, 0.82);
+      setFormData(prev => ({
+        ...prev,
+        imageUrl: compressedDataUrl
+      }));
+      showToast('Photo uploaded and preview updated!');
+    } catch (err) {
+      console.error('Image upload error:', err);
+      showToast('Could not process this image. Please try another.', 'error');
+    } finally {
+      setUploadingImage(false);
+      e.target.value = '';
+    }
   };
 
   // 1. REAL-TIME SUBSCRIPTION TO VENDOR REWARDS & REDEMPTIONS
@@ -899,30 +965,107 @@ export const VendorDashboard = () => {
                   />
                 </div>
 
-                {/* Image URL & Quick Presets */}
-                <div className="space-y-2">
-                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                    Offer Image URL
-                  </label>
-                  <input
-                    type="url"
-                    value={formData.imageUrl}
-                    onChange={e => setFormData({ ...formData, imageUrl: e.target.value })}
-                    placeholder="https://images.unsplash.com/..."
-                    className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs outline-none focus:border-emerald-500"
-                  />
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="text-[10px] text-slate-400 font-bold">Quick Presets:</span>
-                    {PRESET_IMAGES.map(img => (
+                {/* Image Upload & Presets Section */}
+                <div className="space-y-3 p-4 rounded-2xl bg-slate-100/70 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center space-x-1.5">
+                      <ImageIcon className="w-3.5 h-3.5 text-emerald-500" />
+                      <span>Offer Photo & Banner</span>
+                    </label>
+                    {formData.imageUrl && (
                       <button
                         type="button"
-                        key={img.label}
-                        onClick={() => setFormData({ ...formData, imageUrl: img.url })}
-                        className="px-2 py-0.5 rounded-lg text-[10px] font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-emerald-500/10 hover:text-emerald-500 text-slate-600 dark:text-slate-300 transition-colors"
+                        onClick={() => setFormData({ ...formData, imageUrl: PRESET_IMAGES[0].url })}
+                        className="text-[10px] font-bold text-slate-400 hover:text-rose-500 flex items-center space-x-1 transition-colors cursor-pointer"
                       >
-                        {img.label}
+                        <RefreshCw className="w-3 h-3" />
+                        <span>Reset Default</span>
                       </button>
-                    ))}
+                    )}
+                  </div>
+
+                  {/* Upload from Device / Web URL Action Bar */}
+                  <div className="flex items-center gap-2">
+                    <label className="flex-1 py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black flex items-center justify-center space-x-2 cursor-pointer transition-all shadow-md shadow-emerald-600/20 active:scale-[0.98]">
+                      {uploadingImage ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span>Compressing Image...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="w-4 h-4" />
+                          <span>Upload Photo from Device</span>
+                        </>
+                      )}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        disabled={uploadingImage}
+                        onChange={handleImageFileUpload}
+                        className="hidden"
+                      />
+                    </label>
+
+                    <button
+                      type="button"
+                      onClick={() => setShowUrlInput(!showUrlInput)}
+                      className={`px-3.5 py-2.5 rounded-xl border text-xs font-bold flex items-center space-x-1.5 transition-all cursor-pointer ${
+                        showUrlInput
+                          ? 'bg-slate-200 dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white shadow-inner'
+                          : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
+                      }`}
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                      <span>Web URL</span>
+                    </button>
+                  </div>
+
+                  {/* Expandable Web URL Input */}
+                  {showUrlInput && (
+                    <div className="pt-1 animate-in fade-in slide-in-from-top-1">
+                      <input
+                        type="url"
+                        value={formData.imageUrl}
+                        onChange={e => setFormData({ ...formData, imageUrl: e.target.value })}
+                        placeholder="Paste image URL (https://images.unsplash.com/...)"
+                        className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-mono outline-none focus:border-emerald-500"
+                      />
+                    </div>
+                  )}
+
+                  {/* Preset Visual Gallery */}
+                  <div className="space-y-1.5 pt-1">
+                    <span className="text-[10px] text-slate-400 font-bold block">Or Pick a Popular Campus Preset:</span>
+                    <div className="grid grid-cols-4 gap-2 max-h-36 overflow-y-auto pr-1 scrollbar-thin">
+                      {PRESET_IMAGES.map((img) => {
+                        const isSelected = formData.imageUrl === img.url;
+                        return (
+                          <button
+                            type="button"
+                            key={img.label}
+                            onClick={() => setFormData({ ...formData, imageUrl: img.url })}
+                            className={`relative rounded-xl overflow-hidden group border transition-all text-left cursor-pointer h-14 ${
+                              isSelected
+                                ? 'ring-2 ring-emerald-500 border-emerald-500 shadow-md'
+                                : 'border-slate-200 dark:border-slate-700 opacity-75 hover:opacity-100'
+                            }`}
+                          >
+                            <img src={img.url} alt={img.label} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex items-end p-1">
+                              <span className="text-[9px] font-bold text-white leading-tight drop-shadow truncate w-full">
+                                {img.label}
+                              </span>
+                            </div>
+                            {isSelected && (
+                              <div className="absolute top-1 right-1 w-4 h-4 bg-emerald-500 rounded-full flex items-center justify-center text-white shadow-md">
+                                <Check className="w-2.5 h-2.5" />
+                              </div>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
 
@@ -984,11 +1127,11 @@ export const VendorDashboard = () => {
                 {/* The Preview Card */}
                 <div className="rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg flex flex-col justify-between">
                   <div>
-                    <div className="relative h-36 w-full overflow-hidden bg-slate-100 dark:bg-slate-800">
+                    <div className="relative h-44 w-full overflow-hidden bg-slate-100 dark:bg-slate-800 group/previewimg">
                       <img 
                         src={formData.imageUrl || PRESET_IMAGES[0].url} 
                         alt="Preview" 
-                        className="w-full h-full object-cover" 
+                        className="w-full h-full object-cover group-hover/previewimg:scale-105 transition-transform duration-300" 
                       />
                       <div className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-full bg-black/60 backdrop-blur-md text-white text-[9px] font-bold">
                         {formData.category}
@@ -997,6 +1140,20 @@ export const VendorDashboard = () => {
                         <Zap className="w-3 h-3 fill-white" />
                         <span>{formData.pointsRequired} pts</span>
                       </div>
+
+                      {/* Interactive Change Photo Overlay on hover or tap */}
+                      <label className="absolute inset-0 bg-black/55 opacity-0 group-hover/previewimg:opacity-100 transition-opacity flex flex-col items-center justify-center cursor-pointer text-white space-y-1 backdrop-blur-[2px]">
+                        <Camera className="w-6 h-6 text-emerald-400" />
+                        <span className="text-[10px] font-black uppercase tracking-wider bg-black/70 px-2.5 py-1 rounded-xl shadow-md">
+                          Click to Change Photo
+                        </span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageFileUpload}
+                          className="hidden"
+                        />
+                      </label>
                     </div>
 
                     <div className="p-4 space-y-2">

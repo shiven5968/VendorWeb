@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../services/firebase';
-import { Plus, Loader2, CheckCircle2, AlertCircle, X, Sparkles, Tag } from 'lucide-react';
+import { Plus, Loader2, CheckCircle2, AlertCircle, X, Sparkles, Tag, Upload, Image as ImageIcon } from 'lucide-react';
 
 /**
  * createRewardOffer: Direct Firestore writer to shared /rewards collection
@@ -30,6 +30,7 @@ export const CreateOffer = ({ isOpen, onClose, vendorId = 'vendor_burger_club', 
   const [pointsRequired, setPointsRequired] = useState(150);
   const [discountCode, setDiscountCode] = useState('');
   const [totalVouchers, setTotalVouchers] = useState(50);
+  const [imageUrl, setImageUrl] = useState('https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&q=80&w=600');
   const [loading, setLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState(null);
 
@@ -54,6 +55,8 @@ export const CreateOffer = ({ isOpen, onClose, vendorId = 'vendor_burger_club', 
       pointsRequired: Number(pointsRequired) || 100,
       discountCode: (discountCode.trim() || ('ABES' + Math.random().toString(36).substring(2, 6).toUpperCase())),
       totalVouchers: Number(totalVouchers) || 50,
+      imageUrl,
+      image: imageUrl,
       expiryDate: new Date(Date.now() + 60 * 86400000).toISOString().split('T')[0]
     };
 
