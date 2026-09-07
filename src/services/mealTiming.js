@@ -5,7 +5,7 @@
  * - BREAKFAST: 7:20 AM – 8:30 AM  | Rating window: 7:20 AM – 9:00 AM (+30 min)
  * - LUNCH:     12:20 PM – 2:00 PM | Rating window: 12:20 PM – 2:30 PM (+30 min)
  * - SNACKS:    5:00 PM – 6:00 PM  | Rating window: 5:00 PM – 6:30 PM (+30 min)
- * - DINNER:    7:40 PM – 9:00 PM  | Rating window: 7:40 PM – 9:30 PM (+30 min)
+ * - DINNER:    7:30 PM – 9:00 PM  | Rating window: 7:30 PM – 9:30 PM (+30 min)
  */
 
 export const OFFICIAL_MEAL_TIMINGS = {
@@ -55,15 +55,15 @@ export const OFFICIAL_MEAL_TIMINGS = {
     category: 'Dinner',
     name: 'Dinner',
     startHour: 19,
-    startMinute: 40,
+    startMinute: 30,
     endHour: 21,
     endMinute: 0,
     ratingEndHour: 21,
     ratingEndMinute: 30,
-    label: '7:40 PM – 9:00 PM',
-    ratingWindowLabel: '7:40 PM – 9:30 PM',
-    serviceWindow: '19:40 - 21:00',
-    ratingWindow: '19:40 - 21:30'
+    label: '7:30 PM – 9:00 PM',
+    ratingWindowLabel: '7:30 PM – 9:30 PM',
+    serviceWindow: '19:30 - 21:00',
+    ratingWindow: '19:30 - 21:30'
   }
 };
 
@@ -220,7 +220,7 @@ export const getActiveAndNextMealSlot = (now = new Date()) => {
   const sStart = toMinutes(17, 0);
   const sRatingEnd = toMinutes(18, 30);
 
-  const dStart = toMinutes(19, 40);
+  const dStart = toMinutes(19, 30);
   const dRatingEnd = toMinutes(21, 30);
 
   // 1. Before Breakfast (Midnight – 7:20 AM)
@@ -293,7 +293,7 @@ export const getActiveAndNextMealSlot = (now = new Date()) => {
       currentMealCategory: curMin <= toMinutes(18, 0) ? 'Snacks' : null,
       activeRatingCategory: 'Snacks',
       nextMealCategory: 'Dinner',
-      nextMealLabel: 'Dinner (7:40 PM)',
+      nextMealLabel: 'Dinner (7:30 PM)',
       isTomorrow: false,
       bannerMessage: curMin <= toMinutes(18, 0) 
         ? 'Evening Snacks are LIVE • Rating Open' 
@@ -301,19 +301,19 @@ export const getActiveAndNextMealSlot = (now = new Date()) => {
     };
   }
 
-  // 7. Post-Snacks to Pre-Dinner (6:30 PM – 7:40 PM)
+  // 7. Post-Snacks to Pre-Dinner (6:30 PM – 7:30 PM)
   if (curMin < dStart) {
     return {
       currentMealCategory: null,
       activeRatingCategory: null,
       nextMealCategory: 'Dinner',
-      nextMealLabel: 'Dinner (7:40 PM)',
+      nextMealLabel: 'Dinner (7:30 PM)',
       isTomorrow: false,
-      bannerMessage: 'Dinner starts at 7:40 PM'
+      bannerMessage: 'Dinner starts at 7:30 PM'
     };
   }
 
-  // 8. Dinner Window (7:40 PM – 9:30 PM)
+  // 8. Dinner Window (7:30 PM – 9:30 PM)
   if (curMin <= dRatingEnd) {
     return {
       currentMealCategory: curMin <= toMinutes(21, 0) ? 'Dinner' : null,
