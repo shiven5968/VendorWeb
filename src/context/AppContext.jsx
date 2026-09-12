@@ -615,11 +615,24 @@ export const AppProvider = ({ children }) => {
   // 5. RECURRING WEEKLY VOTING & MEAL FEEDBACK
   const getEnrichedPoll = () => {
     if (!poll) return null;
-    const pollVotes = (votesList || []).filter(v => v.pollId === poll.id);
-    const totalVotes = pollVotes.length;
+
+    // 1. Read aggregate counts directly from poll document
+    const voteCounts = poll.voteCounts || {};
+    let totalVotes = typeof poll.totalVotes === 'number'
+      ? poll.totalVotes
+      : Object.values(voteCounts).reduce((a, b) => a + Number(b), 0);
+
+    // Fallback for in-memory or legacy mock tests where votesList might contain votes
+    const pollVotesInList = (votesList || []).filter(v => v.pollId === poll.id);
+    totalVotes = Math.max(totalVotes, pollVotesInList.length);
 
     const optionsWithStats = (poll.options || []).map(opt => {
-      const optVotes = pollVotes.filter(v => v.optionId === opt.id).length;
+      const optVotes = (typeof voteCounts[opt.id] === 'number')
+        ? voteCounts[opt.id]
+        : (typeof opt.votes === 'number' && opt.votes > 0)
+        ? opt.votes
+        : pollVotesInList.filter(v => v.optionId === opt.id).length;
+
       const percent = totalVotes > 0 ? Math.round((optVotes / totalVotes) * 100) : 0;
       return {
         ...opt,
@@ -647,19 +660,41 @@ export const AppProvider = ({ children }) => {
   const voteDish = async (optionId) => {
     if (!currentUser || !enrichedPoll) return;
     try {
+      const uid = currentUser.uid || currentUser.id;
       const newVote = await db.castVote({
         pollId: enrichedPoll.id,
-        userId: currentUser.uid || currentUser.id,
+        userId: uid,
         userName: currentUser.name,
         optionId,
         weekId: currentWeekInfo.weekId,
         weekStart: currentWeekInfo.weekStartStr,
         weekEnd: currentWeekInfo.weekEndStr
       });
+
+      // Update personal votes list immediately
       setVotesList(prev => {
         const exists = prev.some(v => v.id === newVote.id);
         return exists ? prev : [newVote, ...prev];
       });
+
+      // Optimistically increment poll aggregate counters in state
+      setPoll(prev => {
+        if (!prev || prev.id !== enrichedPoll.id) return prev;
+        const currentCounts = { ...(prev.voteCounts || {}) };
+        currentCounts[optionId] = (currentCounts[optionId] || 0) + 1;
+        const newTotal = (prev.totalVotes || 0) + 1;
+        const updatedOptions = (prev.options || []).map(opt => ({
+          ...opt,
+          votes: opt.id === optionId ? (Number(opt.votes || 0) + 1) : Number(opt.votes || 0)
+        }));
+        return {
+          ...prev,
+          voteCounts: currentCounts,
+          totalVotes: newTotal,
+          options: updatedOptions
+        };
+      });
+
       // Voting is strictly civic participation: 0 points awarded
       setPollsVersion(v => v + 1);
       addNotification('Vote Recorded 🗳️', 'Your vote has been counted.', 'info');

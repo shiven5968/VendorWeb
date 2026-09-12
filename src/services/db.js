@@ -1225,14 +1225,18 @@ class LaunchDatabase {
     const pollId = 'poll_' + Date.now();
     const options = (pollData.options || []).map((opt, i) => {
       if (typeof opt === 'string') {
-        return { id: `opt_${i + 1}`, name: opt.trim() };
+        return { id: `opt_${i + 1}`, name: opt.trim(), votes: 0 };
       }
       return {
         id: opt.id || (`opt_${i + 1}`),
         name: opt.name?.trim() || '',
+        votes: 0,
         ...(opt.protein ? { protein: opt.protein } : {})
       };
     }).filter(opt => opt.name);
+
+    const initialVoteCounts = {};
+    options.forEach(opt => { initialVoteCounts[opt.id] = 0; });
 
     const newPoll = {
       id: pollId,
@@ -1240,6 +1244,8 @@ class LaunchDatabase {
       dishToReplace: pollData.dishToReplace || null,
       mealCategory: pollData.mealCategory || 'Lunch',
       options,
+      voteCounts: initialVoteCounts,
+      totalVotes: 0,
       weekId: pollData.weekId || weekInfo.weekId,
       weekStart: weekInfo.weekStartStr,
       weekEnd: weekInfo.weekEndStr,
@@ -1291,6 +1297,14 @@ class LaunchDatabase {
     const targetWeekStart = weekStart || weekInfo.weekStartStr;
     const targetWeekEnd = weekEnd || weekInfo.weekEndStr;
 
+    // Check poll status in local cache
+    const currentPoll = this.getItem('poll');
+    const polls = this.getItem('polls', []);
+    const localPoll = (currentPoll && currentPoll.id === pollId) ? currentPoll : polls.find(p => p.id === pollId);
+    if (localPoll && localPoll.status !== 'ACTIVE') {
+      throw new Error('Cannot vote in a closed poll.');
+    }
+
     const votes = this.getItem('votes', []);
     const alreadyVoted = votes.some(v => v.userId === userId && v.pollId === pollId);
 
@@ -1314,10 +1328,69 @@ class LaunchDatabase {
 
     if (isFirebaseConfigured) {
       try {
-        await setDoc(doc(firestoreDb, 'votes', voteId), newVote);
+        await runTransaction(firestoreDb, async (transaction) => {
+          const voteRef = doc(firestoreDb, 'votes', voteId);
+          const pollRef = doc(firestoreDb, 'polls', pollId);
+
+          // All reads strictly precede all writes
+          const voteSnap = await transaction.get(voteRef);
+          if (voteSnap.exists()) {
+            throw new Error('You have already voted in this poll.');
+          }
+
+          const pollSnap = await transaction.get(pollRef);
+          if (!pollSnap.exists()) {
+            throw new Error('Poll not found.');
+          }
+
+          const pollData = pollSnap.data();
+          if (pollData.status !== 'ACTIVE') {
+            throw new Error('Cannot vote in a closed poll.');
+          }
+
+          const currentCounts = { ...(pollData.voteCounts || {}) };
+          currentCounts[optionId] = Number(currentCounts[optionId] || 0) + 1;
+          const newTotal = Number(pollData.totalVotes || 0) + 1;
+
+          const updatedOptions = (pollData.options || []).map(opt => {
+            const count = opt.id === optionId ? (Number(opt.votes || 0) + 1) : Number(opt.votes || 0);
+            return { ...opt, votes: count };
+          });
+
+          // 1. Write immutable student vote record
+          transaction.set(voteRef, newVote);
+
+          // 2. Atomically increment aggregate tallies on poll document
+          transaction.update(pollRef, {
+            voteCounts: currentCounts,
+            totalVotes: newTotal,
+            options: updatedOptions,
+            updatedAt: new Date().toISOString()
+          });
+        });
       } catch (e) {
-        console.error('Error casting vote in Firestore:', e);
+        console.error('Error casting vote in Firestore transaction:', e);
         throw e;
+      }
+    }
+
+    // Update local cache / in-memory tallies
+    if (localPoll) {
+      const voteCounts = { ...(localPoll.voteCounts || {}) };
+      voteCounts[optionId] = Number(voteCounts[optionId] || 0) + 1;
+      localPoll.voteCounts = voteCounts;
+      localPoll.totalVotes = Number(localPoll.totalVotes || 0) + 1;
+      localPoll.options = (localPoll.options || []).map(opt => {
+        const count = opt.id === optionId ? (Number(opt.votes || 0) + 1) : Number(opt.votes || 0);
+        return { ...opt, votes: count };
+      });
+      if (currentPoll && currentPoll.id === pollId) {
+        this.setItem('poll', localPoll);
+      }
+      const pIdx = polls.findIndex(p => p.id === pollId);
+      if (pIdx !== -1) {
+        polls[pIdx] = localPoll;
+        this.setItem('polls', polls);
       }
     }
 

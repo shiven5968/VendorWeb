@@ -186,8 +186,21 @@ service cloud.firestore {
       // Authenticated users can read active menu replacement polls
       allow read: if isAuthenticated();
 
-      // ONLY Mess Committee and Warden can create, edit, or delete polls
-      allow create, update, delete: if isStaff();
+      // ONLY Mess Committee and Warden can create or delete polls
+      allow create, delete: if isStaff();
+
+      // Updates: Staff can manage status/questions; verified students can atomically increment tallies
+      allow update: if isStaff() || (
+        isAuthenticated() &&
+        isStudent() &&
+        resource.data.status == 'ACTIVE' &&
+        request.resource.data.status == 'ACTIVE' &&
+        request.resource.data.id == resource.data.id &&
+        request.resource.data.question == resource.data.question &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['voteCounts', 'totalVotes', 'options', 'updatedAt']) &&
+        request.resource.data.totalVotes is number &&
+        request.resource.data.totalVotes == resource.data.get('totalVotes', 0) + 1
+      );
     }
 
 
@@ -195,12 +208,15 @@ service cloud.firestore {
     // 6. VOTES COLLECTION (/votes/{voteId})
     // ===============================================================
     match /votes/{voteId} {
-      // Authenticated users can view poll vote counts
-      allow read: if isAuthenticated();
+      // Users can read their own votes, and staff can audit votes
+      allow read: if isAuthenticated() && (resource == null || resource.data.userId == request.auth.uid || isStaff());
 
-      // ONLY verified students can cast a vote (Committee & Warden cannot cast student votes)
+      // ONLY verified students can cast a vote for themselves with deterministic voteId
       allow create: if isStudent() 
-                    && request.resource.data.userId == request.auth.uid;
+                    && request.resource.data.userId == request.auth.uid
+                    && request.resource.data.pollId is string
+                    && voteId == 'vote_' + request.auth.uid + '_' + request.resource.data.pollId
+                    && !exists(/databases/$(database)/documents/votes/$(voteId));
 
       // Votes are strictly immutable once cast: NO user can modify or delete a vote
       allow update, delete: if false;
