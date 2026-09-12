@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { 
   db, 
   MESS_BLOCK_MAP, 
@@ -99,7 +99,7 @@ export const AppProvider = ({ children }) => {
   const [votesList, setVotesList] = useState(() => db.getItem('votes', []));
   const [proteinLogs, setProteinLogs] = useState(() => db.getItem('protein_logs', []));
   const [redemptions, setRedemptions] = useState(() => db.getItem('redemptions', []));
-  const [usersList, setUsersList] = useState(() => db.getUsers() || INITIAL_USERS);
+  const [usersList, setUsersList] = useState(() => (db.getUsers() || INITIAL_USERS).slice(0, 25));
   const [musclePassSubscription, setMusclePassSubscription] = useState(null);
   const [messPhotos, setMessPhotos] = useState([]);
   const [hygieneChecks, setHygieneChecks] = useState([]);
@@ -898,7 +898,7 @@ export const AppProvider = ({ children }) => {
         try {
           setRedemptions(JSON.parse(localStorage.getItem('messmates_launch_redemptions')) || []);
         } catch (e) {}
-        setUsersList(db.getUsers());
+        setUsersList((db.getUsers() || INITIAL_USERS).slice(0, 25));
       }
       setClaimedRewardModal(claimed);
       addNotification('Reward Claimed 🎉', `Claim code: ${claimed.claimCode}`, 'success');
@@ -908,6 +908,15 @@ export const AppProvider = ({ children }) => {
       return false;
     }
   };
+
+  // STAFF DIRECTORY (Phase 2.4: Bounded Paginated Query)
+  const fetchStaffDirectoryUsers = useCallback(async (params = {}) => {
+    const isStaffUser = currentRole === 'warden' || currentRole === 'mess_committee' || currentRole === 'committee' || (currentUser?.email || '').includes('warden') || (currentUser?.email || '').includes('committee') || currentUser?.email === 'anita@abes.ac.in' || currentUser?.email === 'alok@abes.ac.in';
+    if (!isStaffUser) {
+      throw new Error('Unauthorized: Only staff members can access the student directory.');
+    }
+    return await db.getPaginatedUsers(params);
+  }, [currentRole, currentUser?.email]);
 
   // 8. WARDEN METRICS & GOVERNANCE
   const getWardenMetrics = () => {
@@ -1064,6 +1073,8 @@ export const AppProvider = ({ children }) => {
         logout,
         updateUserProfile,
         usersList: usersList,
+        fetchStaffDirectoryUsers,
+        getPaginatedUsers: db.getPaginatedUsers,
 
         // Theme
         darkMode,

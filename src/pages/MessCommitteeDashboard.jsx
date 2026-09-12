@@ -21,8 +21,10 @@ import {
   FileText,
   Award,
   Vote,
-  X
+  X,
+  Users
 } from 'lucide-react';
+import { StudentDirectorySection } from '../components/StudentDirectorySection';
 import { formatCollegeDateDisplay, getCollegeDateString } from '../utils/dateTime';
 import { DailyPhotosPage } from './DailyPhotosPage';
 import { HygieneCheckPage } from './HygieneCheckPage';
@@ -119,6 +121,7 @@ export const MessCommitteeDashboard = ({ initialTab = 'overview' }) => {
 
   const navItems = [
     { id: 'overview', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'students', label: 'Student Directory', icon: Users },
     { id: 'menu', label: 'Menu Studio', icon: UtensilsCrossed },
     { id: 'photos', label: 'Daily Photos', icon: Camera, count: todayPhotos.length },
     { id: 'hygiene', label: 'Hygiene Reports', icon: ClipboardCheck },
@@ -223,6 +226,9 @@ export const MessCommitteeDashboard = ({ initialTab = 'overview' }) => {
 
         {/* MAIN DASHBOARD CONTENT */}
         <main className="flex-1 min-w-0 space-y-6 pb-20">
+
+          {/* TAB: STUDENT DIRECTORY */}
+          {activeTab === 'students' && <StudentDirectorySection />}
           
           {/* ========================================================================= */}
           {/* TAB 1: OVERVIEW DASHBOARD */}

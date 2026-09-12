@@ -1,7 +1,7 @@
 // MessMate Launch Data & Storage Engine
 // Clean Zero-Fluff Launch State for ABES College Mess
 
-import { doc, collection, setDoc, addDoc, updateDoc, deleteDoc, getDocs, getDoc, runTransaction, query, where, increment } from 'firebase/firestore';
+import { doc, collection, setDoc, addDoc, updateDoc, deleteDoc, getDocs, getDoc, runTransaction, query, where, increment, orderBy, limit, startAfter } from 'firebase/firestore';
 import { db as firestoreDb, isFirebaseConfigured } from './firebase.js';
 import { getCollegeWeekInfo, getCollegeDateString } from '../utils/dateTime.js';
 import { OFFICIAL_MEAL_TIMINGS } from './mealTiming.js';
@@ -678,6 +678,7 @@ class LaunchDatabase {
     this.getUsers = this.getUsers.bind(this);
     this.getUserById = this.getUserById.bind(this);
     this.getUserByEmail = this.getUserByEmail.bind(this);
+    this.getPaginatedUsers = this.getPaginatedUsers.bind(this);
     this.registerUser = this.registerUser.bind(this);
     this.updateUserProfile = this.updateUserProfile.bind(this);
     this.getAllMeals = this.getAllMeals.bind(this);
@@ -840,6 +841,164 @@ class LaunchDatabase {
       return users[index];
     }
     return null;
+  }
+
+  /**
+   * Safe, server-side paginated retrieval of users for Staff Directory.
+   * Strictly enforces pageSize limit (default 25, capped at 50) and cursor pagination.
+   * Never downloads the unbounded users collection.
+   *
+   * @param {Object} options
+   * @param {number} [options.pageSize=25] - Documents per page (default 25, max 50)
+   * @param {any} [options.cursor=null] - Document snapshot or identifier for cursor pagination
+   * @param {string} [options.role=null] - Optional role filter ('student' | 'mess_committee' | 'all')
+   * @param {string} [options.hostelBlock=null] - Optional hostel block filter
+   * @param {string} [options.searchQuery=''] - Optional search query (name prefix, admission number, or email)
+   * @returns {Promise<{ users: Array, nextCursor: any, hasMore: boolean, pageSize: number, totalCount?: number }>}
+   */
+  async getPaginatedUsers({
+    pageSize = 25,
+    cursor = null,
+    role = null,
+    hostelBlock = null,
+    searchQuery = ''
+  } = {}) {
+    const effectiveLimit = Math.min(Math.max(Number(pageSize) || 25, 1), 50);
+    const cleanSearch = (searchQuery || '').trim();
+
+    if (isFirebaseConfigured) {
+      try {
+        let q;
+        const constraints = [];
+
+        // 1. Search Query Strategy (Server-side filtered, strictly bounded)
+        if (cleanSearch) {
+          if (cleanSearch.includes('@')) {
+            // Exact email search
+            constraints.push(where('email', '==', cleanSearch.toLowerCase()));
+          } else if (/^\d{4}/.test(cleanSearch) || cleanSearch.length >= 8) {
+            // Admission number search
+            constraints.push(where('admissionNumber', '==', cleanSearch.toUpperCase()));
+          } else {
+            // Name prefix search (capitalized standard for Indian student names)
+            const capitalized = cleanSearch.charAt(0).toUpperCase() + cleanSearch.slice(1);
+            constraints.push(where('name', '>=', capitalized));
+            constraints.push(where('name', '<=', capitalized + '\uf8ff'));
+          }
+        } else {
+          // 2. Role & Hostel Block Scoping
+          if (role && role !== 'all') {
+            constraints.push(where('role', '==', role));
+          }
+          if (hostelBlock && hostelBlock !== 'all') {
+            constraints.push(where('hostelBlock', '==', hostelBlock));
+          }
+        }
+
+        // 3. Cursor Pagination
+        if (cursor) {
+          constraints.push(startAfter(cursor));
+        }
+
+        // 4. Strict Limit Enforcement (<= 25 by default)
+        constraints.push(limit(effectiveLimit));
+
+        q = query(collection(firestoreDb, 'users'), ...constraints);
+        const snap = await getDocs(q);
+
+        const users = [];
+        snap.forEach(docSnap => {
+          const d = docSnap.data();
+          users.push({
+            id: docSnap.id,
+            uid: d.uid || docSnap.id,
+            name: d.name || 'Student',
+            admissionNumber: d.admissionNumber || '',
+            email: d.email || '',
+            role: d.role || 'student',
+            hostelBlock: d.hostelBlock || 'DNB Block',
+            dietPreference: d.dietPreference || '',
+            rewardPoints: Number(d.rewardPoints) || 0,
+            gender: d.gender || '',
+            createdAt: d.createdAt || null
+          });
+        });
+
+        const lastVisible = snap.docs.length > 0 ? snap.docs[snap.docs.length - 1] : null;
+        const hasMore = snap.docs.length === effectiveLimit;
+
+        return {
+          users,
+          nextCursor: hasMore ? lastVisible : null,
+          hasMore,
+          pageSize: effectiveLimit
+        };
+      } catch (err) {
+        console.warn('[getPaginatedUsers] Firestore query fallback:', err.message);
+      }
+    }
+
+    // In-memory / Offline Local Store (Safe Bounded Pagination)
+    let allUsers = this.getUsers() || [];
+
+    // Filter by role
+    if (role && role !== 'all') {
+      allUsers = allUsers.filter(u => u.role === role);
+    }
+    // Filter by hostelBlock
+    if (hostelBlock && hostelBlock !== 'all') {
+      allUsers = allUsers.filter(u => u.hostelBlock === hostelBlock);
+    }
+    // Filter by searchQuery
+    if (cleanSearch) {
+      const lower = cleanSearch.toLowerCase();
+      allUsers = allUsers.filter(u => {
+        const name = (u.name || '').toLowerCase();
+        const adm = (u.admissionNumber || '').toLowerCase();
+        const email = (u.email || '').toLowerCase();
+        return name.includes(lower) || adm.includes(lower) || email.includes(lower);
+      });
+    }
+
+    // Cursor pagination (cursor can be user id or offset index)
+    let startIndex = 0;
+    if (cursor) {
+      if (typeof cursor === 'number') {
+        startIndex = cursor;
+      } else if (typeof cursor === 'string') {
+        const idx = allUsers.findIndex(u => (u.id === cursor || u.uid === cursor));
+        if (idx !== -1) startIndex = idx + 1;
+      } else if (cursor?.id) {
+        const idx = allUsers.findIndex(u => (u.id === cursor.id || u.uid === cursor.id));
+        if (idx !== -1) startIndex = idx + 1;
+      }
+    }
+
+    const pagedUsers = allUsers.slice(startIndex, startIndex + effectiveLimit).map(u => ({
+      id: u.id || u.uid,
+      uid: u.uid || u.id,
+      name: u.name || 'Student',
+      admissionNumber: u.admissionNumber || '',
+      email: u.email || '',
+      role: u.role || 'student',
+      hostelBlock: u.hostelBlock || 'DNB Block',
+      dietPreference: u.dietPreference || '',
+      rewardPoints: Number(u.rewardPoints) || 0,
+      gender: u.gender || '',
+      createdAt: u.createdAt || null
+    }));
+
+    const nextIndex = startIndex + pagedUsers.length;
+    const hasMore = nextIndex < allUsers.length;
+    const nextCursor = hasMore ? (pagedUsers[pagedUsers.length - 1]?.id || nextIndex) : null;
+
+    return {
+      users: pagedUsers,
+      nextCursor,
+      hasMore,
+      pageSize: effectiveLimit,
+      totalCount: allUsers.length
+    };
   }
 
   // MEALS & MENU

@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { 
   LayoutDashboard, UtensilsCrossed, Camera, ClipboardCheck, Star, FileText, 
-  BarChart3, CheckCircle, Check, Plus, Edit3, Trash2, Shield, AlertTriangle, Award
+  BarChart3, CheckCircle, Check, Plus, Edit3, Trash2, Shield, AlertTriangle, Award, Users
 } from 'lucide-react';
 import { 
   StatCard, StatusBadge, EmptyState, DashboardCard, 
@@ -13,6 +13,7 @@ import { clsx } from 'clsx';
 
 import { formatCollegeDateDisplay, getCollegeDateString } from '../utils/dateTime';
 import { StudentSatisfactionModule } from '../components/satisfaction/StudentSatisfactionModule';
+import { StudentDirectorySection } from '../components/StudentDirectorySection';
 
 export const WardenDashboard = ({ initialTab = 'overview' }) => {
   const { 
@@ -100,6 +101,7 @@ export const WardenDashboard = ({ initialTab = 'overview' }) => {
   // Navigation Items (Exact items requested by ABES Officials specification)
   const sidebarItems = [
     { id: 'overview', icon: LayoutDashboard, label: 'Dashboard' },
+    { id: 'students', icon: Users, label: 'Student Directory' },
     { id: 'menu', icon: UtensilsCrossed, label: 'Menu Oversight' },
     { id: 'photos', icon: Camera, label: 'Mess Photos' },
     { id: 'hygiene', icon: ClipboardCheck, label: 'Hygiene Reports' },
@@ -693,6 +695,9 @@ export const WardenDashboard = ({ initialTab = 'overview' }) => {
             </DashboardCard>
           </div>
         );
+
+      case 'students':
+        return <StudentDirectorySection />;
 
       default:
         return null;
