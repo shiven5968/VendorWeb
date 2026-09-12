@@ -10,7 +10,7 @@ import {
   seedFirestoreData
 } from '../services/db';
 import { db as firestoreDb, isFirebaseConfigured } from '../services/firebase';
-import { collection, onSnapshot, query, where, doc, limit } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, doc, limit, getDocs, getDoc } from 'firebase/firestore';
 import { seedPilotAccounts } from '../services/seedUsers';
 import { useAuth } from './AuthContext';
 import {
@@ -162,7 +162,126 @@ export const AppProvider = ({ children }) => {
     });
   }, [authUser?.uid, currentUser?.uid, currentRole]);
 
-  // Live Firestore Real-Time Subscriptions (Synchronized upon login & role change)
+  // Data Refresh Helpers
+  const refreshMeals = async () => {
+    if (!isFirebaseConfigured) return;
+    try {
+      const snapshot = await getDocs(collection(firestoreDb, 'meals'));
+      const list = [];
+      snapshot.forEach(doc => list.push(doc.data()));
+      if (list.length > 0) {
+        setAllMeals(list);
+        db.setItem('meals', list);
+      }
+    } catch (err) {
+      console.warn('Firestore meals fetch:', err.message);
+    }
+  };
+
+  const refreshRatings = async (uid = authUser?.uid) => {
+    if (!isFirebaseConfigured) return;
+    try {
+      const snapshot = await getDocs(query(collection(firestoreDb, 'ratings'), limit(50)));
+      const list = [];
+      snapshot.forEach(doc => list.push(doc.data()));
+      list.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
+      setAllRatings(list);
+
+      if (uid) {
+        const userSnap = await getDocs(query(collection(firestoreDb, 'ratings'), where('userId', '==', uid)));
+        const userList = [];
+        userSnap.forEach(doc => userList.push(doc.data()));
+        userList.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
+        setUserRatings(userList);
+      }
+    } catch (err) {
+      console.warn('Firestore ratings fetch:', err.message);
+    }
+  };
+
+  const refreshPolls = async () => {
+    if (!isFirebaseConfigured) return;
+    try {
+      const snapshot = await getDocs(collection(firestoreDb, 'polls'));
+      const list = [];
+      snapshot.forEach(doc => list.push(doc.data()));
+      const activePoll = list.find(p => p.status === 'ACTIVE');
+      if (activePoll) {
+        setPoll(activePoll);
+      } else if (list.length > 0) {
+        list.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+        setPoll(list[0]);
+      } else {
+        setPoll(null);
+      }
+    } catch (err) {
+      console.warn('Firestore polls fetch:', err.message);
+    }
+  };
+
+  const refreshVotes = async (uid = authUser?.uid, isStaff = false) => {
+    if (!isFirebaseConfigured) return;
+    try {
+      const votesQuery = isStaff
+        ? query(collection(firestoreDb, 'votes'), limit(100))
+        : (uid ? query(collection(firestoreDb, 'votes'), where('userId', '==', uid)) : null);
+      if (votesQuery) {
+        const snapshot = await getDocs(votesQuery);
+        const list = [];
+        snapshot.forEach(doc => list.push(doc.data()));
+        setVotesList(list);
+      }
+    } catch (err) {
+      console.warn('Firestore votes fetch:', err.message);
+    }
+  };
+
+  const refreshComplaints = async (uid = authUser?.uid, isStaff = false) => {
+    if (!isFirebaseConfigured) return;
+    try {
+      const complaintsTarget = isStaff
+        ? query(collection(firestoreDb, 'complaints'), limit(100))
+        : (uid ? query(collection(firestoreDb, 'complaints'), where('userId', '==', uid)) : null);
+      if (complaintsTarget) {
+        const snapshot = await getDocs(complaintsTarget);
+        const list = [];
+        snapshot.forEach(doc => list.push(doc.data()));
+        list.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
+        setAllComplaints(list);
+      }
+    } catch (err) {
+      console.warn('Firestore complaints fetch:', err.message);
+    }
+  };
+
+  const refreshRewardEvents = async (uid = authUser?.uid) => {
+    if (!isFirebaseConfigured || !uid) return;
+    try {
+      const snapshot = await getDocs(query(collection(firestoreDb, 'reward_events'), where('userId', '==', uid)));
+      const list = [];
+      snapshot.forEach(doc => list.push(doc.data()));
+      list.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+      setRewardEvents(list);
+    } catch (err) {
+      console.warn('Firestore reward_events fetch:', err.message);
+    }
+  };
+
+  const refreshAll = async () => {
+    const currentUid = authUser?.uid;
+    const isStaffUser = currentRole === 'warden' || currentRole === 'mess_committee' || currentRole === 'committee' || (authUser?.email || '').includes('warden') || (authUser?.email || '').includes('committee') || authUser?.email === 'anita@abes.ac.in' || authUser?.email === 'alok@abes.ac.in';
+    await Promise.allSettled([
+      refreshMeals(),
+      refreshRatings(currentUid),
+      refreshPolls(),
+      refreshVotes(currentUid, isStaffUser),
+      refreshComplaints(currentUid, isStaffUser),
+      refreshRewardEvents(currentUid)
+    ]);
+  };
+
+  // Optimized Firestore Data Synchronization (Phase 2.1: Consolidated Listeners)
+  // Replaces 11-13 global snapshot WebSockets with single getDocs() fetches + 1 live user notification listener
   useEffect(() => {
     if (!isFirebaseConfigured || !authUser) {
       return;
@@ -171,188 +290,72 @@ export const AppProvider = ({ children }) => {
     const currentUid = authUser.uid;
     const isStaffUser = currentRole === 'warden' || currentRole === 'mess_committee' || currentRole === 'committee' || (authUser.email || '').includes('warden') || (authUser.email || '').includes('committee') || authUser.email === 'anita@abes.ac.in' || authUser.email === 'alok@abes.ac.in';
 
-    // 1. MEALS: Community schedule
-    const unsubMeals = onSnapshot(
-      collection(firestoreDb, 'meals'),
-      (snapshot) => {
-        const list = [];
-        snapshot.forEach(doc => list.push(doc.data()));
-        if (list.length > 0) setAllMeals(list);
-      },
-      (err) => console.warn('Firestore meals listener:', err.message)
-    );
+    let isMounted = true;
 
-    // 2. RATINGS & FEEDBACK: Bounded query for scalability (max 50 recent ratings)
-    const unsubRatings = onSnapshot(
-      query(collection(firestoreDb, 'ratings'), limit(50)),
-      (snapshot) => {
-        const list = [];
-        snapshot.forEach(doc => list.push(doc.data()));
-        list.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
-        setAllRatings(list);
-      },
-      (err) => console.warn('Firestore ratings listener:', err.message)
-    );
+    // 1. Initial on-demand data load for static/user collections
+    const loadData = async () => {
+      try {
+        await Promise.allSettled([
+          refreshMeals(),
+          refreshRatings(currentUid),
+          refreshPolls(),
+          refreshVotes(currentUid, isStaffUser),
+          refreshComplaints(currentUid, isStaffUser),
+          refreshRewardEvents(currentUid),
+          (async () => {
+            // Protein logs (current student)
+            if (currentUid) {
+              const snap = await getDocs(query(collection(firestoreDb, 'protein_logs'), where('userId', '==', currentUid)));
+              const list = [];
+              snap.forEach(doc => list.push(doc.data()));
+              if (isMounted) setProteinLogs(list);
+            }
+          })(),
+          (async () => {
+            // Redemptions
+            const target = isStaffUser
+              ? query(collection(firestoreDb, 'redemptions'), limit(100))
+              : (currentUid ? query(collection(firestoreDb, 'redemptions'), where('userId', '==', currentUid)) : null);
+            if (target) {
+              const snap = await getDocs(target);
+              const list = [];
+              snap.forEach(doc => list.push(doc.data()));
+              if (isMounted) setRedemptions(list);
+            }
+          })(),
+          (async () => {
+            // Muscle Pass subscription
+            if (currentUid) {
+              const docSnap = await getDoc(doc(firestoreDb, 'subscriptions', currentUid));
+              if (isMounted) {
+                setMusclePassSubscription(docSnap.exists() ? docSnap.data() : null);
+              }
+            }
+          })(),
+          (async () => {
+            // Staff operational photos & hygiene checks (bounded query)
+            if (isStaffUser) {
+              const photoSnap = await getDocs(query(collection(firestoreDb, 'mess_photos'), limit(50)));
+              const photoList = [];
+              photoSnap.forEach(doc => photoList.push({ id: doc.id, ...doc.data() }));
+              if (isMounted) setMessPhotos(photoList);
 
-    // 2b. USER PERSONAL RATINGS: Listen to current student's full rating history
-    let unsubUserRatings = () => {};
-    if (currentUid) {
-      unsubUserRatings = onSnapshot(
-        query(collection(firestoreDb, 'ratings'), where('userId', '==', currentUid)),
-        (snapshot) => {
-          const list = [];
-          snapshot.forEach(doc => list.push(doc.data()));
-          list.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
-          setUserRatings(list);
-        },
-        (err) => console.warn('Firestore user ratings listener:', err.message)
-      );
-    }
+              const hygieneSnap = await getDocs(query(collection(firestoreDb, 'hygiene_checks'), limit(30)));
+              const hygieneList = [];
+              hygieneSnap.forEach(doc => hygieneList.push({ id: doc.id, ...doc.data() }));
+              if (isMounted) setHygieneChecks(hygieneList);
+            }
+          })()
+        ]);
+      } catch (err) {
+        console.warn('Initial data load notice:', err.message);
+      }
+    };
 
-    // 3. POLLS: Active replacement poll or most recent closed poll
-    const unsubPolls = onSnapshot(
-      collection(firestoreDb, 'polls'),
-      (snapshot) => {
-        const list = [];
-        snapshot.forEach(doc => list.push(doc.data()));
-        const activePoll = list.find(p => p.status === 'ACTIVE');
-        if (activePoll) {
-          setPoll(activePoll);
-        } else if (list.length > 0) {
-          list.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
-          setPoll(list[0]);
-        } else {
-          setPoll(null);
-        }
-      },
-      (err) => console.warn('Firestore polls listener:', err.message)
-    );
+    loadData();
 
-    // 4. VOTES: Bounded query for current poll votes
-    const unsubVotes = onSnapshot(
-      query(collection(firestoreDb, 'votes'), limit(100)),
-      (snapshot) => {
-        const list = [];
-        snapshot.forEach(doc => list.push(doc.data()));
-        setVotesList(list);
-      },
-      (err) => console.warn('Firestore votes listener:', err.message)
-    );
-
-    // 5. COMPLAINTS: Staff receives all, Student receives own
-    const complaintsTarget = isStaffUser
-      ? collection(firestoreDb, 'complaints')
-      : query(collection(firestoreDb, 'complaints'), where('userId', '==', currentUid));
-
-    const unsubComplaints = onSnapshot(
-      complaintsTarget,
-      (snapshot) => {
-        const list = [];
-        snapshot.forEach(doc => list.push(doc.data()));
-        list.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
-        setAllComplaints(list);
-      },
-      (err) => console.warn('Firestore complaints listener:', err.message)
-    );
-
-    // 6. PROTEIN LOGS: Current student logs
-    const proteinTarget = query(collection(firestoreDb, 'protein_logs'), where('userId', '==', currentUid));
-    const unsubProtein = onSnapshot(
-      proteinTarget,
-      (snapshot) => {
-        const list = [];
-        snapshot.forEach(doc => list.push(doc.data()));
-        setProteinLogs(list);
-      },
-      (err) => console.warn('Firestore protein listener:', err.message)
-    );
-
-    // 7. REDEMPTIONS: Staff receives all, Student receives own
-    const redemptionsTarget = isStaffUser
-      ? collection(firestoreDb, 'redemptions')
-      : query(collection(firestoreDb, 'redemptions'), where('userId', '==', currentUid));
-
-    const unsubRedemptions = onSnapshot(
-      redemptionsTarget,
-      (snapshot) => {
-        const list = [];
-        snapshot.forEach(doc => list.push(doc.data()));
-        setRedemptions(list);
-      },
-      (err) => console.warn('Firestore redemptions listener:', err.message)
-    );
-
-    // 8. MUSCLE PASS SUBSCRIPTION
-    const unsubSubscription = onSnapshot(
-      doc(firestoreDb, 'subscriptions', currentUid),
-      (docSnap) => {
-        if (docSnap.exists()) {
-          setMusclePassSubscription(docSnap.data());
-        } else {
-          setMusclePassSubscription(null);
-        }
-      },
-      (err) => console.warn('Firestore subscription listener:', err.message)
-    );
-
-    // 9. USERS: Staff directory
-    let unsubUsers = () => {};
-    if (isStaffUser) {
-      unsubUsers = onSnapshot(
-        collection(firestoreDb, 'users'),
-        (snapshot) => {
-          const list = [];
-          snapshot.forEach(doc => list.push(doc.data()));
-          if (list.length > 0) setUsersList(list);
-        },
-        (err) => console.warn('Firestore users listener:', err.message)
-      );
-    }
-
-    // 10. MESS PHOTOS: Daily operational photos (bounded to 50 most recent)
-    let unsubMessPhotos = () => {};
-    if (isStaffUser) {
-      unsubMessPhotos = onSnapshot(
-        query(collection(firestoreDb, 'mess_photos'), limit(50)),
-        (snapshot) => {
-          const list = [];
-          snapshot.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
-          setMessPhotos(list);
-        },
-        (err) => console.warn('Firestore mess_photos listener:', err.message)
-      );
-    }
-
-    // 11. HYGIENE CHECKS: Daily hygiene compliance reports (bounded to 30 most recent)
-    let unsubHygiene = () => {};
-    if (isStaffUser) {
-      unsubHygiene = onSnapshot(
-        query(collection(firestoreDb, 'hygiene_checks'), limit(30)),
-        (snapshot) => {
-          const list = [];
-          snapshot.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
-          setHygieneChecks(list);
-        },
-        (err) => console.warn('Firestore hygiene listener:', err.message)
-      );
-    }
-
-    // 12. REWARD EVENTS: Current student ledger
-    let unsubRewardEvents = () => {};
-    if (currentUid) {
-      unsubRewardEvents = onSnapshot(
-        query(collection(firestoreDb, 'reward_events'), where('userId', '==', currentUid)),
-        (snapshot) => {
-          const list = [];
-          snapshot.forEach(doc => list.push(doc.data()));
-          list.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
-          setRewardEvents(list);
-        },
-        (err) => console.warn('Firestore reward_events listener:', err.message)
-      );
-    }
-
-    // 13. NOTIFICATIONS: Current user real-time notifications
+    // 2. ONLY Genuine Real-Time Listener: Current User's Notifications
+    // Push notifications for rewards, grievances, announcements must arrive in real-time.
     let unsubNotifications = () => {};
     if (currentUid) {
       unsubNotifications = onSnapshot(
@@ -361,26 +364,14 @@ export const AppProvider = ({ children }) => {
           const list = [];
           snapshot.forEach(doc => list.push(doc.data()));
           list.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
-          setNotifications(list);
+          if (isMounted) setNotifications(list);
         },
         (err) => console.warn('Firestore notifications listener:', err.message)
       );
     }
 
     return () => {
-      unsubMeals();
-      unsubRatings();
-      unsubUserRatings();
-      unsubPolls();
-      unsubVotes();
-      unsubComplaints();
-      unsubProtein();
-      unsubRedemptions();
-      unsubSubscription();
-      unsubUsers();
-      unsubMessPhotos();
-      unsubHygiene();
-      unsubRewardEvents();
+      isMounted = false;
       unsubNotifications();
     };
   }, [authUser?.uid, currentRole]);
@@ -467,9 +458,7 @@ export const AppProvider = ({ children }) => {
   const saveMeal = async (mealData, targetDay) => {
     try {
       const updatedMeals = await db.saveMeal({ ...mealData, day: targetDay || mealData.day || selectedDay });
-      if (!isFirebaseConfigured) {
-        setAllMeals(updatedMeals);
-      }
+      setAllMeals(updatedMeals);
       setMealsVersion(v => v + 1);
       addNotification('Meal Saved', `${mealData.name} updated in menu.`, 'success');
       return { success: true, meal: updatedMeals };
@@ -483,9 +472,7 @@ export const AppProvider = ({ children }) => {
   const deleteMeal = async (mealId) => {
     try {
       const updatedMeals = await db.deleteMeal(mealId);
-      if (!isFirebaseConfigured) {
-        setAllMeals(updatedMeals);
-      }
+      setAllMeals(updatedMeals);
       setMealsVersion(v => v + 1);
       addNotification('Meal Deleted', 'Dish removed from menu schedule.', 'warning');
       return { success: true };
@@ -1118,6 +1105,15 @@ export const AppProvider = ({ children }) => {
         searchQuery,
         setSearchQuery,
         currentMessInfo,
+
+        // Data Refresh Helpers (Phase 2.1)
+        refreshMeals,
+        refreshRatings,
+        refreshPolls,
+        refreshVotes,
+        refreshComplaints,
+        refreshRewardEvents,
+        refreshAll,
       }}
     >
       {children}
