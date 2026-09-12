@@ -124,6 +124,30 @@ export default defineConfig(({ mode }) => {
         }
       }
     ],
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            const nid = id.replace(/\\/g, '/');
+            if (nid.includes('/node_modules/')) {
+              if (nid.includes('jspdf') || nid.includes('html2canvas')) {
+                return 'vendor-pdf';
+              }
+              if (nid.includes('recharts') || nid.includes('victory-vendor') || nid.includes('d3-')) {
+                return 'vendor-charts';
+              }
+              if (nid.includes('firebase')) {
+                return 'vendor-firebase';
+              }
+              if (nid.includes('lucide-react')) {
+                return 'vendor-icons';
+              }
+            }
+          }
+        }
+      },
+      chunkSizeWarningLimit: 800
+    },
     server: {
       port: 3000,
       open: true

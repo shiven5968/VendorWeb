@@ -1,32 +1,42 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { AppProvider, useApp } from './context/AppContext';
 import { Navbar } from './components/Navbar';
 import { BottomNav } from './components/BottomNav';
 import { Footer } from './components/Footer';
-import { NotificationDrawer } from './components/NotificationDrawer';
-import { SearchModal } from './components/SearchModal';
-import { MealDetailModal } from './components/MealDetailModal';
-import { RewardClaimModal } from './components/RewardClaimModal';
-import { AddEditMealModal } from './components/AddEditMealModal';
-
-import { LandingPage } from './pages/LandingPage';
-import { LoginPage } from './pages/LoginPage';
-import { StudentDashboard } from './pages/StudentDashboard';
-import { MenuPage } from './pages/MenuPage';
-import { MusclePassPage } from './pages/MusclePassPage';
-import { HealthyRewardsPage } from './pages/HealthyRewardsPage';
-import { MessCommitteeDashboard } from './pages/MessCommitteeDashboard';
-import { WardenDashboard } from './pages/WardenDashboard';
-import { VotingPage } from './pages/VotingPage';
-import { ActivityPage } from './pages/ActivityPage';
-import { ProfilePage } from './pages/ProfilePage';
-import { AnalyticsPage } from './pages/AnalyticsPage';
-import { ReportsPage } from './pages/ReportsPage';
-import { DailyPhotosPage } from './pages/DailyPhotosPage';
-import { HygieneCheckPage } from './pages/HygieneCheckPage';
-import { PhotoArchivePage } from './pages/PhotoArchivePage';
 import { Loader2 } from 'lucide-react';
+
+// Lazy-loaded route pages (Code Splitting / On-Demand Loading)
+const LandingPage = lazy(() => import('./pages/LandingPage').then(m => ({ default: m.LandingPage })));
+const LoginPage = lazy(() => import('./pages/LoginPage').then(m => ({ default: m.LoginPage })));
+const StudentDashboard = lazy(() => import('./pages/StudentDashboard').then(m => ({ default: m.StudentDashboard })));
+const MenuPage = lazy(() => import('./pages/MenuPage').then(m => ({ default: m.MenuPage })));
+const MusclePassPage = lazy(() => import('./pages/MusclePassPage').then(m => ({ default: m.MusclePassPage })));
+const HealthyRewardsPage = lazy(() => import('./pages/HealthyRewardsPage').then(m => ({ default: m.HealthyRewardsPage })));
+const MessCommitteeDashboard = lazy(() => import('./pages/MessCommitteeDashboard').then(m => ({ default: m.MessCommitteeDashboard })));
+const WardenDashboard = lazy(() => import('./pages/WardenDashboard').then(m => ({ default: m.WardenDashboard })));
+const VotingPage = lazy(() => import('./pages/VotingPage').then(m => ({ default: m.VotingPage })));
+const ActivityPage = lazy(() => import('./pages/ActivityPage').then(m => ({ default: m.ActivityPage })));
+const ProfilePage = lazy(() => import('./pages/ProfilePage').then(m => ({ default: m.ProfilePage })));
+const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage').then(m => ({ default: m.AnalyticsPage })));
+const ReportsPage = lazy(() => import('./pages/ReportsPage').then(m => ({ default: m.ReportsPage })));
+const DailyPhotosPage = lazy(() => import('./pages/DailyPhotosPage').then(m => ({ default: m.DailyPhotosPage })));
+const HygieneCheckPage = lazy(() => import('./pages/HygieneCheckPage').then(m => ({ default: m.HygieneCheckPage })));
+const PhotoArchivePage = lazy(() => import('./pages/PhotoArchivePage').then(m => ({ default: m.PhotoArchivePage })));
+
+// Lazy-loaded modals (Loaded strictly on-demand when activated)
+const NotificationDrawer = lazy(() => import('./components/NotificationDrawer').then(m => ({ default: m.NotificationDrawer })));
+const SearchModal = lazy(() => import('./components/SearchModal').then(m => ({ default: m.SearchModal })));
+const MealDetailModal = lazy(() => import('./components/MealDetailModal').then(m => ({ default: m.MealDetailModal })));
+const RewardClaimModal = lazy(() => import('./components/RewardClaimModal').then(m => ({ default: m.RewardClaimModal })));
+const AddEditMealModal = lazy(() => import('./components/AddEditMealModal').then(m => ({ default: m.AddEditMealModal })));
+
+const PageLoadingFallback = () => (
+  <div className="min-h-[50vh] flex flex-col items-center justify-center space-y-3 py-12">
+    <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
+    <p className="text-xs font-semibold text-slate-400">Loading...</p>
+  </div>
+);
 
 const AppContent = () => {
   const { user, profile, role, isInitialAuthLoading, isProfileLoading } = useAuth();
@@ -43,7 +53,9 @@ const AppContent = () => {
     isNotificationsOpen, 
     setIsNotificationsOpen,
     isNotificationOpen,
-    setIsNotificationOpen
+    setIsNotificationOpen,
+    claimedRewardModal,
+    selectedMealModal
   } = useApp();
 
   // Role selection state for unauthenticated landing -> login flow
@@ -169,19 +181,21 @@ const AppContent = () => {
     return (
       <div className="min-h-screen flex flex-col justify-between bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
         <main className="flex-1 flex items-center justify-center p-4">
-          {isLoginFlow ? (
-            <LoginPage 
-              initialRole={selectedRole} 
-              onBackToRoles={() => setIsLoginFlow(false)} 
-            />
-          ) : (
-            <LandingPage 
-              onSelectRole={(chosenRole) => {
-                setSelectedRole(chosenRole);
-                setIsLoginFlow(true);
-              }} 
-            />
-          )}
+          <Suspense fallback={<PageLoadingFallback />}>
+            {isLoginFlow ? (
+              <LoginPage 
+                initialRole={selectedRole} 
+                onBackToRoles={() => setIsLoginFlow(false)} 
+              />
+            ) : (
+              <LandingPage 
+                onSelectRole={(chosenRole) => {
+                  setSelectedRole(chosenRole);
+                  setIsLoginFlow(true);
+                }} 
+              />
+            )}
+          </Suspense>
         </main>
         <Footer />
       </div>
@@ -232,18 +246,22 @@ const AppContent = () => {
     <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-300 relative">
       <Navbar />
       <main className="flex-1 transition-all duration-300">
-        {renderAuthenticatedPage()}
+        <Suspense fallback={<PageLoadingFallback />}>
+          {renderAuthenticatedPage()}
+        </Suspense>
       </main>
 
       <Footer />
       <BottomNav />
 
-      {/* Global Modals */}
-      <NotificationDrawer />
-      <SearchModal />
-      <MealDetailModal />
-      <RewardClaimModal />
-      <AddEditMealModal />
+      {/* Global Modals (Loaded strictly on-demand when activated) */}
+      <Suspense fallback={null}>
+        {(isNotificationsOpen || isNotificationOpen) && <NotificationDrawer />}
+        {isSearchOpen && <SearchModal />}
+        {(selectedMeal || selectedMealModal) && <MealDetailModal />}
+        {claimedRewardModal && <RewardClaimModal />}
+        {isAddMealModalOpen && <AddEditMealModal />}
+      </Suspense>
     </div>
   );
 };

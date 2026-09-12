@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { PhotoGallery, EmptyState, LoadingState, DashboardCard, SectionHeader } from '../components/ui';
-import { getMessPhotos } from '../services/messOperations';
 import { useApp } from '../context/AppContext';
 import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getCollegeDateString } from '../utils/dateTime';
@@ -22,6 +21,7 @@ export const PhotoArchivePage = () => {
     const fetchPhotos = async () => {
       setLoading(true);
       try {
+        const { getMessPhotos } = await import('../services/messOperations');
         const fetched = await getMessPhotos(selectedDate);
         setPhotos(fetched);
       } catch (err) {

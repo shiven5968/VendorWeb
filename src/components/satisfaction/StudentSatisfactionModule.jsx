@@ -24,7 +24,6 @@ import {
   CartesianGrid
 } from 'recharts';
 import { getCollegeDateString, getPastCollegeDateString, formatCollegeDateTime } from '../../utils/dateTime';
-import { generateSatisfactionPdf } from '../../utils/satisfactionReportPdf';
 
 const THEME_KEYWORDS = {
   Taste: ['taste', 'flavor', 'tasty', 'delicious', 'spicy', 'bland', 'salt', 'masala', 'sweet'],
@@ -341,6 +340,7 @@ export const StudentSatisfactionModule = ({
   const handleDownloadPdf = async () => {
     try {
       setIsDownloadingPdf(true);
+      const { generateSatisfactionPdf } = await import('../../utils/satisfactionReportPdf');
       const filename = generateSatisfactionPdf({
         periodLabel,
         startDate,
