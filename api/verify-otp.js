@@ -24,9 +24,10 @@ export default async function handler(req, res) {
     return res.status(405).json({ message: 'Method Not Allowed', requestId });
   }
 
-  const timeoutPromise = new Promise((_, reject) =>
-    setTimeout(() => reject(new Error('Verification timed out. Please try again.')), SERVER_TIMEOUT_MS)
-  );
+  let timeoutHandle;
+  const timeoutPromise = new Promise((_, reject) => {
+    timeoutHandle = setTimeout(() => reject(new Error('Verification timed out. Please try again.')), SERVER_TIMEOUT_MS);
+  });
 
   try {
     let body = req.body;
@@ -37,10 +38,12 @@ export default async function handler(req, res) {
     const { email, otp, sessionId, sessionToken } = body || {};
 
     if (!email || typeof email !== 'string') {
+      clearTimeout(timeoutHandle);
       return res.status(400).json({ message: 'Email address is required.', requestId });
     }
 
     if (!otp || typeof otp !== 'string' || otp.trim().length !== 6) {
+      clearTimeout(timeoutHandle);
       return res.status(400).json({ message: 'Please enter a valid 6-digit verification code.', requestId });
     }
 
@@ -53,10 +56,12 @@ export default async function handler(req, res) {
       }),
       timeoutPromise
     ]);
+    clearTimeout(timeoutHandle);
 
     return res.status(200).json({ ...result, requestId });
 
   } catch (err) {
+    clearTimeout(timeoutHandle);
     const msg = err.message || 'Verification failed.';
 
     // Expired → 410 Gone

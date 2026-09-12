@@ -26,9 +26,10 @@ export default async function handler(req, res) {
   }
 
   // Timeout wrapper — prevents infinite hang
-  const timeoutPromise = new Promise((_, reject) =>
-    setTimeout(() => reject(new Error('Request timed out. Please try again.')), SERVER_TIMEOUT_MS)
-  );
+  let timeoutHandle;
+  const timeoutPromise = new Promise((_, reject) => {
+    timeoutHandle = setTimeout(() => reject(new Error('Request timed out. Please try again.')), SERVER_TIMEOUT_MS);
+  });
 
   try {
     let body = req.body;
@@ -40,6 +41,7 @@ export default async function handler(req, res) {
     const { email, admissionNumber, name } = body || {};
 
     if (!email || typeof email !== 'string') {
+      clearTimeout(timeoutHandle);
       return res.status(400).json({
         message: 'Email address is required.',
         requestId
@@ -47,6 +49,7 @@ export default async function handler(req, res) {
     }
 
     if (!admissionNumber || typeof admissionNumber !== 'string') {
+      clearTimeout(timeoutHandle);
       return res.status(400).json({
         message: 'Admission Number is required.',
         requestId
@@ -58,10 +61,12 @@ export default async function handler(req, res) {
       sendOtpEmail({ email: email.trim().toLowerCase(), admissionNumber: admissionNumber.trim(), name: (name || 'Student').trim() }),
       timeoutPromise
     ]);
+    clearTimeout(timeoutHandle);
 
     return res.status(200).json({ ...result, requestId });
 
   } catch (err) {
+    clearTimeout(timeoutHandle);
     // Categorize error for appropriate HTTP status
     const msg = err.message || 'Failed to send verification code.';
 
@@ -71,7 +76,7 @@ export default async function handler(req, res) {
     }
 
     // Configuration error (missing API key etc.) → 503
-    if (msg.includes('not configured') || msg.includes('RESEND_API_KEY')) {
+    if (msg.includes('not configured') || msg.includes('BREVO_API_KEY') || msg.includes('RESEND_API_KEY')) {
       console.error(`[${requestId}] OTP service configuration error:`, msg);
       return res.status(503).json({
         message: 'Verification service is temporarily unavailable. Please try again shortly.',

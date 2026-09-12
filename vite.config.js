@@ -7,6 +7,15 @@ import verifyRazorpayPaymentHandler from './api/verify-razorpay-payment.js';
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
+  if (env.BREVO_API_KEY) {
+    process.env.BREVO_API_KEY = env.BREVO_API_KEY;
+  }
+  if (env.BREVO_FROM_EMAIL) {
+    process.env.BREVO_FROM_EMAIL = env.BREVO_FROM_EMAIL;
+  }
+  if (env.BREVO_FROM_NAME) {
+    process.env.BREVO_FROM_NAME = env.BREVO_FROM_NAME;
+  }
   if (env.RESEND_API_KEY) {
     process.env.RESEND_API_KEY = env.RESEND_API_KEY;
   }
@@ -33,11 +42,12 @@ export default defineConfig(({ mode }) => {
               req.on('end', async () => {
                 try {
                   const parsed = JSON.parse(body || '{}');
-                  if (!process.env.RESEND_API_KEY || !process.env.RESEND_API_KEY.startsWith('re_')) {
+                  const hasEmailKey = Boolean(process.env.BREVO_API_KEY || (process.env.RESEND_API_KEY && process.env.RESEND_API_KEY.startsWith('re_')));
+                  if (!hasEmailKey) {
                     res.setHeader('Content-Type', 'application/json');
                     res.statusCode = 503;
                     res.end(JSON.stringify({
-                      message: 'Local development: RESEND_API_KEY is not configured in .env. Configure RESEND_API_KEY to send verification emails locally, or specify VITE_OTP_API_URL.'
+                      message: 'Local development: BREVO_API_KEY is not configured in .env. Configure BREVO_API_KEY to send verification emails locally, or specify VITE_OTP_API_URL.'
                     }));
                     return;
                   }

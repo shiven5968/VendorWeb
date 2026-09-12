@@ -131,7 +131,7 @@ export function generateSecureOTP() {
 }
 
 /**
- * Dispatch 6-digit OTP via Resend API and manage durable session in Firestore via Firebase Admin SDK
+ * Dispatch 6-digit OTP via Brevo API and manage durable session in Firestore via Firebase Admin SDK
  */
 export async function sendOtpEmail({ email, admissionNumber, name }) {
   const cleanEmail = (email || '').trim().toLowerCase();
@@ -185,80 +185,130 @@ export async function sendOtpEmail({ email, admissionNumber, name }) {
   };
   const signedSessionToken = signSessionToken(sessionPayload);
 
-  // 3. Send email via Resend API
+  // 3. Send email via Brevo API (with fallback to Resend if configured)
+  const brevoApiKey = process.env.BREVO_API_KEY;
+  const brevoFromEmail = process.env.BREVO_FROM_EMAIL || 'otp@messmates.tech';
+  const brevoFromName = process.env.BREVO_FROM_NAME || 'MESSMATES';
+
   const resendApiKey = process.env.RESEND_API_KEY;
-  const fromEmail = process.env.RESEND_FROM_EMAIL || 'MessMates <verify@messmates.jo3.org>';
+  const resendFromEmail = process.env.RESEND_FROM_EMAIL || 'MessMates <verify@messmates.jo3.org>';
 
-  let resendMessageId = null;
+  let emailMessageId = null;
 
-  if (resendApiKey && resendApiKey.startsWith('re_')) {
+  const emailHtml = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>MessMates Verification Code</title>
+    </head>
+    <body style="margin: 0; padding: 0; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+      <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f8fafc; padding: 40px 16px;">
+        <tr>
+          <td align="center">
+            <table width="100%" max-width="520" border="0" cellspacing="0" cellpadding="0" style="max-width: 520px; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+              <!-- Header -->
+              <tr>
+                <td style="background-color: #059669; padding: 28px 24px; text-align: center;">
+                  <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 900; letter-spacing: -0.5px;">MessMates</h1>
+                  <p style="color: #d1fae5; margin: 4px 0 0 0; font-size: 12px; font-weight: 500;">Know Your Meal Before You Eat It • ABES EC</p>
+                </td>
+              </tr>
+
+              <!-- Main Content -->
+              <tr>
+                <td style="padding: 32px 28px;">
+                  <p style="color: #0f172a; font-size: 15px; font-weight: 600; margin: 0 0 12px 0;">Hello ${cleanName},</p>
+                  <p style="color: #475569; font-size: 13px; line-height: 1.6; margin: 0 0 24px 0;">
+                    Thank you for registering on <strong>MessMates</strong>. Please use the following 6-digit verification code to verify your college email identity and activate your student account:
+                  </p>
+
+                  <!-- Code Box -->
+                  <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-bottom: 24px;">
+                    <tr>
+                      <td align="center" style="background-color: #f0fdf4; border: 2px dashed #86efac; border-radius: 14px; padding: 20px;">
+                        <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #166534; display: block; margin-bottom: 8px;">Your Verification Code</span>
+                        <span style="font-size: 36px; font-weight: 900; letter-spacing: 8px; color: #065f46; font-family: Consolas, 'Courier New', monospace; display: block;">${otp}</span>
+                        <span style="font-size: 11px; font-weight: 600; color: #15803d; display: block; margin-top: 8px;">Valid for 10 minutes.</span>
+                      </td>
+                    </tr>
+                  </table>
+
+                  <!-- Details -->
+                  <div style="background-color: #f8fafc; border-radius: 12px; padding: 14px 16px; margin-bottom: 24px; border: 1px solid #edf2f7;">
+                    <p style="margin: 0 0 6px 0; font-size: 12px; color: #64748b;"><strong>Admission No:</strong> ${cleanAdmission}</p>
+                    <p style="margin: 0; font-size: 12px; color: #64748b;"><strong>Email:</strong> ${cleanEmail}</p>
+                  </div>
+
+                  <p style="color: #94a3b8; font-size: 11px; line-height: 1.5; margin: 0;">
+                    If you did not request this verification code, please disregard this email. Do not share this code with anyone.
+                  </p>
+                </td>
+              </tr>
+
+              <!-- Footer -->
+              <tr>
+                <td style="background-color: #f8fafc; padding: 16px 24px; text-align: center; border-top: 1px solid #f1f5f9;">
+                  <p style="color: #94a3b8; font-size: 11px; margin: 0;">© 2026 MessMates • ABES Engineering College, Ghaziabad</p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </body>
+    </html>
+  `;
+
+  const emailText = `Hello ${cleanName},\n\nThank you for registering on MessMates. Please use the following 6-digit verification code to verify your college email identity and activate your student account:\n\n${otp}\n\nValid for 10 minutes.\nAdmission No: ${cleanAdmission}\nEmail: ${cleanEmail}\n\nIf you did not request this verification code, please disregard this email. Do not share this code with anyone.\n\n© 2026 MessMates • ABES Engineering College, Ghaziabad`;
+
+  if (brevoApiKey && brevoApiKey.trim()) {
     try {
-      const emailHtml = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>MessMates Verification Code</title>
-        </head>
-        <body style="margin: 0; padding: 0; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
-          <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f8fafc; padding: 40px 16px;">
-            <tr>
-              <td align="center">
-                <table width="100%" max-width="520" border="0" cellspacing="0" cellpadding="0" style="max-width: 520px; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
-                  <!-- Header -->
-                  <tr>
-                    <td style="background-color: #059669; padding: 28px 24px; text-align: center;">
-                      <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 900; letter-spacing: -0.5px;">MessMates</h1>
-                      <p style="color: #d1fae5; margin: 4px 0 0 0; font-size: 12px; font-weight: 500;">Know Your Meal Before You Eat It • ABES EC</p>
-                    </td>
-                  </tr>
+      const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: {
+          'accept': 'application/json',
+          'api-key': brevoApiKey.trim(),
+          'content-type': 'application/json'
+        },
+        body: JSON.stringify({
+          sender: {
+            name: brevoFromName.trim(),
+            email: brevoFromEmail.trim()
+          },
+          to: [
+            {
+              email: cleanEmail,
+              name: cleanName
+            }
+          ],
+          replyTo: {
+            email: 'support@messmates.tech',
+            name: 'MESSMATES Support'
+          },
+          subject: `MessMates Verification Code: ${otp}`,
+          htmlContent: emailHtml,
+          textContent: emailText
+        })
+      });
 
-                  <!-- Main Content -->
-                  <tr>
-                    <td style="padding: 32px 28px;">
-                      <p style="color: #0f172a; font-size: 15px; font-weight: 600; margin: 0 0 12px 0;">Hello ${cleanName},</p>
-                      <p style="color: #475569; font-size: 13px; line-height: 1.6; margin: 0 0 24px 0;">
-                        Thank you for registering on <strong>MessMates</strong>. Please use the following 6-digit verification code to verify your college email identity and activate your student account:
-                      </p>
-
-                      <!-- Code Box -->
-                      <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-bottom: 24px;">
-                        <tr>
-                          <td align="center" style="background-color: #f0fdf4; border: 2px dashed #86efac; border-radius: 14px; padding: 20px;">
-                            <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #166534; display: block; margin-bottom: 8px;">Your Verification Code</span>
-                            <span style="font-size: 36px; font-weight: 900; letter-spacing: 8px; color: #065f46; font-family: Consolas, 'Courier New', monospace; display: block;">${otp}</span>
-                            <span style="font-size: 11px; font-weight: 600; color: #15803d; display: block; margin-top: 8px;">Valid for 10 minutes.</span>
-                          </td>
-                        </tr>
-                      </table>
-
-                      <!-- Details -->
-                      <div style="background-color: #f8fafc; border-radius: 12px; padding: 14px 16px; margin-bottom: 24px; border: 1px solid #edf2f7;">
-                        <p style="margin: 0 0 6px 0; font-size: 12px; color: #64748b;"><strong>Admission No:</strong> ${cleanAdmission}</p>
-                        <p style="margin: 0; font-size: 12px; color: #64748b;"><strong>Email:</strong> ${cleanEmail}</p>
-                      </div>
-
-                      <p style="color: #94a3b8; font-size: 11px; line-height: 1.5; margin: 0;">
-                        If you did not request this verification code, please disregard this email. Do not share this code with anyone.
-                      </p>
-                    </td>
-                  </tr>
-
-                  <!-- Footer -->
-                  <tr>
-                    <td style="background-color: #f8fafc; padding: 16px 24px; text-align: center; border-top: 1px solid #f1f5f9;">
-                      <p style="color: #94a3b8; font-size: 11px; margin: 0;">© 2026 MessMates • ABES Engineering College, Ghaziabad</p>
-                    </td>
-                  </tr>
-                </table>
-              </td>
-            </tr>
-          </table>
-        </body>
-        </html>
-      `;
-
+      const resData = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const errMsg = resData.message || resData.code || `Brevo API HTTP ${response.status}`;
+        throw new Error(errMsg);
+      }
+      emailMessageId = resData.messageId || resData.id || `brevo_${Date.now()}`;
+    } catch (err) {
+      // Sanitize error: never leak API keys in console or error responses
+      const rawMsg = err.message || 'Unknown Brevo error';
+      const sanitizedMsg = brevoApiKey ? rawMsg.replace(new RegExp(brevoApiKey, 'g'), '[REDACTED]') : rawMsg;
+      console.error('[Brevo Error]:', sanitizedMsg);
+      throw new Error(`Unable to send verification code: ${sanitizedMsg}`);
+    }
+  } else if (resendApiKey && resendApiKey.startsWith('re_')) {
+    // Graceful backward compatibility with Resend
+    try {
       const response = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
@@ -266,24 +316,24 @@ export async function sendOtpEmail({ email, admissionNumber, name }) {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          from: fromEmail,
+          from: resendFromEmail,
           to: [cleanEmail],
           subject: `MessMates Verification Code: ${otp}`,
           html: emailHtml
         })
       });
 
-      const resData = await response.json();
+      const resData = await response.json().catch(() => ({}));
       if (!response.ok) {
         throw new Error(resData.message || 'Resend API returned error.');
       }
-      resendMessageId = resData.id;
+      emailMessageId = resData.id;
     } catch (err) {
-      console.error('[Resend Error]:', err);
+      console.error('[Resend Error]:', err.message);
       throw new Error(`Unable to send verification code: ${err.message}`);
     }
   } else {
-    throw new Error('Unable to send verification code: RESEND_API_KEY is not configured on the server.');
+    throw new Error('Unable to send verification code: BREVO_API_KEY is not configured on the server.');
   }
 
   // 4. Save PRIVILEGED OTP Session via Firebase Admin SDK (/otp_sessions/{cleanEmail})
@@ -301,7 +351,8 @@ export async function sendOtpEmail({ email, admissionNumber, name }) {
         lastSentAt: now,
         attempts: 0,
         verified: false,
-        resendMessageId: resendMessageId || null,
+        messageId: emailMessageId || null,
+        resendMessageId: emailMessageId || null,
         verificationProofToken: null
       });
     } catch (dbErr) {
@@ -314,7 +365,7 @@ export async function sendOtpEmail({ email, admissionNumber, name }) {
     sessionId: signedSessionToken,
     sessionToken: signedSessionToken,
     email: cleanEmail,
-    messageId: resendMessageId,
+    messageId: emailMessageId,
     message: `We sent a 6-digit verification code to ${cleanEmail}`
   };
 }
