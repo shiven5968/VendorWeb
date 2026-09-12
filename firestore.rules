@@ -138,14 +138,16 @@ service cloud.firestore {
       // Authenticated users can view community meal ratings & reviews
       allow read: if isAuthenticated();
 
-      // ONLY verified students can create ratings (Committee & Warden cannot create student ratings)
+      // ONLY verified students can create ratings with deterministic ID: rating_{uid}_{mealOccurrenceId}
+      // Prevents creating multiple ratings for the same occurrence through arbitrary IDs
       allow create: if isStudent() 
-                    && request.resource.data.userId == request.auth.uid;
+                    && request.resource.data.userId == request.auth.uid
+                    && request.resource.data.mealOccurrenceId is string
+                    && ratingId == 'rating_' + request.auth.uid + '_' + request.resource.data.mealOccurrenceId
+                    && !exists(/databases/$(database)/documents/ratings/$(ratingId));
 
-      // Students can ONLY update their own ratings; cannot transfer ownership or spoof userId
-      allow update: if isStudent() 
-                    && resource.data.userId == request.auth.uid 
-                    && request.resource.data.userId == request.auth.uid;
+      // Submitted ratings are immutable — no updates or overwrites permitted
+      allow update: if false;
 
       // Students can delete their own ratings; Wardens can moderate / remove offensive reviews
       allow delete: if (isStudent() && resource.data.userId == request.auth.uid) 

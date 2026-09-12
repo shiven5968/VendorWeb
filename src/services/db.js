@@ -979,8 +979,20 @@ class LaunchDatabase {
     const resolvedOccurrenceId = mealOccurrenceId || `${resolvedDate}_${mealId}`;
     const weekInfo = getCollegeWeekInfo(new Date());
 
+    // Deterministic Rating Identity: rating_${userId}_${mealOccurrenceId}
+    const ratingId = `rating_${userId}_${resolvedOccurrenceId}`;
+
+    // Microtask memory mutex to prevent concurrent duplicate submissions in the same JS runtime
+    if (!this._pendingRatingSubmissions) {
+      this._pendingRatingSubmissions = new Set();
+    }
+    if (this._pendingRatingSubmissions.has(ratingId)) {
+      throw new Error('Rating already submitted for this meal occurrence. Repeated ratings or edits are not allowed.');
+    }
+
     // Strict duplicate check: ONLY prevent if the student already rated this specific occurrence (same date and meal)
     const existingIdx = ratings.findIndex(r => {
+      if (r.id === ratingId) return true;
       if (r.userId !== userId) return false;
       
       // If rating has an explicit mealOccurrenceId matching this occurrence
@@ -1001,61 +1013,89 @@ class LaunchDatabase {
       throw new Error('Rating already submitted for this meal occurrence. Repeated ratings or edits are not allowed.');
     }
 
-    const ratingId = 'rat_' + Date.now();
-    const ratingEntry = {
-      id: ratingId,
-      userId,
-      userName: userName || 'Student',
-      hostelBlock: hostelBlock || 'DNB Block',
-      mealId,
-      mealOccurrenceId: resolvedOccurrenceId,
-      date: resolvedDate,
-      occurrenceDate: resolvedDate,
-      weekId: weekInfo.weekId,
-      mealCategory: mealCategory || '',
-      hostelBlock: hostelBlock || '',
-      mealName,
-      rating: Number(rating),
-      feedback: feedback.trim(),
-      tags,
-      timestamp: new Date().toISOString()
-    };
+    this._pendingRatingSubmissions.add(ratingId);
 
-    if (isFirebaseConfigured) {
-      try {
-        await setDoc(doc(firestoreDb, 'ratings', ratingId), ratingEntry);
-      } catch (e) {
-        console.error('Error saving rating to Firestore:', e);
-        throw e;
+    try {
+      const ratingEntry = {
+        id: ratingId,
+        userId,
+        userName: userName || 'Student',
+        hostelBlock: hostelBlock || 'DNB Block',
+        mealId,
+        mealOccurrenceId: resolvedOccurrenceId,
+        date: resolvedDate,
+        occurrenceDate: resolvedDate,
+        weekId: weekInfo.weekId,
+        mealCategory: mealCategory || '',
+        mealName,
+        rating: Number(rating),
+        feedback: feedback.trim(),
+        tags,
+        timestamp: new Date().toISOString()
+      };
+
+      if (isFirebaseConfigured) {
+        try {
+          const ratingRef = doc(firestoreDb, 'ratings', ratingId);
+          await runTransaction(firestoreDb, async (transaction) => {
+            const ratingSnap = await transaction.get(ratingRef);
+            if (ratingSnap.exists()) {
+              throw new Error('Rating already submitted for this meal occurrence. Repeated ratings or edits are not allowed.');
+            }
+            transaction.set(ratingRef, ratingEntry);
+          });
+        } catch (e) {
+          if (e.message && e.message.includes('Rating already submitted')) {
+            throw e;
+          }
+          console.error('Error saving rating to Firestore:', e);
+          throw e;
+        }
       }
+
+      ratings.unshift(ratingEntry);
+      this.setItem('ratings', ratings);
+
+      // Award strictly +1 reward point for valid submitted meal rating
+      await this.awardRewardEvent({
+        userId,
+        type: 'MEAL_RATING',
+        points: 1,
+        referenceId: resolvedOccurrenceId,
+        description: mealName,
+        date: resolvedDate
+      });
+
+      return ratingEntry;
+    } finally {
+      this._pendingRatingSubmissions.delete(ratingId);
     }
-
-    ratings.unshift(ratingEntry);
-    // Award strictly +1 reward point for valid submitted meal rating
-    await this.awardRewardEvent({
-      userId,
-      type: 'MEAL_RATING',
-      points: 1,
-      referenceId: resolvedOccurrenceId,
-      description: mealName,
-      date: resolvedDate
-    });
-
-    this.setItem('ratings', ratings);
-    return ratingEntry;
   }
 
   getUserRatingForMeal(userId, mealId, targetDate = getCollegeDateString()) {
     const ratings = this.getAllRatings();
+    const expectedOccurrenceId = targetDate ? `${targetDate}_${mealId}` : null;
+    const deterministicRatingId = expectedOccurrenceId ? `rating_${userId}_${expectedOccurrenceId}` : null;
+
     return ratings.find(r => {
       if (r.userId !== userId) return false;
       
+      // Fast match by deterministic document ID
+      if (deterministicRatingId && r.id === deterministicRatingId) {
+        return true;
+      }
+
+      // Match by explicit mealOccurrenceId
+      if (expectedOccurrenceId && r.mealOccurrenceId === expectedOccurrenceId) {
+        return true;
+      }
+
       // Match meal by ID or occurrence ID suffix
       const mealMatches = r.mealId === mealId || 
         (r.mealOccurrenceId && r.mealOccurrenceId.endsWith(`_${mealId}`));
       if (!mealMatches) return false;
 
-      // If targetDate is specified, check against occurrence date
+      // If targetDate is specified, check against occurrence date (supports historical formats)
       if (targetDate) {
         const rDate = r.date || r.occurrenceDate || (r.timestamp ? getCollegeDateString(new Date(r.timestamp)) : null);
         return rDate === targetDate;

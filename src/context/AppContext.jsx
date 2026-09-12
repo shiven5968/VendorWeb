@@ -535,7 +535,7 @@ export const AppProvider = ({ children }) => {
         tags
       });
 
-      setAllRatings(prev => [ratingEntry, ...prev]);
+      setAllRatings(prev => [ratingEntry, ...prev.filter(r => r.id !== ratingEntry.id)]);
       setUserRatings(prev => [ratingEntry, ...prev.filter(r => r.id !== ratingEntry.id)]);
       setRatingsVersion(v => v + 1);
       return ratingEntry;
@@ -549,9 +549,22 @@ export const AppProvider = ({ children }) => {
   const getUserRating = (mealId, targetDate = getCollegeDateString(currentTime || new Date())) => {
     if (!currentUser) return null;
     const uid = currentUser.uid || currentUser.id;
+    const expectedOccurrenceId = targetDate ? `${targetDate}_${mealId}` : null;
+    const deterministicRatingId = expectedOccurrenceId ? `rating_${uid}_${expectedOccurrenceId}` : null;
 
     const findInList = (list) => (list || []).find(r => {
       if (r.userId !== uid) return false;
+
+      // Fast match by deterministic document ID
+      if (deterministicRatingId && r.id === deterministicRatingId) {
+        return true;
+      }
+
+      // Match by explicit mealOccurrenceId
+      if (expectedOccurrenceId && r.mealOccurrenceId === expectedOccurrenceId) {
+        return true;
+      }
+
       const mealMatches = r.mealId === mealId || 
         (r.mealOccurrenceId && r.mealOccurrenceId.endsWith(`_${mealId}`));
       if (!mealMatches) return false;
