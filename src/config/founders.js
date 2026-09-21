@@ -21,7 +21,7 @@ export const FOUNDERS = [
   {
     id: 'founder_shivendra',
     name: 'Shivendra Pratap Singh',
-    role: 'CO-FOUNDER',
+    role: 'FOUNDER',
     year: '2nd Year',
     branch: 'CSE',
     college: 'ABES Engineering College',
