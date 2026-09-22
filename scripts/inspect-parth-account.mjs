@@ -147,7 +147,7 @@ async function main() {
     if (
       adm.includes('15310212') ||
       email.includes('25b15310212') ||
-      (email.includes('parth') && !email.includes('anita')) ||
+      (email.includes('parth') && !email.includes('amita')) ||
       name.includes('parth')
     ) {
       matchedUserDocs.push({ id: docSnap.id, ...d });

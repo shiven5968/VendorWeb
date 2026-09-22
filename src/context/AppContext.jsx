@@ -269,7 +269,7 @@ export const AppProvider = ({ children }) => {
 
   const refreshAll = async () => {
     const currentUid = authUser?.uid;
-    const isStaffUser = currentRole === 'warden' || currentRole === 'mess_committee' || currentRole === 'committee' || (authUser?.email || '').includes('warden') || (authUser?.email || '').includes('committee') || authUser?.email === 'anita@abes.ac.in' || authUser?.email === 'alok@abes.ac.in';
+    const isStaffUser = currentRole === 'warden' || currentRole === 'mess_committee' || currentRole === 'committee' || (authUser?.email || '').includes('warden') || (authUser?.email || '').includes('committee') || authUser?.email === 'amita@abes.ac.in' || authUser?.email === 'alok@abes.ac.in';
     await Promise.allSettled([
       refreshMeals(),
       refreshRatings(currentUid),
@@ -288,7 +288,7 @@ export const AppProvider = ({ children }) => {
     }
 
     const currentUid = authUser.uid;
-    const isStaffUser = currentRole === 'warden' || currentRole === 'mess_committee' || currentRole === 'committee' || (authUser.email || '').includes('warden') || (authUser.email || '').includes('committee') || authUser.email === 'anita@abes.ac.in' || authUser.email === 'alok@abes.ac.in';
+    const isStaffUser = currentRole === 'warden' || currentRole === 'mess_committee' || currentRole === 'committee' || (authUser.email || '').includes('warden') || (authUser.email || '').includes('committee') || authUser.email === 'amita@abes.ac.in' || authUser.email === 'alok@abes.ac.in';
 
     let isMounted = true;
 
@@ -911,7 +911,7 @@ export const AppProvider = ({ children }) => {
 
   // STAFF DIRECTORY (Phase 2.4: Bounded Paginated Query)
   const fetchStaffDirectoryUsers = useCallback(async (params = {}) => {
-    const isStaffUser = currentRole === 'warden' || currentRole === 'mess_committee' || currentRole === 'committee' || (currentUser?.email || '').includes('warden') || (currentUser?.email || '').includes('committee') || currentUser?.email === 'anita@abes.ac.in' || currentUser?.email === 'alok@abes.ac.in';
+    const isStaffUser = currentRole === 'warden' || currentRole === 'mess_committee' || currentRole === 'committee' || (currentUser?.email || '').includes('warden') || (currentUser?.email || '').includes('committee') || currentUser?.email === 'amita@abes.ac.in' || currentUser?.email === 'alok@abes.ac.in';
     if (!isStaffUser) {
       throw new Error('Unauthorized: Only staff members can access the student directory.');
     }

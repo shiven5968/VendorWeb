@@ -34,7 +34,7 @@ service cloud.firestore {
         getUserRole() == 'warden' ||
         (request.auth.token.email != null && (
           request.auth.token.email == 'warden@abes.ac.in' ||
-          request.auth.token.email == 'anita@abes.ac.in' ||
+          request.auth.token.email == 'amita@abes.ac.in' ||
           request.auth.token.email == 'alok@abes.ac.in' ||
           request.auth.token.email.matches('^warden.*@abes\\.ac\\.in$')
         ))

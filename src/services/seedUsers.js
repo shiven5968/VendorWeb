@@ -37,9 +37,9 @@ export const PILOT_ACCOUNTS = [
     rewardPoints: 0
   },
   {
-    name: 'Dr. Anita Sharma',
-    admissionNumber: 'OFFICIAL-ANITA',
-    email: 'anita@abes.ac.in',
+    name: 'Dr. Amita Sharma',
+    admissionNumber: 'OFFICIAL-AMITA',
+    email: 'amita@abes.ac.in',
     role: 'warden',
     gender: 'Other',
     hostelBlock: 'ABES Administration',

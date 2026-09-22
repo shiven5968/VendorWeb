@@ -147,9 +147,9 @@ export const LoginPage = ({ initialRole = 'student', onBackToRoles }) => {
     // Role-specific pre-check for ABES Officials
     if (activeRole === 'warden') {
       const email = cleanIdentifier.toLowerCase();
-      const authorizedOfficials = ['anita@abes.ac.in', 'alok@abes.ac.in'];
+      const authorizedOfficials = ['amita@abes.ac.in', 'alok@abes.ac.in'];
       if (!authorizedOfficials.includes(email)) {
-        setErrorMessage('Access Denied: Only authorized ABES Officials (anita@abes.ac.in, alok@abes.ac.in) are permitted to sign in to this portal.');
+        setErrorMessage('Access Denied: Only authorized ABES Officials (amita@abes.ac.in, alok@abes.ac.in) are permitted to sign in to this portal.');
         return;
       }
     }
@@ -478,7 +478,7 @@ export const LoginPage = ({ initialRole = 'student', onBackToRoles }) => {
                     id="staff-college-email"
                     name="email"
                     autoComplete="username"
-                    placeholder={activeRole === 'warden' ? 'anita@abes.ac.in or alok@abes.ac.in' : 'committee@abes.ac.in'}
+                    placeholder={activeRole === 'warden' ? 'amita@abes.ac.in or alok@abes.ac.in' : 'committee@abes.ac.in'}
                     value={loginData.identifier}
                     onChange={handleLoginChange}
                     className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500/20"

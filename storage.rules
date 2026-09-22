@@ -20,7 +20,7 @@ service firebase.storage {
         getUserRole() == 'mess_committee' ||
         getUserRole() == 'committee' ||
         (request.auth.token.email != null && (
-          request.auth.token.email in ['anita@abes.ac.in', 'alok@abes.ac.in', 'warden@abes.ac.in', 'committee@abes.ac.in'] ||
+          request.auth.token.email in ['amita@abes.ac.in', 'alok@abes.ac.in', 'warden@abes.ac.in', 'committee@abes.ac.in'] ||
           request.auth.token.email.matches('^warden.*@abes\\.ac\\.in$') ||
           request.auth.token.email.matches('^committee.*@abes\\.ac\\.in$')
         ))

@@ -94,7 +94,7 @@ export const AuthProvider = ({ children }) => {
             // This can happen for staff accounts or partial registrations.
             // We build a minimal profile WITHOUT silently logging them out.
             const email = firebaseUser.email || '';
-            const isWardenEmail = email.includes('warden') || email === 'anita@abes.ac.in' || email === 'alok@abes.ac.in';
+            const isWardenEmail = email.includes('warden') || email === 'amita@abes.ac.in' || email === 'alok@abes.ac.in';
             const role = isWardenEmail
               ? 'warden'
               : email.includes('committee')

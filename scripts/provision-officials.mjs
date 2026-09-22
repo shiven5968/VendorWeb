@@ -3,7 +3,7 @@
  * MessMates — Administrative Provisioning Script for ABES Officials
  * =================================================================
  * Safely provisions or updates the authorized ABES Officials:
- * 1. anita@abes.ac.in
+ * 1. amita@abes.ac.in
  * 2. alok@abes.ac.in
  *
  * Credentials are provided via environment variable or CLI argument:
@@ -35,7 +35,7 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 const OFFICIAL_ACCOUNTS = [
-  { email: 'anita@abes.ac.in', name: 'Dr. Anita Sharma', admissionNumber: 'OFFICIAL-ANITA' },
+  { email: 'amita@abes.ac.in', name: 'Dr. Amita Sharma', admissionNumber: 'OFFICIAL-AMITA' },
   { email: 'alok@abes.ac.in', name: 'Prof. Alok Singh', admissionNumber: 'OFFICIAL-ALOK' }
 ];
 
