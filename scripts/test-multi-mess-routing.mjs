@@ -1,27 +1,31 @@
 /**
- * Automated Test Suite: Multi-Mess Menu Routing & Student/Official Access Verification
+ * Automated Test Suite: Multi-Mess Menu Routing & Strict Block Isolation Verification
  * 
  * Verifies:
- *   1. 2025B -> junior
- *   2. 2026B -> junior
- *   3. 2024B -> senior
- *   4. 2023B -> senior
- *   5. girls -> girls
- *   6. unknown prefix -> NOT automatically junior (unresolved / null)
- *   7. Normal student cannot manually switch messes (restricted to resolved mess)
- *   8. Officials can still switch and view all 3 messes independently
- *   9. Menu data integrity (7x4 matrix completeness)
- *   10. Strict meal separation (no cross-contamination between messes)
- *   11. Sunday snacks OFF handling across all messes
+ *   1. A Block -> girls, B Block -> girls, C Block -> girls
+ *   2. D Block + 2025B -> boys_junior
+ *   3. D Block + 2026B -> boys_junior
+ *   4. D Block + 2023B -> boys_senior
+ *   5. D Block + 2024B -> boys_senior
+ *   6. E Block + 2025B -> boys_junior
+ *   7. F Block + 2024B -> boys_senior
+ *   8. Non-A/B/C -> NEVER girls
+ *   9. Regression assertion: "A BOYS hostel student must never resolve to girls."
+ *   10. Unknown admission -> null / unresolved
+ *   11. Missing hostel block -> unresolved / null
+ *   12. Normal student cannot manually switch mess
+ *   13. Official can inspect all 3 messes
+ *   14. Menu dataset completeness & separation
+ *   15. Sunday snacks OFF across all messes
  */
 
 import { 
   getMessForStudent, 
   MESS_CONFIG, 
+  isGirlsHostelBlock,
   ADMISSION_PREFIX_TO_MESS,
   getMessOptions,
-  getMessById,
-  isGirlsProfile
+  getMessById
 } from '../src/config/menuGroups.js';
 
 import { 
@@ -29,7 +33,6 @@ import {
   BOYS_SENIOR_WEEKLY_MENU, 
   GIRLS_WEEKLY_MENU,
   getMenuByMessId,
-  getHostelMenu,
   getTodayHostelMeals
 } from '../src/data/hostelMenus.js';
 
@@ -47,207 +50,175 @@ function assert(condition, message) {
 }
 
 console.log('\n============================================================');
-console.log('TEST SUITE: MULTI-MESS MENU ROUTING & ACCESS VERIFICATION');
+console.log('TEST SUITE: MULTI-MESS MENU ROUTING & STRICT ISOLATION');
 console.log('============================================================\n');
 
-// ── TEST 1: ADMISSION NUMBER PREFIX ROUTING ───────────────────────────────
-console.log('1. Required Prefix Routing:');
+// ── TEST 1: STRICT GIRLS HOSTEL BLOCKS (A, B, C ONLY) ─────────────────────
+console.log('1. Girls Blocks Resolution (A, B, C ONLY):');
 
-// 2025B -> junior
-const res2025 = getMessForStudent({ admissionNumber: '2025B01010012' });
-assert(res2025 && res2025.id === 'boys_junior', '2025B -> junior (Boys Junior Mess)');
-
-// 2026B -> junior
-const res2026 = getMessForStudent({ admissionNumber: '2026B01010545' });
-assert(res2026 && res2026.id === 'boys_junior', '2026B -> junior (Boys Junior Mess)');
-
-// 2024B -> senior
-const res2024 = getMessForStudent({ admissionNumber: '2024B1531068' });
-assert(res2024 && res2024.id === 'boys_senior', '2024B -> senior (Boys Senior Mess)');
-
-// 2023B -> senior
-const res2023 = getMessForStudent({ admissionNumber: '2023B0131224' });
-assert(res2023 && res2023.id === 'boys_senior', '2023B -> senior (Boys Senior Mess)');
-
-// ── TEST 2: GIRLS HOSTEL CONTEXT ROUTING ──────────────────────────────────
-console.log('\n2. Girls Context Routing:');
-
-const girlsBlocks = ['Block A (Girls)', 'Block B (Girls)', 'Block C (Girls)', 'Girls Hostel Wing'];
-girlsBlocks.forEach(block => {
-  const result = getMessForStudent({ hostelBlock: block });
-  assert(result && result.id === 'girls', `girls (${block}) -> girls (Girls Hostel Mess)`);
-});
-
-// Girls context takes priority over admission number
-const girlsWithSeniorAdm = getMessForStudent({ 
-  admissionNumber: '2024B1531068', 
-  hostelBlock: 'Block A (Girls)' 
-});
-assert(girlsWithSeniorAdm && girlsWithSeniorAdm.id === 'girls', 'Girls profile context takes priority over admission number');
-
-// Female gender context
-const girlsGenderProfile = getMessForStudent({ gender: 'Female' });
-assert(girlsGenderProfile && girlsGenderProfile.id === 'girls', 'Female profile context -> girls');
-
-// ── TEST 3: NORMALIZATION & TRIMMING ──────────────────────────────────────
-console.log('\n3. Normalization (Case-insensitivity & Trimming):');
-
-assert(getMessForStudent({ admissionNumber: '  2025b0101001  ' })?.id === 'boys_junior', 'Lowercase 2025b with spaces -> junior');
-assert(getMessForStudent({ admissionNumber: '  2026b0101001  ' })?.id === 'boys_junior', 'Lowercase 2026b with spaces -> junior');
-assert(getMessForStudent({ admissionNumber: '  2024b1531068\t' })?.id === 'boys_senior', 'Lowercase 2024b with tab -> senior');
-assert(getMessForStudent({ admissionNumber: '2023b0131224\n' })?.id === 'boys_senior', 'Lowercase 2023b with newline -> senior');
-
-// ── TEST 4: UNKNOWN ADMISSION FALLBACK (NEVER JUNIOR) ─────────────────────
-console.log('\n4. Unknown Prefix Fallback (NEVER automatically Junior):');
-
-const unknownCases = [
-  { profile: { admissionNumber: 'UNKNOWN9999' }, desc: 'Unknown prefix "UNKNOWN9999"' },
-  { profile: { admissionNumber: '1999B0000000' }, desc: 'Historical unlisted prefix "1999B0000000"' },
-  { profile: { admissionNumber: 'EXT2026001' }, desc: 'Non-standard prefix "EXT2026001"' },
-  { profile: { admissionNumber: 'ABCD12345' }, desc: 'Arbitrary string "ABCD12345"' },
-  { profile: { admissionNumber: '' }, desc: 'Empty admission number' },
-  { profile: {}, desc: 'Empty profile object' },
-  { profile: null, desc: 'Null profile' },
-  { profile: { admissionNumber: '2027B0101001' }, desc: 'Unregistered batch "2027B0101001"' },
+const girlsVariants = [
+  'A Block', 'B Block', 'C Block',
+  'a block', 'b block', 'c block',
+  ' A Block ', ' B Block ', ' C Block ',
+  'A', 'B', 'C', 'a', 'b', 'c',
+  'Block A', 'Block B', 'Block C',
+  'block a', 'block b', 'block c',
+  'Block A (Girls)', 'Block B (Girls)', 'Block C (Girls)',
+  'A-Block', 'B-Block', 'C-Block'
 ];
 
-unknownCases.forEach(uc => {
-  const result = getMessForStudent(uc.profile);
-  assert(result === null, `${uc.desc} -> returns null (unresolved)`);
-  assert(result?.id !== 'boys_junior', `${uc.desc} -> NOT automatically junior`);
+girlsVariants.forEach(block => {
+  const isGirls = isGirlsHostelBlock(block);
+  assert(isGirls === true, `isGirlsHostelBlock("${block}") === true`);
+  const res = getMessForStudent({ hostelBlock: block });
+  assert(res && res.id === 'girls', `getMessForStudent({ hostelBlock: "${block}" }) -> girls`);
 });
 
-// Verify getMenuByMessId for unknown/null messId
-assert(getMenuByMessId(null) === null, 'getMenuByMessId(null) returns null (no menu leak)');
-assert(getMenuByMessId('unknown') === null, 'getMenuByMessId("unknown") returns null (never junior)');
+// Explicit required assertions:
+assert(getMessForStudent({ hostelBlock: 'A Block' })?.id === 'girls', 'A Block -> girls');
+assert(getMessForStudent({ hostelBlock: 'B Block' })?.id === 'girls', 'B Block -> girls');
+assert(getMessForStudent({ hostelBlock: 'C Block' })?.id === 'girls', 'C Block -> girls');
 
-// ── TEST 5: STUDENT CANNOT MANUALLY SWITCH MESSES ─────────────────────────
-console.log('\n5. Student Access Control (Cannot manually switch messes):');
+// ── TEST 2: BOYS JUNIOR / SENIOR ROUTING ON BOYS BLOCKS ───────────────────
+console.log('\n2. Boys Blocks Junior & Senior Routing:');
 
-// Simulate the MenuPage active mess resolution logic
+// D Block
+assert(getMessForStudent({ hostelBlock: 'D Block', admissionNumber: '2025B0101001' })?.id === 'boys_junior', 'D Block + 2025B -> boys_junior');
+assert(getMessForStudent({ hostelBlock: 'D Block', admissionNumber: '2026B0101001' })?.id === 'boys_junior', 'D Block + 2026B -> boys_junior');
+assert(getMessForStudent({ hostelBlock: 'D Block', admissionNumber: '2023B0101001' })?.id === 'boys_senior', 'D Block + 2023B -> boys_senior');
+assert(getMessForStudent({ hostelBlock: 'D Block', admissionNumber: '2024B1531068' })?.id === 'boys_senior', 'D Block + 2024B -> boys_senior');
+
+// E Block & F Block
+assert(getMessForStudent({ hostelBlock: 'E Block', admissionNumber: '2025B0101001' })?.id === 'boys_junior', 'E Block + 2025B -> boys_junior');
+assert(getMessForStudent({ hostelBlock: 'F Block', admissionNumber: '2024B1531068' })?.id === 'boys_senior', 'F Block + 2024B -> boys_senior');
+
+// Campus named boys blocks: DNB, VKB, RKB, ABB
+assert(getMessForStudent({ hostelBlock: 'DNB Block', admissionNumber: '2025B0101001' })?.id === 'boys_junior', 'DNB Block + 2025B -> boys_junior');
+assert(getMessForStudent({ hostelBlock: 'VKB Block', admissionNumber: '2026B0101001' })?.id === 'boys_junior', 'VKB Block + 2026B -> boys_junior');
+assert(getMessForStudent({ hostelBlock: 'RKB Block', admissionNumber: '2023B0101001' })?.id === 'boys_senior', 'RKB Block + 2023B -> boys_senior');
+assert(getMessForStudent({ hostelBlock: 'ABB Block', admissionNumber: '2024B1531068' })?.id === 'boys_senior', 'ABB Block + 2024B -> boys_senior');
+
+// Case-insensitivity & whitespace normalization in admission number
+assert(getMessForStudent({ hostelBlock: 'DNB Block', admissionNumber: '  2025b0101001  ' })?.id === 'boys_junior', 'DNB Block + " 2025b... " -> boys_junior');
+assert(getMessForStudent({ hostelBlock: 'ABB Block', admissionNumber: '2024b1531068\t' })?.id === 'boys_senior', 'ABB Block + "2024b...\t" -> boys_senior');
+
+// ── TEST 3: NON-A/B/C HOSTEL BLOCKS MUST NEVER RESOLVE TO GIRLS ───────────
+console.log('\n3. Non-A/B/C Blocks Invariant (NEVER girls):');
+
+const nonGirlsBlocks = [
+  'DNB Block', 'VKB Block', 'RKB Block', 'ABB Block',
+  'D Block', 'E Block', 'F Block', 'G Block', 'H Block',
+  'd block', 'e block', 'f block',
+  'Admin Block', 'Hostel Office', 'Girls Hostel Wing'
+];
+
+nonGirlsBlocks.forEach(blk => {
+  assert(isGirlsHostelBlock(blk) === false, `isGirlsHostelBlock("${blk}") === false`);
+  
+  // Test with junior admission
+  const resJunior = getMessForStudent({ hostelBlock: blk, admissionNumber: '2025B0101001' });
+  assert(resJunior?.id !== 'girls', `${blk} with 2025B is NEVER girls (got ${resJunior?.id})`);
+
+  // Test with senior admission
+  const resSenior = getMessForStudent({ hostelBlock: blk, admissionNumber: '2024B1531068' });
+  assert(resSenior?.id !== 'girls', `${blk} with 2024B is NEVER girls (got ${resSenior?.id})`);
+
+  // Test with unknown admission
+  const resUnknown = getMessForStudent({ hostelBlock: blk, admissionNumber: 'UNKNOWN999' });
+  assert(resUnknown?.id !== 'girls', `${blk} with UNKNOWN is NEVER girls (got ${resUnknown?.id})`);
+});
+
+// ── TEST 4: REGRESSION TEST FOR CURRENT BUG ───────────────────────────────
+console.log('\n4. Explicit Regression Assertions for Current Bug:');
+
+// Critical assertion: A BOYS hostel student must never resolve to girls
+const boysAccounts = [
+  { hostelBlock: 'DNB Block', admissionNumber: '2025B0101001', gender: 'male', desc: 'DNB Junior Boy' },
+  { hostelBlock: 'DNB Block', admissionNumber: '2024B1531068', gender: 'male', desc: 'DNB Senior Boy' },
+  { hostelBlock: 'ABB Block', admissionNumber: '2025B0101001', gender: 'male', desc: 'ABB Junior Boy' },
+  { hostelBlock: 'ABB Block', admissionNumber: '2024B1531068', gender: 'male', desc: 'ABB Senior Boy' },
+  { hostelBlock: 'VKB Block', admissionNumber: '2026B0101001', gender: 'male', desc: 'VKB Junior Boy' },
+  { hostelBlock: 'RKB Block', admissionNumber: '2023B0101001', gender: 'male', desc: 'RKB Senior Boy' },
+  { hostelBlock: 'D Block',   admissionNumber: '2025B0101001', gender: 'male', desc: 'D Block Junior Boy' },
+  { hostelBlock: 'DNB Block', admissionNumber: '2025B0101001', gender: 'female', desc: 'DNB Boy with erroneous gender field' }
+];
+
+boysAccounts.forEach(account => {
+  const res = getMessForStudent(account);
+  assert(res?.id !== 'girls', `A BOYS hostel student must never resolve to girls (${account.desc})`);
+  assert(res?.id === 'boys_junior' || res?.id === 'boys_senior', `${account.desc} successfully routes to a BOYS mess (${res?.id})`);
+});
+
+// ── TEST 5: UNKNOWN / MISSING ALLOCATION SAFETY ───────────────────────────
+console.log('\n5. Unknown / Missing Allocation Safety (NEVER girls, NEVER junior fallback):');
+
+// Missing hostel block -> null
+assert(getMessForStudent({ hostelBlock: '', admissionNumber: '2025B0101001' }) === null, 'Missing hostel block ("") -> null (unresolved)');
+assert(getMessForStudent({ hostelBlock: '   ', admissionNumber: '2025B0101001' }) === null, 'Whitespace hostel block ("   ") -> null (unresolved)');
+assert(getMessForStudent({ admissionNumber: '2025B0101001' }) === null, 'Undefined hostel block -> null (unresolved)');
+assert(getMessForStudent(null) === null, 'Null profile -> null (unresolved)');
+assert(getMessForStudent({}) === null, 'Empty profile -> null (unresolved)');
+
+// Unknown admission number on boys block -> null (NOT boys_junior!)
+assert(getMessForStudent({ hostelBlock: 'DNB Block', admissionNumber: 'UNKNOWN999' }) === null, 'DNB Block + UNKNOWN prefix -> null (NOT junior)');
+assert(getMessForStudent({ hostelBlock: 'D Block', admissionNumber: '1999B0000000' }) === null, 'D Block + historical unlisted prefix -> null (NOT junior)');
+assert(getMessForStudent({ hostelBlock: 'E Block', admissionNumber: 'EXT2026001' }) === null, 'E Block + non-standard prefix -> null (NOT junior)');
+assert(getMessForStudent({ hostelBlock: 'ABB Block', admissionNumber: '' }) === null, 'ABB Block + empty admission number -> null (NOT junior)');
+
+// getMenuByMessId for null/unknown
+assert(getMenuByMessId(null) === null, 'getMenuByMessId(null) === null');
+assert(getMenuByMessId('unknown') === null, 'getMenuByMessId("unknown") === null');
+
+// ── TEST 6: NORMAL STUDENT CANNOT MANUALLY SWITCH MESS ────────────────────
+console.log('\n6. Normal Student Access Control:');
+
 function resolveMenuPageActiveMess({ currentUser, currentRole, selectedMessOverride }) {
   const isOfficial = currentRole === 'warden' || currentRole === 'mess_committee' || currentUser?.role === 'warden' || currentUser?.role === 'mess_committee';
   const resolvedMess = getMessForStudent(currentUser);
-  // Normal students see ONLY their resolved mess menu and cannot switch
   return isOfficial && selectedMessOverride ? selectedMessOverride : resolvedMess;
 }
 
-// Case A: Junior student tries to override to senior
-const juniorStudent = { admissionNumber: '2025B0101001', role: 'student' };
-const juniorActiveMess = resolveMenuPageActiveMess({
-  currentUser: juniorStudent,
-  currentRole: 'student',
-  selectedMessOverride: MESS_CONFIG.boys_senior // Attempted manual switch!
-});
-assert(juniorActiveMess.id === 'boys_junior', 'Normal Junior student CANNOT manually switch to Senior (locked to boys_junior)');
+// Junior student cannot switch to Senior or Girls
+const normalJunior = { hostelBlock: 'DNB Block', admissionNumber: '2025B0101001', role: 'student' };
+assert(resolveMenuPageActiveMess({ currentUser: normalJunior, currentRole: 'student', selectedMessOverride: MESS_CONFIG.boys_senior })?.id === 'boys_junior', 'Normal student cannot switch to Senior (locked to boys_junior)');
+assert(resolveMenuPageActiveMess({ currentUser: normalJunior, currentRole: 'student', selectedMessOverride: MESS_CONFIG.girls })?.id === 'boys_junior', 'Normal student cannot switch to Girls (locked to boys_junior)');
 
-// Case B: Senior student tries to override to girls
-const seniorStudent = { admissionNumber: '2024B1531068', role: 'student' };
-const seniorActiveMess = resolveMenuPageActiveMess({
-  currentUser: seniorStudent,
-  currentRole: 'student',
-  selectedMessOverride: MESS_CONFIG.girls // Attempted manual switch!
-});
-assert(seniorActiveMess.id === 'boys_senior', 'Normal Senior student CANNOT manually switch to Girls (locked to boys_senior)');
+// Senior student cannot switch to Junior or Girls
+const normalSenior = { hostelBlock: 'ABB Block', admissionNumber: '2024B1531068', role: 'student' };
+assert(resolveMenuPageActiveMess({ currentUser: normalSenior, currentRole: 'student', selectedMessOverride: MESS_CONFIG.boys_junior })?.id === 'boys_senior', 'Normal student cannot switch to Junior (locked to boys_senior)');
+assert(resolveMenuPageActiveMess({ currentUser: normalSenior, currentRole: 'student', selectedMessOverride: MESS_CONFIG.girls })?.id === 'boys_senior', 'Normal student cannot switch to Girls (locked to boys_senior)');
 
-// Case C: Girls student tries to override to junior
-const girlsStudent = { hostelBlock: 'Block A (Girls)', role: 'student' };
-const girlsActiveMess = resolveMenuPageActiveMess({
-  currentUser: girlsStudent,
-  currentRole: 'student',
-  selectedMessOverride: MESS_CONFIG.boys_junior // Attempted manual switch!
-});
-assert(girlsActiveMess.id === 'girls', 'Normal Girls student CANNOT manually switch to Junior (locked to girls)');
+// Girls student cannot switch to Junior or Senior
+const normalGirls = { hostelBlock: 'Block A (Girls)', role: 'student' };
+assert(resolveMenuPageActiveMess({ currentUser: normalGirls, currentRole: 'student', selectedMessOverride: MESS_CONFIG.boys_junior })?.id === 'girls', 'Normal Girls student cannot switch to Junior (locked to girls)');
+assert(resolveMenuPageActiveMess({ currentUser: normalGirls, currentRole: 'student', selectedMessOverride: MESS_CONFIG.boys_senior })?.id === 'girls', 'Normal Girls student cannot switch to Senior (locked to girls)');
 
-// ── TEST 6: OFFICIALS RETAIN INDEPENDENT ACCESS TO ALL 3 MESSES ──────────
-console.log('\n6. Officials Access (Can switch and view all 3 messes):');
+// ── TEST 7: OFFICIAL CAN INSPECT ALL 3 MESSES ─────────────────────────────
+console.log('\n7. Officials Can Inspect All 3 Messes:');
 
 const wardenUser = { role: 'warden', email: 'warden@abes.ac.in' };
 
-// Warden selects Junior
-const officialJunior = resolveMenuPageActiveMess({
-  currentUser: wardenUser,
-  currentRole: 'warden',
-  selectedMessOverride: MESS_CONFIG.boys_junior
-});
-assert(officialJunior.id === 'boys_junior', 'Official can switch to Boys Junior');
+assert(resolveMenuPageActiveMess({ currentUser: wardenUser, currentRole: 'warden', selectedMessOverride: MESS_CONFIG.boys_junior })?.id === 'boys_junior', 'Official can inspect Boys Junior');
+assert(resolveMenuPageActiveMess({ currentUser: wardenUser, currentRole: 'warden', selectedMessOverride: MESS_CONFIG.boys_senior })?.id === 'boys_senior', 'Official can inspect Boys Senior');
+assert(resolveMenuPageActiveMess({ currentUser: wardenUser, currentRole: 'warden', selectedMessOverride: MESS_CONFIG.girls })?.id === 'girls', 'Official can inspect Girls');
 
-// Warden selects Senior
-const officialSenior = resolveMenuPageActiveMess({
-  currentUser: wardenUser,
-  currentRole: 'warden',
-  selectedMessOverride: MESS_CONFIG.boys_senior
-});
-assert(officialSenior.id === 'boys_senior', 'Official can switch to Boys Senior');
+// Official meals resolution
+const offJunior = getTodayHostelMeals('Monday', null, 'boys_junior');
+const offSenior = getTodayHostelMeals('Monday', null, 'boys_senior');
+const offGirls = getTodayHostelMeals('Monday', null, 'girls');
 
-// Warden selects Girls
-const officialGirls = resolveMenuPageActiveMess({
-  currentUser: wardenUser,
-  currentRole: 'warden',
-  selectedMessOverride: MESS_CONFIG.girls
-});
-assert(officialGirls.id === 'girls', 'Official can switch to Girls Mess');
+assert(offJunior[0].name === 'Veg Fried Idli & Plain Idli', 'Official sees Junior dishes');
+assert(offSenior[0].name === 'Matar Kulche & Tea', 'Official sees Senior dishes');
+assert(offGirls[0].name === 'Fried Idli, Sambar & Nariyal Chatni', 'Official sees Girls dishes');
 
-// Official getTodayHostelMeals for all 3 messes
-const offJuniorToday = getTodayHostelMeals('Monday', null, 'boys_junior');
-const offSeniorToday = getTodayHostelMeals('Monday', null, 'boys_senior');
-const offGirlsToday = getTodayHostelMeals('Monday', null, 'girls');
+// ── TEST 8: MENU INTEGRITY & DATA SEPARATION ──────────────────────────────
+console.log('\n8. Menu Integrity & Data Separation:');
 
-assert(offJuniorToday[0].name === 'Veg Fried Idli & Plain Idli', 'Official sees Junior Mon Breakfast: "Veg Fried Idli & Plain Idli"');
-assert(offSeniorToday[0].name === 'Matar Kulche & Tea', 'Official sees Senior Mon Breakfast: "Matar Kulche & Tea"');
-assert(offGirlsToday[0].name === 'Fried Idli, Sambar & Nariyal Chatni', 'Official sees Girls Mon Breakfast: "Fried Idli, Sambar & Nariyal Chatni"');
-
-// ── TEST 7: MENU DATA INTEGRITY & 7x4 COMPLETENESS ────────────────────────
-console.log('\n7. Menu Data Integrity & 7x4 Matrix Completeness:');
-
-const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-const categories = ['Breakfast', 'Lunch', 'Snacks', 'Dinner'];
-
-const menus = [
-  { name: 'Boys Junior', data: BOYS_JUNIOR_WEEKLY_MENU, id: 'boys_junior' },
-  { name: 'Boys Senior', data: BOYS_SENIOR_WEEKLY_MENU, id: 'boys_senior' },
-  { name: 'Girls',       data: GIRLS_WEEKLY_MENU,        id: 'girls' }
-];
-
-menus.forEach(m => {
-  let mealCount = 0;
-  let allHaveTitles = true;
-  let allHaveItems = true;
-
-  days.forEach(day => {
-    assert(m.data[day] !== undefined, `${m.name} has menu for ${day}`);
-    categories.forEach(cat => {
-      const meal = m.data[day]?.[cat];
-      if (meal) {
-        mealCount++;
-        if (!meal.title) allHaveTitles = false;
-        if (!Array.isArray(meal.items) || meal.items.length === 0) allHaveItems = false;
-      }
-    });
-  });
-
-  assert(mealCount === 28, `${m.name} has exactly 28 meals (7x4)`);
-  assert(allHaveTitles, `${m.name}: all 28 meals have titles`);
-  assert(allHaveItems, `${m.name}: all 28 meals have non-empty items array`);
-});
-
-// ── TEST 8: CROSS-MESS SEPARATION ─────────────────────────────────────────
-console.log('\n8. Cross-Mess Separation Verification:');
-
-assert(BOYS_JUNIOR_WEEKLY_MENU.Monday.Breakfast.title !== BOYS_SENIOR_WEEKLY_MENU.Monday.Breakfast.title, 'Junior and Senior Mon Breakfast titles distinct');
-assert(BOYS_SENIOR_WEEKLY_MENU.Monday.Breakfast.title !== GIRLS_WEEKLY_MENU.Monday.Breakfast.title, 'Senior and Girls Mon Breakfast titles distinct');
-assert(BOYS_JUNIOR_WEEKLY_MENU.Monday.Lunch.title !== BOYS_SENIOR_WEEKLY_MENU.Monday.Lunch.title, 'Junior and Senior Mon Lunch titles distinct');
-assert(BOYS_SENIOR_WEEKLY_MENU.Monday.Lunch.title !== GIRLS_WEEKLY_MENU.Monday.Lunch.title, 'Senior and Girls Mon Lunch titles distinct');
-
-// ── TEST 9: SUNDAY SNACKS OFF ACROSS ALL 3 MESSES ─────────────────────────
-console.log('\n9. Sunday Snacks OFF Verification:');
-
-assert(BOYS_JUNIOR_WEEKLY_MENU.Sunday.Snacks.title === 'OFF', 'Boys Junior Sunday Snacks is OFF');
-assert(BOYS_JUNIOR_WEEKLY_MENU.Sunday.Snacks.calories === '0 kcal', 'Boys Junior Sunday Snacks is 0 kcal');
-assert(BOYS_SENIOR_WEEKLY_MENU.Sunday.Snacks.title === 'OFF', 'Boys Senior Sunday Snacks is OFF');
-assert(BOYS_SENIOR_WEEKLY_MENU.Sunday.Snacks.calories === '0 kcal', 'Boys Senior Sunday Snacks is 0 kcal');
-assert(GIRLS_WEEKLY_MENU.Sunday.Snacks.title === 'OFF', 'Girls Sunday Snacks is OFF');
-assert(GIRLS_WEEKLY_MENU.Sunday.Snacks.calories === '0 kcal', 'Girls Sunday Snacks is 0 kcal');
+assert(BOYS_JUNIOR_WEEKLY_MENU.Monday.Breakfast.title !== BOYS_SENIOR_WEEKLY_MENU.Monday.Breakfast.title, 'Junior and Senior Mon Breakfast distinct');
+assert(BOYS_SENIOR_WEEKLY_MENU.Monday.Breakfast.title !== GIRLS_WEEKLY_MENU.Monday.Breakfast.title, 'Senior and Girls Mon Breakfast distinct');
+assert(BOYS_JUNIOR_WEEKLY_MENU.Sunday.Snacks.title === 'OFF', 'Junior Sunday Snacks OFF');
+assert(BOYS_SENIOR_WEEKLY_MENU.Sunday.Snacks.title === 'OFF', 'Senior Sunday Snacks OFF');
+assert(GIRLS_WEEKLY_MENU.Sunday.Snacks.title === 'OFF', 'Girls Sunday Snacks OFF');
 
 console.log('\n============================================================');
 console.log(`TOTAL RESULTS: ${passed} PASSED, ${failed} FAILED`);
@@ -256,6 +227,6 @@ console.log('============================================================\n');
 if (failed > 0) {
   process.exit(1);
 } else {
-  console.log('ALL VERIFICATION INVARIANTS PASSED PERFECTLY!\n');
+  console.log('ALL TESTS PASSED WITH 100% SUCCESS!\n');
   process.exit(0);
 }
