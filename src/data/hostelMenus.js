@@ -778,8 +778,8 @@ export const getMenuByMessId = (messId) => {
   switch (messId) {
     case 'boys_senior': return BOYS_SENIOR_WEEKLY_MENU;
     case 'girls':       return GIRLS_WEEKLY_MENU;
-    case 'boys_junior':
-    default:            return BOYS_JUNIOR_WEEKLY_MENU;
+    case 'boys_junior': return BOYS_JUNIOR_WEEKLY_MENU;
+    default:            return null;
   }
 };
 

@@ -105,8 +105,8 @@ export const StudentDashboard = () => {
 
   const categoryOrder = { Breakfast: 1, Lunch: 2, Snacks: 3, Dinner: 4 };
   const rawMeals = todayMeals && todayMeals.length > 0 ? todayMeals : [];
-  const mealsList = ['Breakfast', 'Lunch', 'Snacks', 'Dinner'].map(cat => {
-    const dayMenu = activeMenu[todayDay] || activeMenu['Monday'];
+  const mealsList = activeMenu ? ['Breakfast', 'Lunch', 'Snacks', 'Dinner'].map(cat => {
+    const dayMenu = activeMenu[todayDay] || activeMenu['Monday'] || {};
     const staticMeal = dayMenu[cat] || { title: `${cat} Menu`, items: [], image: '', protein: '15g', calories: '500 kcal' };
     const matchingDbMeal = rawMeals.find(m => m.category === cat);
     return {
@@ -120,7 +120,7 @@ export const StudentDashboard = () => {
       protein: (staticMeal.protein || matchingDbMeal?.protein || '14g').toString().replace('g', ''),
       calories: (staticMeal.calories || matchingDbMeal?.calories || '520 kcal').toString().replace(' kcal', ''),
     };
-  });
+  }) : [];
 
   // Active rating meal slot determination
   const activeRatingMeal = mealsList.find(m => checkIsRatingAllowed(m.category));
