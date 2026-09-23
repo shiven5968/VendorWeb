@@ -24,17 +24,22 @@ export const MenuPage = () => {
     meals,
     setSelectedMealModal,
     currentUser,
+    currentRole,
     getUserRating,
     getMealStats,
   } = useApp();
 
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
+  const isOfficial = currentRole === 'warden' || currentRole === 'mess_committee' || currentUser?.role === 'warden' || currentUser?.role === 'mess_committee';
+
   // Resolve the student's mess from their profile (centralized, single source of truth)
   const resolvedMess = getMessForStudent(currentUser);
-  const [selectedMessOverride, setSelectedMessOverride] = useState(null);
 
-  const activeMess = selectedMessOverride || resolvedMess;
+  // Normal students see ONLY their resolved mess menu and cannot switch.
+  // Officials retain the ability to inspect all 3 messes.
+  const [selectedMessOverride, setSelectedMessOverride] = useState(null);
+  const activeMess = isOfficial && selectedMessOverride ? selectedMessOverride : resolvedMess;
 
   const categoryStyles = {
     Breakfast: { bg: 'bg-amber-500', icon: Sun },
@@ -44,12 +49,12 @@ export const MenuPage = () => {
   };
 
   // Weekly menu from the mess-resolved dataset
-  const activeWeeklyMenu = getMenuByMessId(activeMess.menuId || activeMess.id);
-  const dayMenu = activeWeeklyMenu?.[selectedDay] || activeWeeklyMenu?.['Monday'] || {};
+  const activeWeeklyMenu = activeMess ? getMenuByMessId(activeMess.menuId || activeMess.id) : null;
+  const dayMenu = activeWeeklyMenu ? (activeWeeklyMenu[selectedDay] || activeWeeklyMenu['Monday'] || {}) : null;
 
   // Build 4 meals in official order for the active mess
   const categories = ['Breakfast', 'Lunch', 'Snacks', 'Dinner'];
-  const displayMeals = categories.map(cat => {
+  const displayMeals = dayMenu ? categories.map(cat => {
     const staticMeal = dayMenu[cat] || { title: `${cat} Special`, items: [], image: '', protein: '15g', calories: '500 kcal' };
     const matchingDbMeal = (meals || []).find(m => m.category === cat);
     return {
@@ -69,7 +74,7 @@ export const MenuPage = () => {
       fiber: staticMeal.fiber ? parseFloat(staticMeal.fiber) || 0 : (matchingDbMeal?.fiber || 0),
       status: staticMeal.status || (staticMeal.calories === '0 kcal' ? 'off' : 'active'),
     };
-  });
+  }) : [];
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 pb-24 md:pb-12">
@@ -88,47 +93,59 @@ export const MenuPage = () => {
           </p>
         </div>
 
-        {/* Mess Selector — 3 tabs */}
-        <div className="flex items-center space-x-2">
-          <span className="text-[11px] font-bold text-slate-400 uppercase hidden sm:inline">Mess:</span>
-          <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
-            {getMessOptions().map(opt => (
-              <button
-                key={opt.id}
-                onClick={() => setSelectedMessOverride(opt)}
-                title={opt.description}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                  activeMess.id === opt.id
-                    ? 'bg-emerald-600 text-white shadow-sm'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                }`}
-              >
-                {opt.shortLabel || opt.label}
-              </button>
-            ))}
+        {/* Mess Selector — ONLY available to officials */}
+        {isOfficial && (
+          <div className="flex items-center space-x-2">
+            <span className="text-[11px] font-bold text-slate-400 uppercase hidden sm:inline">Official View:</span>
+            <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
+              {getMessOptions().map(opt => (
+                <button
+                  key={opt.id}
+                  onClick={() => setSelectedMessOverride(opt)}
+                  title={opt.description}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    activeMess?.id === opt.id
+                      ? 'bg-emerald-600 text-white shadow-sm'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  {opt.shortLabel || opt.label}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
-      </div>
-
-      {/* Mess identity badge */}
-      <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
-        <GraduationCap className="w-4 h-4 text-emerald-500" />
-        <span>
-          <span className="text-emerald-600 dark:text-emerald-400 font-bold">{activeMess.label}</span>
-          {' — '}{activeMess.description}
-          {activeMess.caterer && (
-            <span className="ml-1 text-slate-400">({activeMess.caterer}, W.E.F. {activeMess.effectiveDate})</span>
-          )}
-        </span>
-        {selectedMessOverride && selectedMessOverride.id !== resolvedMess.id && (
-          <button
-            onClick={() => setSelectedMessOverride(null)}
-            className="ml-2 text-[10px] font-black text-amber-500 hover:text-amber-600 underline cursor-pointer"
-          >
-            Back to my mess
-          </button>
         )}
       </div>
+
+      {/* Mess identity badge or Unresolved Notice */}
+      {activeMess ? (
+        <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
+          <GraduationCap className="w-4 h-4 text-emerald-500" />
+          <span>
+            <span className="text-emerald-600 dark:text-emerald-400 font-bold">{activeMess.label}</span>
+            {' — '}{activeMess.description}
+            {activeMess.caterer && (
+              <span className="ml-1 text-slate-400">({activeMess.caterer}, W.E.F. {activeMess.effectiveDate})</span>
+            )}
+          </span>
+          {isOfficial && selectedMessOverride && selectedMessOverride.id !== resolvedMess?.id && (
+            <button
+              onClick={() => setSelectedMessOverride(null)}
+              className="ml-2 text-[10px] font-black text-amber-500 hover:text-amber-600 underline cursor-pointer"
+            >
+              Reset to my mess
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200 text-xs flex items-center space-x-2">
+          <GraduationCap className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+          <div>
+            <span className="font-bold">Mess Allocation Unresolved: </span>
+            <span>Your admission number could not be mapped to an official dining complex. Please contact the hostel administration to verify your mess assignment.</span>
+          </div>
+        </div>
+      )}
 
       {/* Day Selector Pills */}
       <div className="flex items-center space-x-2 overflow-x-auto pb-2 scrollbar-none">
@@ -154,7 +171,11 @@ export const MenuPage = () => {
       </div>
 
       {/* Meals Grid for Selected Day */}
-      {displayMeals.length === 0 ? (
+      {!activeMess ? (
+        <div className="p-12 text-center text-xs font-bold text-slate-400 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800">
+          No mess assigned to your student profile. Please contact the hostel office.
+        </div>
+      ) : displayMeals.length === 0 ? (
         <div className="p-12 text-center text-xs font-bold text-slate-400 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800">
           No meals scheduled for {selectedDay}. Check back shortly.
         </div>

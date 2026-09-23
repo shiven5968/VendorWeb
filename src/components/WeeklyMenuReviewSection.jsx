@@ -139,7 +139,7 @@ export const WeeklyMenuReviewSection = () => {
     }, 1500);
   };
 
-  const activeMeal = weeklyMenu[selectedDay]?.[selectedSlot];
+  const activeMeal = weeklyMenu ? weeklyMenu[selectedDay]?.[selectedSlot] : null;
   const activeItems = activeMeal?.items || [];
 
   return (
@@ -153,7 +153,7 @@ export const WeeklyMenuReviewSection = () => {
             <span>WEEKLY MENU EXPLORER</span>
           </h2>
           <p className="text-xs text-slate-500 font-semibold mt-0.5">
-            {studentMess.label} {studentMess.caterer ? `(${studentMess.caterer}, W.E.F. ${studentMess.effectiveDate})` : ''} • Day-wise food item reviews
+            {studentMess ? `${studentMess.label} ${studentMess.caterer ? `(${studentMess.caterer}, W.E.F. ${studentMess.effectiveDate})` : ''} • Day-wise food item reviews` : 'Official hostel mess schedule • Day-wise food item reviews'}
           </p>
         </div>
         <div className="flex items-center space-x-1.5 text-[10px] font-black uppercase bg-emerald-500/10 text-emerald-600 px-3 py-1 rounded-full">

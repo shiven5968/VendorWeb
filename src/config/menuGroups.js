@@ -7,15 +7,13 @@
  *   girls        → Girls Hostel Mess
  *
  * Routing rules:
- *   2026B* → boys_junior
- *   2025B* → boys_junior
- *   2024B* → boys_senior
- *   2023B* → boys_senior
- *   Girls hostel block context → girls
- *   Unknown prefix → safe fallback (boys_junior)
+ *   2026B* / 2025B*                 → boys_junior
+ *   2024B* / 2023B*                 → boys_senior
+ *   Girls hostel block context      → girls
+ *   Unknown / unmatched             → null (unresolved — NEVER silently assigned to Junior)
  *
- * IMPORTANT: Admission number is normalized (trim + uppercase) before matching.
- * Unknown prefixes are never silently routed to the wrong mess.
+ * Invariant: Admission number is normalized (trim + uppercase) before matching.
+ * Unknown prefixes are NEVER silently classified as Junior.
  */
 
 // ── CANONICAL MESS CONFIG ─────────────────────────────────────────────────
@@ -62,8 +60,8 @@ export const MESS_CONFIG = {
 };
 
 // ── ADMISSION PREFIX → MESS ROUTING MAP ──────────────────────────────────
-// Only explicitly-known prefixes are listed.
-// Unlisted prefixes fall back to the safe default.
+// Only explicitly-known prefixes are mapped.
+// Unknown prefixes are UNRESOLVED and must NEVER be mapped to Junior.
 export const ADMISSION_PREFIX_TO_MESS = {
   '2026B': 'boys_junior',
   '2025B': 'boys_junior',
@@ -71,41 +69,50 @@ export const ADMISSION_PREFIX_TO_MESS = {
   '2023B': 'boys_senior',
 };
 
-// ── SAFE DEFAULT (fallback for unknown prefixes) ──────────────────────────
-export const DEFAULT_MESS_ID = 'boys_junior';
-
-// ── Girls hostel block check ───────────────────────────────────────────────
-const isGirlsBlock = (hostelBlock) => {
-  if (!hostelBlock || typeof hostelBlock !== 'string') return false;
-  const lower = hostelBlock.toLowerCase();
-  return (
-    lower.includes('(girls)') ||
-    lower.includes('girls') ||
-    (lower.includes('block') && (lower.includes(' a') || lower.includes(' b') || lower.includes(' c')))
-  );
+// ── Girls hostel & profile context check ──────────────────────────────────
+export const isGirlsProfile = (profile) => {
+  if (!profile) return false;
+  const hostelBlock = profile.hostelBlock || profile.block || '';
+  if (typeof hostelBlock === 'string') {
+    const lower = hostelBlock.toLowerCase();
+    if (
+      lower.includes('(girls)') ||
+      lower.includes('girls') ||
+      (lower.includes('block') && (lower.includes(' a') || lower.includes(' b') || lower.includes(' c')))
+    ) {
+      return true;
+    }
+  }
+  if (profile.hostelType && typeof profile.hostelType === 'string' && profile.hostelType.toLowerCase().includes('girls')) {
+    return true;
+  }
+  if (profile.gender && typeof profile.gender === 'string' && (profile.gender.toLowerCase() === 'female' || profile.gender.toLowerCase() === 'f')) {
+    return true;
+  }
+  return false;
 };
 
 /**
  * Resolve a student's mess from their profile.
  *
- * Priority:
- *  1. Girls hostel block → girls
- *  2. Admission prefix (2026B, 2025B → junior; 2024B, 2023B → senior)
- *  3. Safe fallback (boys_junior)
+ * Rules:
+ *  1. Verified Girls Hostel / Girls profile context → girls
+ *  2. 2025B* / 2026B* → boys_junior
+ *  3. 2023B* / 2024B* → boys_senior
+ *  4. Unknown / unmatched → null (unresolved). NEVER automatically Junior.
  *
  * @param {object} profile - Firestore user profile
- * @returns {object} - MESS_CONFIG entry
+ * @returns {object|null} - MESS_CONFIG entry, or null if unresolved
  */
 export const getMessForStudent = (profile) => {
-  if (!profile) return MESS_CONFIG[DEFAULT_MESS_ID];
+  if (!profile) return null;
 
-  // 1. Girls hostel block takes priority
-  const hostelBlock = profile.hostelBlock || '';
-  if (isGirlsBlock(hostelBlock)) {
+  // 1. Verified Girls Hostel context takes highest priority
+  if (isGirlsProfile(profile)) {
     return MESS_CONFIG.girls;
   }
 
-  // 2. Admission number prefix matching
+  // 2. Admission number prefix matching (normalized: trimmed + uppercase)
   const admissionNumber = (profile.admissionNumber || '').trim().toUpperCase();
   if (admissionNumber.length >= 5) {
     const prefix5 = admissionNumber.substring(0, 5); // e.g. "2026B"
@@ -115,20 +122,20 @@ export const getMessForStudent = (profile) => {
     }
   }
 
-  // 3. Safe fallback — never silently assign wrong mess
-  return MESS_CONFIG[DEFAULT_MESS_ID];
+  // 3. Unknown or unlisted prefix → returns null (safe unresolved behavior)
+  // NEVER silently classify unknown students as boys_junior
+  return null;
 };
 
 // ── Backward-compatibility alias ──────────────────────────────────────────
 /**
  * @deprecated Use getMessForStudent() instead.
- * Kept for backward-compatibility with components that imported resolveMenuGroup.
  */
 export const resolveMenuGroup = getMessForStudent;
 
 // ── Utility helpers ───────────────────────────────────────────────────────
 /**
- * Returns all mess options as an array (for dropdowns, selectors).
+ * Returns all valid mess options as an array (for dropdowns, official selectors).
  */
 export const getMessOptions = () => Object.values(MESS_CONFIG);
 
@@ -138,12 +145,12 @@ export const getMessOptions = () => Object.values(MESS_CONFIG);
 export const getMenuGroupOptions = getMessOptions;
 
 /**
- * Returns MESS_CONFIG entry by messId, or default.
+ * Returns MESS_CONFIG entry by messId, or null if invalid.
  */
-export const getMessById = (messId) => MESS_CONFIG[messId] || MESS_CONFIG[DEFAULT_MESS_ID];
+export const getMessById = (messId) => MESS_CONFIG[messId] || null;
 
 /**
- * Routing lookup table for tests and external consumers.
+ * Routing lookup table for verification and tests.
  */
 export const ROUTING_TABLE = [
   { prefix: '2026B', messId: 'boys_junior', label: 'Boys Junior' },
@@ -152,7 +159,7 @@ export const ROUTING_TABLE = [
   { prefix: '2023B', messId: 'boys_senior', label: 'Boys Senior' },
 ];
 
-// Keep old MENU_GROUP_CONFIG shape for any components that destructure it
+// Backward-compatible config shape for legacy components
 export const MENU_GROUP_CONFIG = {
   juniorStudents: MESS_CONFIG.boys_junior,
   seniorStudents: MESS_CONFIG.boys_senior,

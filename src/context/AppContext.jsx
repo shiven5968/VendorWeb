@@ -1036,11 +1036,11 @@ export const AppProvider = ({ children }) => {
   const userBlock = currentUser?.hostelBlock || 'DNB Block';
   const studentMess = getMessForStudent(currentUser);
   const currentMessInfo = {
-    messName: studentMess.caterer ? `${studentMess.caterer} — ${studentMess.label}` : studentMess.label,
-    caterer: studentMess.caterer,
+    messName: studentMess ? (studentMess.caterer ? `${studentMess.caterer} — ${studentMess.label}` : studentMess.label) : 'Mess Allocation Pending',
+    caterer: studentMess?.caterer || null,
     location: 'ABES EC & ABESBS Campus, Ghaziabad',
     block: userBlock,
-    chef: studentMess.caterer ? `Head Chef (${studentMess.caterer})` : 'Head Chef',
+    chef: studentMess?.caterer ? `Head Chef (${studentMess.caterer})` : 'Head Chef',
     hygieneScore: '98.8% (Grade A+)',
     timings: {
       Breakfast: OFFICIAL_MEAL_TIMINGS.Breakfast.label,
