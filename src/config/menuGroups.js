@@ -1,101 +1,160 @@
 /**
- * MessMates — Configurable Menu Group Architecture
- * 
- * Menu groups define which student population gets which menu.
- * This is configurable — new groups can be added without modifying
- * component logic. In future, this can be fetched from Firestore
- * menu_groups collection.
+ * MessMates — Centralized Mess Configuration & Routing
  *
- * Current ABES deployment:
- *   Junior Students (1st + 2nd Year) → default menu
- *   Senior Students (3rd + 4th Year) → default menu (same for now, configurable)
- *   Girls Hostel → girls menu (when available)
+ * Canonical mess identifiers:
+ *   boys_junior  → Boys Junior Mess  (I Year & II Year — Naina Caters)
+ *   boys_senior  → Boys Senior Mess  (III Year, IV Year, MBA & MCA — Star Caterers)
+ *   girls        → Girls Hostel Mess
+ *
+ * Routing rules:
+ *   2026B* → boys_junior
+ *   2025B* → boys_junior
+ *   2024B* → boys_senior
+ *   2023B* → boys_senior
+ *   Girls hostel block context → girls
+ *   Unknown prefix → safe fallback (boys_junior)
+ *
+ * IMPORTANT: Admission number is normalized (trim + uppercase) before matching.
+ * Unknown prefixes are never silently routed to the wrong mess.
  */
 
-export const MENU_GROUP_CONFIG = {
-  juniorStudents: {
-    id: 'juniorStudents',
-    label: 'Junior Students',
+// ── CANONICAL MESS CONFIG ─────────────────────────────────────────────────
+export const MESS_CONFIG = {
+  boys_junior: {
+    id: 'boys_junior',
+    label: 'Boys Junior Mess',
     shortLabel: 'Junior',
+    description: 'I Year & II Year — Naina Caters',
+    caterer: 'Naina Caters',
+    effectiveDate: '18 Sept 2026',
     years: [1, 2],
     hostelTypes: null,
-    menuId: 'default',
-    description: '1st & 2nd Year',
+    menuId: 'boys_junior',
     color: 'emerald',
-    icon: 'GraduationCap'
+    scopeKey: 'boys_junior',
   },
-  seniorStudents: {
-    id: 'seniorStudents',
-    label: 'Senior Students',
+  boys_senior: {
+    id: 'boys_senior',
+    label: 'Boys Senior Mess',
     shortLabel: 'Senior',
+    description: 'III Year, IV Year, MBA & MCA — Star Caterers',
+    caterer: 'Star Caterers',
+    effectiveDate: '24 Aug 2026',
     years: [3, 4],
     hostelTypes: null,
-    menuId: 'default',
-    description: '3rd & 4th Year',
+    menuId: 'boys_senior',
     color: 'blue',
-    icon: 'GraduationCap'
+    scopeKey: 'boys_senior',
   },
-  girlsHostel: {
-    id: 'girlsHostel',
-    label: 'Girls Hostel',
+  girls: {
+    id: 'girls',
+    label: 'Girls Hostel Mess',
     shortLabel: 'Girls',
+    description: 'Girls Hostel — Session 2026-27',
+    caterer: 'ABES EC & ABES BS',
+    effectiveDate: '19 Sept 2026',
     years: null,
     hostelTypes: ['Block A (Girls)', 'Block B (Girls)', 'Block C (Girls)'],
-    menuId: 'default',
-    description: 'Girls Hostel',
-    color: 'pink',
-    icon: 'Home'
-  }
+    menuId: 'girls',
+    color: 'rose',
+    scopeKey: 'girls',
+  },
+};
+
+// ── ADMISSION PREFIX → MESS ROUTING MAP ──────────────────────────────────
+// Only explicitly-known prefixes are listed.
+// Unlisted prefixes fall back to the safe default.
+export const ADMISSION_PREFIX_TO_MESS = {
+  '2026B': 'boys_junior',
+  '2025B': 'boys_junior',
+  '2024B': 'boys_senior',
+  '2023B': 'boys_senior',
+};
+
+// ── SAFE DEFAULT (fallback for unknown prefixes) ──────────────────────────
+export const DEFAULT_MESS_ID = 'boys_junior';
+
+// ── Girls hostel block check ───────────────────────────────────────────────
+const isGirlsBlock = (hostelBlock) => {
+  if (!hostelBlock || typeof hostelBlock !== 'string') return false;
+  const lower = hostelBlock.toLowerCase();
+  return (
+    lower.includes('(girls)') ||
+    lower.includes('girls') ||
+    (lower.includes('block') && (lower.includes(' a') || lower.includes(' b') || lower.includes(' c')))
+  );
 };
 
 /**
- * Resolves a student's menu group from their profile.
- * Falls back to juniorStudents if year/hostel cannot be determined.
+ * Resolve a student's mess from their profile.
+ *
+ * Priority:
+ *  1. Girls hostel block → girls
+ *  2. Admission prefix (2026B, 2025B → junior; 2024B, 2023B → senior)
+ *  3. Safe fallback (boys_junior)
  *
  * @param {object} profile - Firestore user profile
- * @returns {object} - menu group config object
+ * @returns {object} - MESS_CONFIG entry
  */
-export const resolveMenuGroup = (profile) => {
-  if (!profile) return MENU_GROUP_CONFIG.juniorStudents;
+export const getMessForStudent = (profile) => {
+  if (!profile) return MESS_CONFIG[DEFAULT_MESS_ID];
 
-  // Check hostel type first (Girls Hostel takes priority)
+  // 1. Girls hostel block takes priority
   const hostelBlock = profile.hostelBlock || '';
-  if (
-    hostelBlock.toLowerCase().includes('girls') ||
-    hostelBlock.toLowerCase().includes('block a') ||
-    hostelBlock.toLowerCase().includes('block b') ||
-    hostelBlock.toLowerCase().includes('block c')
-  ) {
-    return MENU_GROUP_CONFIG.girlsHostel;
+  if (isGirlsBlock(hostelBlock)) {
+    return MESS_CONFIG.girls;
   }
 
-  // Try to resolve year from admission number
-  // ABES admission numbers: 2025B01011362 → 2025 = join year
-  const admissionNumber = profile.admissionNumber || '';
-  const currentYear = new Date().getFullYear();
-  let yearOfStudy = null;
-
-  if (admissionNumber.length >= 4) {
-    const joinYear = parseInt(admissionNumber.substring(0, 4), 10);
-    if (!isNaN(joinYear)) {
-      yearOfStudy = currentYear - joinYear + 1;
+  // 2. Admission number prefix matching
+  const admissionNumber = (profile.admissionNumber || '').trim().toUpperCase();
+  if (admissionNumber.length >= 5) {
+    const prefix5 = admissionNumber.substring(0, 5); // e.g. "2026B"
+    const messId = ADMISSION_PREFIX_TO_MESS[prefix5];
+    if (messId && MESS_CONFIG[messId]) {
+      return MESS_CONFIG[messId];
     }
   }
 
-  // Fallback: check profile.year directly
-  if (yearOfStudy === null && profile.year) {
-    yearOfStudy = parseInt(profile.year, 10);
-  }
-
-  if (yearOfStudy !== null) {
-    if (yearOfStudy >= 3) return MENU_GROUP_CONFIG.seniorStudents;
-    return MENU_GROUP_CONFIG.juniorStudents;
-  }
-
-  return MENU_GROUP_CONFIG.juniorStudents;
+  // 3. Safe fallback — never silently assign wrong mess
+  return MESS_CONFIG[DEFAULT_MESS_ID];
 };
 
+// ── Backward-compatibility alias ──────────────────────────────────────────
 /**
- * Returns all menu group options as an array (for dropdowns, selectors).
+ * @deprecated Use getMessForStudent() instead.
+ * Kept for backward-compatibility with components that imported resolveMenuGroup.
  */
-export const getMenuGroupOptions = () => Object.values(MENU_GROUP_CONFIG);
+export const resolveMenuGroup = getMessForStudent;
+
+// ── Utility helpers ───────────────────────────────────────────────────────
+/**
+ * Returns all mess options as an array (for dropdowns, selectors).
+ */
+export const getMessOptions = () => Object.values(MESS_CONFIG);
+
+/**
+ * @deprecated Use getMessOptions() instead.
+ */
+export const getMenuGroupOptions = getMessOptions;
+
+/**
+ * Returns MESS_CONFIG entry by messId, or default.
+ */
+export const getMessById = (messId) => MESS_CONFIG[messId] || MESS_CONFIG[DEFAULT_MESS_ID];
+
+/**
+ * Routing lookup table for tests and external consumers.
+ */
+export const ROUTING_TABLE = [
+  { prefix: '2026B', messId: 'boys_junior', label: 'Boys Junior' },
+  { prefix: '2025B', messId: 'boys_junior', label: 'Boys Junior' },
+  { prefix: '2024B', messId: 'boys_senior', label: 'Boys Senior' },
+  { prefix: '2023B', messId: 'boys_senior', label: 'Boys Senior' },
+];
+
+// Keep old MENU_GROUP_CONFIG shape for any components that destructure it
+export const MENU_GROUP_CONFIG = {
+  juniorStudents: MESS_CONFIG.boys_junior,
+  seniorStudents: MESS_CONFIG.boys_senior,
+  girlsHostel: MESS_CONFIG.girls,
+};

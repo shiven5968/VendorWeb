@@ -2,96 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Star, MessageSquare, Calendar, Sun, UtensilsCrossed, Coffee, Moon, X, Check, Send, Sparkles } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
-// Naina Caters (I & II Year Menu : ABES Boys' Hostel)
-const BOYS_MENU_DATA = {
-  Monday: {
-    Breakfast: ["Veg Fried Idli / Plain Idli / Sambhar Bada", "Sambhar", "Coconut Chutney", "Lal Chutney", "Tea", "Milk", "Banana"],
-    Lunch: ["Mix Veg", "Rajma", "Roti", "Rice", "Mix Salad", "Boondi Raita", "Lemon 1/2"],
-    Snacks: ["Burger", "Sauce (Chilly & Tomato)", "Roohafza"],
-    Dinner: ["Arhar Daal", "Aloo Shimla Mirch", "Rice", "Roti", "Suji Halwa", "Matar Mushroom + Moong Dal Halwa (Monthly Special)", "Chhachh"]
-  },
-  Tuesday: {
-    Breakfast: ["Matar Kulche", "Milk", "Tea", "Watermelon"],
-    Lunch: ["Tahri", "Aaloo Tamatar Sabji", "Roti", "Salad", "Curd", "Lemon 1/2", "Hari Chutney"],
-    Snacks: ["Macroni", "Tomato & Chilly Sauce", "Coffee"],
-    Dinner: ["Kali Masoor Dal", "Bhindi", "Rice", "Roti", "Icecream (Mango/Butterscotch/Chocolate)", "Mix Salad", "Achar"]
-  },
-  Wednesday: {
-    Breakfast: ["Aaloo Paratha", "Pickle", "Curd", "Tea", "Muskmelon"],
-    Lunch: ["Kaabli Chhole (Small)", "Kashifal", "Roti", "Jeera Rice", "Mix Salad", "Curd", "Lemon 1/2"],
-    Snacks: ["Samosa", "Tomato & Chilly Sauce", "Tea"],
-    Dinner: ["Butter Paneer Masala / Kadhai Paneer", "Aaloo Jeera", "Puri", "Pulaw", "Mix Salad"]
-  },
-  Thursday: {
-    Breakfast: ["Pav Bhaji", "Tea", "Milk", "Butter", "Papaya"],
-    Lunch: ["Aaloo Pyaj Sabji", "Kadhi", "Rice", "Roti", "Salad", "Papad Fried", "Lemon 1/2"],
-    Snacks: ["Mix Pakodi / Bread Pakoda", "Chilli & Tomato Sauce", "Tea"],
-    Dinner: ["Daal Makhani", "Mix Veg", "Roti", "Rice", "Gulab Jamun", "Chhachh", "Achar"]
-  },
-  Friday: {
-    Breakfast: ["Gobhi Paratha", "Pickle", "Curd", "Tea", "Banana"],
-    Lunch: ["Mix Daal", "Tarohi", "Roti", "Rice", "Mix Salad", "Curd", "Lemon 1/2"],
-    Snacks: ["Chowmein", "Chilly & Tomato Sauce", "Hot Tea"],
-    Dinner: ["Arhar Daal", "Lauki", "Rice", "Roti", "Coconut Laddoo", "Mix Salad", "Achar"]
-  },
-  Saturday: {
-    Breakfast: ["Aaloo Tamatar Sabji", "Puri", "Mirchi", "Tea", "Jalebi", "Curd", "Watermelon"],
-    Lunch: ["Chhole Kabuli (Big)", "Bhature", "Fry Mirch", "Sirka Pyaz", "Jeera Rice", "Cold Drink", "Pickle", "Veg Raita"],
-    Snacks: ["Bread Roll", "Chilly & Tomato Sauce", "Tea"],
-    Dinner: ["Arhar Dal", "Lauki", "Rice", "Roti", "Mix Salad", "Chhachh"]
-  },
-  Sunday: {
-    Breakfast: ["Veg Sandwich", "Tomato Sauce", "Cornflakes", "Milk", "Tea", "Mix Fruit", "Chat Masala"],
-    Lunch: ["Chhole Kabuli (Big)", "Bhature", "Fry Mirch", "Sirka Pyaz", "Jeera Rice", "Cold Drink", "Pickle", "Veg Raita"],
-    Snacks: ["OFF"],
-    Dinner: ["Lauki Kofta", "Arabi", "Rice", "Roti", "Chhachh", "Kheer / Sewai"]
-  }
-};
-
-const GIRLS_MENU_DATA = {
-  Monday: {
-    Breakfast: ["Fried Idli & Sambar", "Nariyal Chatni", "Tea with Ginger", "Milk", "Banana"],
-    Lunch: ["Arhar Daal", "Mix Veg Paneer", "Boondi Raita", "Rice", "Chapati", "Salad (Onion)", "1/2 Lemon"],
-    Snacks: ["Bread Pakoda / Mix Pakodi", "Tomato Sauce", "Green Chatni", "Tea"],
-    Dinner: ["Butter Masala / Kadhai Paneer", "Aloo Chokha", "Chapati", "Rice", "Ice Cream", "Mix Salad"]
-  },
-  Tuesday: {
-    Breakfast: ["Aloo Onion Parantha", "Tea (Ginger)", "Milk", "Pickle", "Muskmelon / Seasonal Fruit"],
-    Lunch: ["Black Chana Gravy", "Aloo Beans", "Chapati", "Rice", "Curd (Beetroot)", "Salad", "1/2 Lemon"],
-    Snacks: ["Chowmein", "Tomato/Green Chilli Sauce", "Shikanji"],
-    Dinner: ["Aloo Tamatar", "Bhindi", "Plain Parantha", "Rice", "Gulab Jamun", "Chhachh"]
-  },
-  Wednesday: {
-    Breakfast: ["Bread Butter Jam & Cornflakes", "Amul Butter", "Tea (Ginger)", "Milk", "Banana"],
-    Lunch: ["Kadhi", "Aloo Jeera", "Chapati", "Rice", "Fried Mirchi", "Papad", "Masala Onion Laccha", "1/2 Lemon"],
-    Snacks: ["Poha / Namkeen Jave", "Tomato/Green Chilli Sauce", "Roohafza"],
-    Dinner: ["Manchoorian / Black Masoor Daal", "Aloo Tikki", "Curd", "Fried Rice / Plain Rice", "Fruit Custard", "Cold Drink (Monthly)"]
-  },
-  Thursday: {
-    Breakfast: ["Plain/Methi Parantha & Aloo Jeera Dry", "Tea (Ginger)", "Milk", "Papaya"],
-    Lunch: ["Arhar Daal", "Lauki", "Boondi Raita", "Chapati", "Rice", "Salad", "1/2 Lemon"],
-    Snacks: ["Macroni", "Tomato/Green Chilli Sauce", "Tang"],
-    Dinner: ["Chhole Masala & Aloo Shimla Mirch", "Chapati", "Rice", "Salad", "Sweet Sewai"]
-  },
-  Friday: {
-    Breakfast: ["Matar Kulcha / Aloo Sandwich", "Tomato Sauce", "Tea (Ginger)", "Milk", "Watermelon"],
-    Lunch: ["Rajma", "Aloo Jeera (Kasuri Methi)", "Chapati", "Rice", "Curd", "Beetroot Salad", "1/2 Lemon"],
-    Snacks: ["Papdi Chaat / Black Chana Chaat", "Tomato/Green Chilli Sauce", "Coffee"],
-    Dinner: ["Sabut Lal Masoor Daal", "Arbi Dry", "Matar Mushroom (Monthly)", "Chapati", "Rice", "Nariyal Laddoo / Moong Dal Halwa", "Mix Salad"]
-  },
-  Saturday: {
-    Breakfast: ["Aloo Tomato Sabji (Bhandara)", "Plain Poori / Palak Poori", "Tea (Ginger)", "Milk", "Pickle", "Papaya", "Jalebi"],
-    Lunch: ["Mix Daal", "Aloo Soyabean", "Chapati", "Rice", "Veg Raita", "Salad", "1/2 Lemon"],
-    Snacks: ["Samosa (1 Pc Big) & Tea", "Saunth", "Green Chatni", "Tea"],
-    Dinner: ["Rajma", "Aloo Baingan", "Chapati", "Rice", "Chhachh"]
-  },
-  Sunday: {
-    Breakfast: ["Aloo Onion Parantha", "Green Chatni", "Tea (Ginger)", "Milk", "Pickle", "Watermelon"],
-    Lunch: ["Chhole Bhature", "Jeera Rice", "Fried Mirchi", "Masala Onion Laccha", "Cold Drink"],
-    Snacks: ["OFF"],
-    Dinner: ["Chana Daal", "Kathal", "Chapati", "Rice", "Kheer", "Mix Salad"]
-  }
-};
+import { getMessForStudent } from '../config/menuGroups';
+import { getMenuByMessId } from '../data/hostelMenus';
 
 const MEAL_SLOTS = [
   { name: 'Breakfast', time: '07:20 AM - 08:30 AM', icon: Sun, color: 'text-amber-500 bg-amber-500/10' },
@@ -102,9 +14,8 @@ const MEAL_SLOTS = [
 
 export const WeeklyMenuReviewSection = () => {
   const { currentUser } = useApp();
-  const girlsHostels = ["Block A (Girls)", "Block B (Girls)", "Block C (Girls)"];
-  const isGirlsHostel = currentUser && girlsHostels.includes(currentUser.hostelBlock);
-  const MENU_DATA = isGirlsHostel ? GIRLS_MENU_DATA : BOYS_MENU_DATA;
+  const studentMess = getMessForStudent(currentUser);
+  const weeklyMenu = getMenuByMessId(studentMess.menuId || studentMess.id);
 
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
   
@@ -127,14 +38,15 @@ export const WeeklyMenuReviewSection = () => {
     const saved = localStorage.getItem('messmates_ratings');
     if (saved) return JSON.parse(saved);
     
-    // Seed default baseline ratings for a realistic look across both menus
+    // Seed default baseline ratings for a realistic look across all 3 menus
     const initialDb = {};
-    const seedMenus = [BOYS_MENU_DATA, GIRLS_MENU_DATA];
-    seedMenus.forEach(menu => {
+    const seedMessIds = ['boys_junior', 'boys_senior', 'girls'];
+    seedMessIds.forEach(messId => {
+      const menu = getMenuByMessId(messId);
       Object.keys(menu).forEach(day => {
         Object.keys(menu[day]).forEach(slot => {
-          menu[day][slot].forEach(item => {
-            if (item !== 'OFF') {
+          (menu[day][slot].items || []).forEach(item => {
+            if (item && item !== 'OFF') {
               const seedRating = parseFloat((3.8 + Math.random() * 0.9).toFixed(1));
               const seedCount = Math.floor(5 + Math.random() * 25);
               initialDb[`${day}_${slot}_${item}`] = {
@@ -227,7 +139,8 @@ export const WeeklyMenuReviewSection = () => {
     }, 1500);
   };
 
-  const activeItems = MENU_DATA[selectedDay]?.[selectedSlot] || [];
+  const activeMeal = weeklyMenu[selectedDay]?.[selectedSlot];
+  const activeItems = activeMeal?.items || [];
 
   return (
     <div className="w-full space-y-6">
@@ -240,7 +153,7 @@ export const WeeklyMenuReviewSection = () => {
             <span>WEEKLY MENU EXPLORER</span>
           </h2>
           <p className="text-xs text-slate-500 font-semibold mt-0.5">
-            {isGirlsHostel ? "ABES Girls' Hostel Official Menu (w.e.f. 05 May 2026)" : "ABES Boys' Hostel Official Menu (Naina Caters)"} • Day-wise food item reviews
+            {studentMess.label} {studentMess.caterer ? `(${studentMess.caterer}, W.E.F. ${studentMess.effectiveDate})` : ''} • Day-wise food item reviews
           </p>
         </div>
         <div className="flex items-center space-x-1.5 text-[10px] font-black uppercase bg-emerald-500/10 text-emerald-600 px-3 py-1 rounded-full">

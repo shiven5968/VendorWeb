@@ -19,23 +19,20 @@ import {
   GraduationCap
 } from 'lucide-react';
 import { WeeklyMenuReviewSection } from '../components/WeeklyMenuReviewSection';
-import { resolveMenuGroup } from '../config/menuGroups';
+import { getMessForStudent } from '../config/menuGroups';
 import { formatCollegeDateDisplay, formatRatingRelativeTime } from '../utils/dateTime';
 import { OFFICIAL_MEAL_TIMINGS } from '../services/mealTiming';
 
 import {
   MEAL_IMAGES,
   GH_IMAGES,
-  BOYS_WEEKLY_MENU,
-  GIRLS_WEEKLY_MENU,
-  getHostelMenu,
+  getMenuByMessId,
   isGirlsHostelBlock
 } from '../data/hostelMenus';
 
-const FULL_WEEKLY_MENU = BOYS_WEEKLY_MENU;
-
 const getActiveMenu = (user) => {
-  return getHostelMenu(user?.hostelBlock);
+  const mess = getMessForStudent(user);
+  return getMenuByMessId(mess.menuId || mess.id);
 };
 
 const getMealTiming = (mealType, selectedDay) => {
@@ -76,7 +73,7 @@ export const StudentDashboard = () => {
   const [ratingError, setRatingError] = useState('');
 
   const todayDateString = formatCollegeDateDisplay(currentTime);
-  const menuGroup = resolveMenuGroup(currentUser);
+  const menuGroup = getMessForStudent(currentUser);
 
   const categoryStyles = {
     Breakfast: { bg: 'bg-amber-500', icon: Sun },
@@ -113,14 +110,15 @@ export const StudentDashboard = () => {
     const staticMeal = dayMenu[cat] || { title: `${cat} Menu`, items: [], image: '', protein: '15g', calories: '500 kcal' };
     const matchingDbMeal = rawMeals.find(m => m.category === cat);
     return {
+      ...(matchingDbMeal || {}),
       id: matchingDbMeal?.id || `${todayDay.toLowerCase().substring(0, 3)}_${cat.toLowerCase().substring(0, 1)}`,
       category: cat,
       name: staticMeal.title || matchingDbMeal?.name,
       items: (staticMeal.items && staticMeal.items.length > 0 ? staticMeal.items.join(', ') : matchingDbMeal?.items) || '',
       image: staticMeal.image || matchingDbMeal?.image,
-      protein: (staticMeal.protein || matchingDbMeal?.protein || '14g').replace('g', ''),
-      calories: (staticMeal.calories || matchingDbMeal?.calories || '520 kcal').replace(' kcal', ''),
-      ...(matchingDbMeal || {})
+      servingSize: staticMeal.servingSize || matchingDbMeal?.servingSize || '',
+      protein: (staticMeal.protein || matchingDbMeal?.protein || '14g').toString().replace('g', ''),
+      calories: (staticMeal.calories || matchingDbMeal?.calories || '520 kcal').toString().replace(' kcal', ''),
     };
   });
 

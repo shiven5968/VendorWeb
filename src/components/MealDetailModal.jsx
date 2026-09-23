@@ -29,9 +29,10 @@ export const MealDetailModal = () => {
   const liveStats = getMealStats ? getMealStats(meal.id) : { rating: null, ratingDisplay: 'No ratings yet', ratingCount: 0 };
   const timingInfo = getTimingStatus ? getTimingStatus(meal.category) : { isRatingAllowed: true, message: '' };
 
-  const hasNutrition = meal.calories > 0 || meal.protein > 0;
+  const isSundaySnack = meal.id === 'sun_s' || (meal.day === 'Sunday' && meal.category === 'Snacks') || (meal.calories === 0 && meal.category === 'Snacks');
+  const hasNutrition = (meal.calories > 0 || meal.protein > 0) && !isSundaySnack;
   const isStudent = currentRole === 'student';
-  const isRatingWindowOpen = timingInfo.isRatingAllowed;
+  const isRatingWindowOpen = timingInfo.isRatingAllowed && !isSundaySnack;
   const isAlreadyRated = Boolean(userExistingRating);
 
   const handleSubmitRating = async (e) => {
@@ -116,46 +117,77 @@ export const MealDetailModal = () => {
           
           {/* Nutrition Cards */}
           {hasNutrition ? (
-            <div className="grid grid-cols-4 gap-2 bg-slate-50 dark:bg-slate-800/60 p-3 rounded-2xl border border-slate-200/80 dark:border-slate-800 text-center">
-              <div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase">Calories</span>
-                <p className="text-base font-black text-slate-900 dark:text-white">{meal.calories}</p>
-                <span className="text-[9px] text-slate-400">kcal</span>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
+                  Estimated Nutrition
+                </span>
+                <span className="text-[10px] text-slate-400 font-bold">Standard Mess Serving</span>
               </div>
-              <div>
-                <span className="text-[10px] font-bold text-emerald-500 uppercase">Protein</span>
-                <p className="text-base font-black text-emerald-600 dark:text-emerald-400">{meal.protein}g</p>
-                <span className="text-[9px] text-slate-400">protein</span>
+              <div className="grid grid-cols-5 gap-1.5 sm:gap-2 bg-slate-50 dark:bg-slate-800/60 p-3 rounded-2xl border border-slate-200/80 dark:border-slate-800 text-center">
+                <div>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase">Calories</span>
+                  <p className="text-sm sm:text-base font-black text-slate-900 dark:text-white">{meal.calories}</p>
+                  <span className="text-[9px] text-slate-400">kcal</span>
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold text-emerald-500 uppercase">Protein</span>
+                  <p className="text-sm sm:text-base font-black text-emerald-600 dark:text-emerald-400">{meal.protein}g</p>
+                  <span className="text-[9px] text-slate-400">protein</span>
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase">Carbs</span>
+                  <p className="text-sm sm:text-base font-black text-slate-900 dark:text-white">{meal.carbs || 0}g</p>
+                  <span className="text-[9px] text-slate-400">carbs</span>
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase">Fat</span>
+                  <p className="text-sm sm:text-base font-black text-slate-900 dark:text-white">{meal.fats ?? meal.fat ?? 0}g</p>
+                  <span className="text-[9px] text-slate-400">fat</span>
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase">Fiber</span>
+                  <p className="text-sm sm:text-base font-black text-slate-900 dark:text-white">{meal.fiber || 0}g</p>
+                  <span className="text-[9px] text-slate-400">fiber</span>
+                </div>
               </div>
-              <div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase">Carbs</span>
-                <p className="text-base font-black text-slate-900 dark:text-white">{meal.carbs || 0}g</p>
-                <span className="text-[9px] text-slate-400">carbs</span>
-              </div>
-              <div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase">Fats</span>
-                <p className="text-base font-black text-slate-900 dark:text-white">{meal.fats || 0}g</p>
-                <span className="text-[9px] text-slate-400">fats</span>
-              </div>
+              <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium italic leading-relaxed">
+                Nutrition values are estimates based on standard serving sizes and food-composition references. Actual values may vary with recipe, oil, ingredients and portion size.
+              </p>
+            </div>
+          ) : isSundaySnack ? (
+            <div className="p-4 rounded-2xl bg-slate-100 dark:bg-slate-800 text-center space-y-1">
+              <span className="text-xs font-black text-slate-700 dark:text-slate-200 uppercase">Sunday Snacks: OFF</span>
+              <p className="text-[11px] text-slate-500 font-medium">Mess kitchen remains closed on Sunday evening. No meal served.</p>
             </div>
           ) : null}
 
+          {/* Serving Size */}
+          {(meal.servingUsed || meal.servingSize) && !isSundaySnack && (
+            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-800 space-y-1">
+              <h4 className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Serving Size</h4>
+              <p className="text-xs text-slate-800 dark:text-slate-200 font-bold leading-relaxed">{meal.servingUsed || meal.servingSize}</p>
+            </div>
+          )}
+
           {/* Description & Items */}
-          {meal.items && (
+          {meal.items && !isSundaySnack && (
             <div>
-              <h4 className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-1">Menu Items</h4>
+              <h4 className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-1">What is Served</h4>
               <p className="text-xs text-slate-700 dark:text-slate-200 font-semibold">{meal.items}</p>
             </div>
           )}
 
           {/* Timing & Rating Status Banner */}
-          <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between text-xs font-bold">
-            <div className="flex items-center space-x-2">
-              <Clock className="w-4 h-4 text-emerald-500" />
-              <span className="text-slate-600 dark:text-slate-300">{timingInfo.message}</span>
+          {!isSundaySnack && (
+            <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between text-xs font-bold">
+              <div className="flex items-center space-x-2">
+                <Clock className="w-4 h-4 text-emerald-500" />
+                <span className="text-slate-600 dark:text-slate-300">{timingInfo.message}</span>
+              </div>
+              <span className="text-[10px] text-slate-400">Window: {timingInfo.ratingWindowLabel}</span>
             </div>
-            <span className="text-[10px] text-slate-400">Window: {timingInfo.ratingWindowLabel}</span>
-          </div>
+          )}
 
           {/* RATE MEAL FORM (STUDENT ONLY) */}
           {isStudent && (
@@ -189,6 +221,12 @@ export const MealDetailModal = () => {
                     <p className="text-[11px] text-slate-300 italic">"{userExistingRating.feedback}"</p>
                   )}
                   <span className="text-[10px] text-slate-400 block">Submitted ratings cannot be modified.</span>
+                </div>
+              ) : isSundaySnack ? (
+                // Sunday Snack Closed Notice
+                <div className="p-3 rounded-xl bg-slate-800 border border-slate-700 text-center space-y-1 text-xs text-slate-400">
+                  <p className="font-bold text-slate-300">Sunday Snacks are OFF.</p>
+                  <p className="text-[11px]">Mess kitchen is closed on Sunday evening. Ratings are not applicable.</p>
                 </div>
               ) : !isRatingWindowOpen ? (
                 // Window Closed Notice

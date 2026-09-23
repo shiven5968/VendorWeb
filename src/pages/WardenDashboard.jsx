@@ -20,8 +20,10 @@ import {
   GIRLS_HOSTEL_BLOCKS,
   isGirlsHostelBlock,
   BOYS_WEEKLY_MENU,
+  BOYS_JUNIOR_WEEKLY_MENU,
+  BOYS_SENIOR_WEEKLY_MENU,
   GIRLS_WEEKLY_MENU,
-  getHostelMenu,
+  getMenuByMessId,
   getTodayHostelMeals
 } from '../data/hostelMenus';
 
@@ -49,7 +51,8 @@ export const WardenDashboard = ({ initialTab = 'overview' }) => {
   } = useApp();
 
   const [activeTab, setActiveTab] = useState(initialTab);
-  // Hostel scope: 'all' | 'boys' | 'girls'
+  // Hostel scope: 'all' | 'boys_junior' | 'boys_senior' | 'girls'
+  // Keep legacy 'boys' as alias → 'boys_junior' for backward compat with URL params / saved state
   const [hostelScope, setHostelScope] = useState('all');
   // Specific block filter: 'all' | block name
   const [blockFilter, setBlockFilter] = useState('all');
@@ -66,11 +69,17 @@ export const WardenDashboard = ({ initialTab = 'overview' }) => {
   const todayStr = getCollegeDateString(currentTime);
   const todayFormattedDate = formatCollegeDateDisplay(currentTime);
 
+  // Canonical scope helpers
+  const scopeIsGirls   = hostelScope === 'girls';
+  const scopeIsBoys    = scopeIsBoysJunior || hostelScope === 'boys_junior' || hostelScope === 'boys_senior';
+  const scopeIsBoysSenior  = hostelScope === 'boys_senior';
+  const scopeIsBoysJunior  = scopeIsBoysJunior || hostelScope === 'boys_junior';
+
   // Helper to check if item belongs to chosen hostel scope & block
   const matchHostelScope = (itemBlock) => {
     const isGirls = isGirlsHostelBlock(itemBlock);
-    if (hostelScope === 'boys' && isGirls) return false;
-    if (hostelScope === 'girls' && !isGirls) return false;
+    if (scopeIsGirls && !isGirls) return false;
+    if (scopeIsBoys && isGirls) return false;
     if (blockFilter !== 'all' && itemBlock && itemBlock !== blockFilter) return false;
     return true;
   };
@@ -172,34 +181,47 @@ export const WardenDashboard = ({ initialTab = 'overview' }) => {
     return { ratingsCount: gRatings.length, avgRating: avg, pending, resolved, totalComplaints: gComplaints.length };
   }, [allRatings, allComplaints]);
 
-  // Live Today's meals for each hostel section
-  const todayBoysMeals = useMemo(() => getTodayHostelMeals(todayDay, 'DNB Block'), [todayDay]);
-  const todayGirlsMeals = useMemo(() => getTodayHostelMeals(todayDay, 'Block A (Girls)'), [todayDay]);
+  // Live Today's meals for each mess section
+  const todayBoysJuniorMeals = useMemo(() => getTodayHostelMeals(todayDay, null, 'boys_junior'), [todayDay]);
+  const todayBoysSeniorMeals = useMemo(() => getTodayHostelMeals(todayDay, null, 'boys_senior'), [todayDay]);
+  const todayGirlsMeals      = useMemo(() => getTodayHostelMeals(todayDay, null, 'girls'), [todayDay]);
+
+  // Backward compat alias
+  const todayBoysMeals = todayBoysJuniorMeals;
 
   // Current active meals based on scope
   const activeTodayMeals = useMemo(() => {
-    if (hostelScope === 'girls') return todayGirlsMeals;
-    if (hostelScope === 'boys') return todayBoysMeals;
-    return todayMeals && todayMeals.length > 0 ? todayMeals : todayBoysMeals;
-  }, [hostelScope, todayGirlsMeals, todayBoysMeals, todayMeals]);
+    if (hostelScope === 'girls')       return todayGirlsMeals;
+    if (hostelScope === 'boys_senior') return todayBoysSeniorMeals;
+    if (hostelScope === 'boys_junior' || scopeIsBoysJunior) return todayBoysJuniorMeals;
+    return todayMeals && todayMeals.length > 0 ? todayMeals : todayBoysJuniorMeals;
+  }, [hostelScope, todayGirlsMeals, todayBoysSeniorMeals, todayBoysJuniorMeals, todayMeals]);
 
-  // Weekly menu oversight dataset based on scope
+  // Weekly menu oversight dataset based on scope — routes to correct 3-mess dataset
   const weeklyMenuOversight = useMemo(() => {
-    const menuData = hostelScope === 'girls' ? GIRLS_WEEKLY_MENU : BOYS_WEEKLY_MENU;
+    let messId = 'boys_junior';
+    if (hostelScope === 'boys_senior') messId = 'boys_senior';
+    else if (hostelScope === 'girls')  messId = 'girls';
+    const menuData = getMenuByMessId(messId);
     const dayMenu = menuData[selectedDay] || menuData['Monday'];
     const categories = ['Breakfast', 'Lunch', 'Snacks', 'Dinner'];
     return categories.map(cat => {
       const meal = dayMenu[cat] || { title: `${cat} Special`, items: [], image: '', protein: '12g', calories: '400 kcal' };
       return {
-        id: `oversight_${hostelScope}_${selectedDay}_${cat}`.toLowerCase(),
+        id: `oversight_${messId}_${selectedDay}_${cat}`.toLowerCase().replace(/\s+/g, '_'),
         name: meal.title,
         category: cat,
         day: selectedDay,
         description: meal.items?.join(', ') || '',
         items: meal.items || [],
         imageUrl: meal.image || '',
+        image: meal.image || '',
         protein: meal.protein || '12g',
         calories: meal.calories || '400 kcal',
+        carbs: meal.carbs || '',
+        fats: meal.fats || '',
+        fiber: meal.fiber || '',
+        servingSize: meal.servingSize || '',
         isVeg: true
       };
     });
@@ -256,8 +278,8 @@ export const WardenDashboard = ({ initialTab = 'overview' }) => {
 
   // Active quality score
   const activeQualityScore = useMemo(() => {
-    if (hostelScope === 'boys') return `${boysMetrics.avgRating} / 5.0`;
-    if (hostelScope === 'girls') return `${girlsMetrics.avgRating} / 5.0`;
+    if (scopeIsBoys)   return `${boysMetrics.avgRating} / 5.0`;
+    if (scopeIsGirls)  return `${girlsMetrics.avgRating} / 5.0`;
     return wardenMetrics?.messQualityScore ? `${wardenMetrics.messQualityScore} / 5.0` : '4.7 / 5.0';
   }, [hostelScope, boysMetrics.avgRating, girlsMetrics.avgRating, wardenMetrics]);
 
@@ -303,13 +325,20 @@ export const WardenDashboard = ({ initialTab = 'overview' }) => {
                         </p>
                       </div>
 
-                      <button
-                        onClick={() => setHostelScope('boys')}
-                        className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center space-x-1 shadow-sm transition-all cursor-pointer whitespace-nowrap"
-                      >
-                        <span>Inspect Boys' Mess</span>
-                        <ChevronRight className="w-3.5 h-3.5" />
-                      </button>
+                      <div className="flex flex-col items-end gap-1.5">
+                        <button
+                          onClick={() => setHostelScope('boys_junior')}
+                          className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center space-x-1 shadow-sm transition-all cursor-pointer whitespace-nowrap"
+                        >
+                          <span>Junior ↗</span>
+                        </button>
+                        <button
+                          onClick={() => setHostelScope('boys_senior')}
+                          className="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center space-x-1 shadow-sm transition-all cursor-pointer whitespace-nowrap"
+                        >
+                          <span>Senior ↗</span>
+                        </button>
+                      </div>
                     </div>
 
                     {/* Telemetry quick metrics */}
@@ -337,13 +366,13 @@ export const WardenDashboard = ({ initialTab = 'overview' }) => {
                       </div>
                     </div>
 
-                    {/* Today's Meals Quick Preview */}
+                    {/* Today's Meals Quick Preview — Boys Junior (default) */}
                     <div className="space-y-1.5">
                       <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">
-                        Today's Scheduled Dishes ({todayDay}):
+                        Today's Scheduled Dishes ({todayDay}) — Junior Mess:
                       </span>
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                        {todayBoysMeals.map(m => (
+                        {todayBoysJuniorMeals.map(m => (
                           <div key={m.id} className="p-2 rounded-xl bg-white dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/60 space-y-1">
                             <span className="text-[9px] font-black text-blue-600 dark:text-blue-400 uppercase block">
                               {m.category}
@@ -434,26 +463,33 @@ export const WardenDashboard = ({ initialTab = 'overview' }) => {
               </div>
             )}
 
-            {/* 2. ACTIVE SECTION BANNER (When scoped into boys or girls) */}
+            {/* 2. ACTIVE SECTION BANNER (When scoped into a specific mess) */}
             {hostelScope !== 'all' && (
               <div className={clsx(
                 'p-4 sm:p-5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 border shadow-sm',
-                hostelScope === 'boys' 
-                  ? 'bg-blue-50/80 dark:bg-blue-950/30 border-blue-200 dark:border-blue-900/60 text-blue-950 dark:text-blue-100'
-                  : 'bg-rose-50/80 dark:bg-rose-950/30 border-rose-200 dark:border-rose-900/60 text-rose-950 dark:text-rose-100'
+                hostelScope === 'girls'
+                  ? 'bg-rose-50/80 dark:bg-rose-950/30 border-rose-200 dark:border-rose-900/60 text-rose-950 dark:text-rose-100'
+                  : hostelScope === 'boys_senior'
+                  ? 'bg-indigo-50/80 dark:bg-indigo-950/30 border-indigo-200 dark:border-indigo-900/60 text-indigo-950 dark:text-indigo-100'
+                  : 'bg-blue-50/80 dark:bg-blue-950/30 border-blue-200 dark:border-blue-900/60 text-blue-950 dark:text-blue-100'
               )}>
                 <div className="space-y-0.5">
                   <div className="flex items-center space-x-2">
                     <span className={clsx(
                       'text-xs font-black uppercase tracking-wider px-2 py-0.5 rounded-full',
-                      hostelScope === 'boys'
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-rose-600 text-white'
+                      hostelScope === 'girls'     ? 'bg-rose-600 text-white'
+                      : hostelScope === 'boys_senior' ? 'bg-indigo-600 text-white'
+                      : 'bg-blue-600 text-white'
                     )}>
-                      Active Filter: {hostelScope === 'boys' ? "Boys' Hostel Section" : "Girls' Hostel Section"}
+                      Active Filter:{' '}
+                      {hostelScope === 'girls'      ? "Girls' Hostel Mess"
+                       : hostelScope === 'boys_senior' ? "Boys Senior Mess (III–IV Yr, MBA & MCA)"
+                       : "Boys Junior Mess (I & II Year)"}
                     </span>
                     <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
-                      {hostelScope === 'boys' ? 'DNB, VKB, RKB, ABB' : 'Block A, Block B, Block C'}
+                      {hostelScope === 'girls'      ? 'Block A, Block B, Block C'
+                       : hostelScope === 'boys_senior' ? 'DNB, VKB, RKB, ABB — Star Caterers'
+                       : 'DNB, VKB, RKB, ABB — Naina Caters'}
                     </span>
                   </div>
                   <p className="text-xs text-slate-600 dark:text-slate-300">
@@ -466,16 +502,25 @@ export const WardenDashboard = ({ initialTab = 'overview' }) => {
                     onClick={() => setHostelScope('all')}
                     className="px-3.5 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer"
                   >
-                    View All Hostels
+                    View All
                   </button>
                   <button
-                    onClick={() => setHostelScope(hostelScope === 'boys' ? 'girls' : 'boys')}
+                    onClick={() => {
+                      const next = hostelScope === 'boys_junior' ? 'boys_senior'
+                                 : hostelScope === 'boys_senior' ? 'girls'
+                                 : 'boys_junior';
+                      setHostelScope(next);
+                    }}
                     className={clsx(
                       'px-3.5 py-1.5 rounded-xl text-white text-xs font-bold shadow-sm transition-colors cursor-pointer',
-                      hostelScope === 'boys' ? 'bg-rose-600 hover:bg-rose-500' : 'bg-blue-600 hover:bg-blue-500'
+                      hostelScope === 'girls' ? 'bg-blue-600 hover:bg-blue-500'
+                      : hostelScope === 'boys_senior' ? 'bg-rose-600 hover:bg-rose-500'
+                      : 'bg-indigo-600 hover:bg-indigo-500'
                     )}
                   >
-                    Switch to {hostelScope === 'boys' ? "Girls' Hostel" : "Boys' Hostel"} →
+                    {hostelScope === 'boys_junior' ? 'Switch to Senior →'
+                     : hostelScope === 'boys_senior' ? "Switch to Girls' →"
+                     : 'Switch to Junior →'}
                   </button>
                 </div>
               </div>
@@ -485,7 +530,10 @@ export const WardenDashboard = ({ initialTab = 'overview' }) => {
             <div>
               <div className="flex items-center justify-between mb-3">
                 <h2 className="text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                  {hostelScope === 'boys' ? "Boys' Mess Telemetry" : hostelScope === 'girls' ? "Girls' Mess Telemetry" : "Today's Campus Overview"}
+                  {scopeIsGirls ? "Girls' Mess Telemetry"
+                   : scopeIsBoysSenior ? "Boys Senior Mess Telemetry"
+                   : scopeIsBoysJunior ? "Boys Junior Mess Telemetry"
+                   : "Today's Campus Overview"}
                 </h2>
                 <span className="text-[11px] font-bold text-slate-400">
                   Live Institutional Telemetry
@@ -537,11 +585,15 @@ export const WardenDashboard = ({ initialTab = 'overview' }) => {
                   </span>
                   <span className={clsx(
                     'text-[10px] font-black px-2 py-0.5 rounded-full',
-                    hostelScope === 'girls'
+                    scopeIsGirls
                       ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300'
+                      : scopeIsBoysSenior
+                      ? 'bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300'
                       : 'bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300'
                   )}>
-                    {hostelScope === 'girls' ? "Girls' Hostel Schedule" : "Boys' Hostel Schedule"}
+                    {scopeIsGirls ? "Girls' Hostel Menu"
+                     : scopeIsBoysSenior ? "Boys Senior Menu"
+                     : "Boys Junior Menu"}
                   </span>
                 </div>
                 <button
@@ -755,39 +807,54 @@ export const WardenDashboard = ({ initialTab = 'overview' }) => {
       case 'menu':
         return (
           <div className="space-y-6">
-            {/* HOSTEL TOGGLE FOR MENU OVERSIGHT */}
+            {/* MESS SELECTOR FOR MENU OVERSIGHT */}
             <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
               <div className="space-y-0.5">
                 <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">
-                  Select Mess Complex to Authorize / Inspect:
+                  Select Mess to Authorize / Inspect:
                 </span>
                 <h3 className="text-sm font-black text-slate-900 dark:text-white">
-                  {hostelScope === 'girls' ? "Girls' Hostel Dining Schedule (Block A, B, C)" : "Boys' Hostel Dining Schedule (DNB, VKB, RKB, ABB)"}
+                  {scopeIsGirls
+                    ? "Girls' Hostel Dining Schedule (Block A, B, C)"
+                    : scopeIsBoysSenior
+                    ? "Boys Senior Dining Schedule — Star Caterers (III–IV Yr, MBA & MCA)"
+                    : "Boys Junior Dining Schedule — Naina Caters (I & II Year)"}
                 </h3>
               </div>
 
               <div className="inline-flex rounded-xl bg-slate-100 dark:bg-slate-800 p-1 border border-slate-200 dark:border-slate-700 self-start sm:self-auto">
                 <button
-                  onClick={() => setHostelScope('boys')}
+                  onClick={() => setHostelScope('boys_junior')}
                   className={clsx(
-                    'px-4 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer flex items-center space-x-1.5',
-                    hostelScope === 'boys' || hostelScope === 'all'
+                    'px-3 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer flex items-center space-x-1.5',
+                    scopeIsBoysJunior || hostelScope === 'all'
                       ? 'bg-blue-600 text-white shadow-sm'
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                   )}
                 >
-                  <span>👨‍🎓 Boys' Hostel Menu</span>
+                  <span>👨‍🎓 Junior</span>
+                </button>
+                <button
+                  onClick={() => setHostelScope('boys_senior')}
+                  className={clsx(
+                    'px-3 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer flex items-center space-x-1.5',
+                    scopeIsBoysSenior
+                      ? 'bg-indigo-600 text-white shadow-sm'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  )}
+                >
+                  <span>🎓 Senior</span>
                 </button>
                 <button
                   onClick={() => setHostelScope('girls')}
                   className={clsx(
-                    'px-4 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer flex items-center space-x-1.5',
-                    hostelScope === 'girls'
+                    'px-3 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer flex items-center space-x-1.5',
+                    scopeIsGirls
                       ? 'bg-rose-600 text-white shadow-sm'
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                   )}
                 >
-                  <span>👩‍🎓 Girls' Hostel Menu</span>
+                  <span>👩‍🎓 Girls</span>
                 </button>
               </div>
             </div>
@@ -799,8 +866,8 @@ export const WardenDashboard = ({ initialTab = 'overview' }) => {
               todayDay={todayDay} 
             />
 
-            <DashboardCard 
-              title={`${selectedDay}'s ${hostelScope === 'girls' ? "Girls' Hostel" : "Boys' Hostel"} Menu Oversight`} 
+            <DashboardCard
+              title={`${selectedDay}'s ${scopeIsGirls ? "Girls' Hostel" : scopeIsBoysSenior ? "Boys Senior Mess" : "Boys Junior Mess"} Menu Oversight`}
               subtitle={`Review and authorize scheduled dishes for ${selectedDay}`}
               action={
                 <div className="flex items-center space-x-2">
@@ -943,10 +1010,10 @@ export const WardenDashboard = ({ initialTab = 'overview' }) => {
                   🏢 All Hostels
                 </button>
                 <button
-                  onClick={() => setHostelScope('boys')}
+                  onClick={() => setHostelScope('boys_junior')}
                   className={clsx(
                     'px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer',
-                    hostelScope === 'boys' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-500'
+                    scopeIsBoysJunior ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-500'
                   )}
                 >
                   👨‍🎓 Boys' Hostel
@@ -998,10 +1065,10 @@ export const WardenDashboard = ({ initialTab = 'overview' }) => {
                   All Hostels ({allRatings?.length || 0})
                 </button>
                 <button
-                  onClick={() => setHostelScope('boys')}
+                  onClick={() => setHostelScope('boys_junior')}
                   className={clsx(
                     'px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer',
-                    hostelScope === 'boys' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                    scopeIsBoysJunior ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
                   )}
                 >
                   👨‍🎓 Boys' ({boysMetrics.ratingsCount})
@@ -1019,7 +1086,7 @@ export const WardenDashboard = ({ initialTab = 'overview' }) => {
             </div>
 
             <DashboardCard 
-              title={`${hostelScope === 'boys' ? "Boys' Hostel" : hostelScope === 'girls' ? "Girls' Hostel" : "Campus"} Meal Ratings & Feedback`} 
+              title={`${scopeIsBoysJunior ? "Boys' Hostel" : hostelScope === 'girls' ? "Girls' Hostel" : "Campus"} Meal Ratings & Feedback`} 
               subtitle="Aggregated student feedback by dish"
             >
               {mealRatingsSummary.length > 0 ? (
@@ -1117,10 +1184,10 @@ export const WardenDashboard = ({ initialTab = 'overview' }) => {
                   All Hostels ({allComplaints?.length || 0})
                 </button>
                 <button
-                  onClick={() => setHostelScope('boys')}
+                  onClick={() => setHostelScope('boys_junior')}
                   className={clsx(
                     'px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer',
-                    hostelScope === 'boys' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                    scopeIsBoysJunior ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
                   )}
                 >
                   👨‍🎓 Boys' ({boysMetrics.totalComplaints})
@@ -1138,7 +1205,7 @@ export const WardenDashboard = ({ initialTab = 'overview' }) => {
             </div>
 
             <DashboardCard 
-              title={`${hostelScope === 'boys' ? "Boys' Hostel" : hostelScope === 'girls' ? "Girls' Hostel" : "Institutional"} Complaints Oversight`} 
+              title={`${scopeIsBoysJunior ? "Boys' Hostel" : hostelScope === 'girls' ? "Girls' Hostel" : "Institutional"} Complaints Oversight`} 
               subtitle="Review and update student mess grievances"
             >
               <div className="space-y-4">
@@ -1224,10 +1291,10 @@ export const WardenDashboard = ({ initialTab = 'overview' }) => {
                   🏢 Campus Wide
                 </button>
                 <button
-                  onClick={() => setHostelScope('boys')}
+                  onClick={() => setHostelScope('boys_junior')}
                   className={clsx(
                     'px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer',
-                    hostelScope === 'boys' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-500'
+                    scopeIsBoysJunior ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-500'
                   )}
                 >
                   👨‍🎓 Boys' Mess
@@ -1339,10 +1406,10 @@ export const WardenDashboard = ({ initialTab = 'overview' }) => {
             </button>
 
             <button
-              onClick={() => setHostelScope('boys')}
+              onClick={() => setHostelScope('boys_junior')}
               className={clsx(
                 'w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all text-left cursor-pointer',
-                hostelScope === 'boys'
+                scopeIsBoysJunior
                   ? 'bg-blue-600 text-white shadow-sm'
                   : 'text-slate-600 dark:text-slate-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 hover:text-blue-600'
               )}
@@ -1422,10 +1489,10 @@ export const WardenDashboard = ({ initialTab = 'overview' }) => {
             🏢 All Hostels
           </button>
           <button
-            onClick={() => setHostelScope('boys')}
+            onClick={() => setHostelScope('boys_junior')}
             className={clsx(
               'px-2.5 py-1 rounded-lg text-[11px] font-bold whitespace-nowrap transition-colors flex-shrink-0 cursor-pointer',
-              hostelScope === 'boys'
+              scopeIsBoysJunior
                 ? 'bg-blue-600 text-white'
                 : 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300'
             )}
@@ -1483,11 +1550,11 @@ export const WardenDashboard = ({ initialTab = 'overview' }) => {
                 </h1>
                 <span className={clsx(
                   'text-[10px] font-black uppercase px-2 py-0.5 rounded-full',
-                  hostelScope === 'boys' ? 'bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300' :
+                  scopeIsBoysJunior ? 'bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300' :
                   hostelScope === 'girls' ? 'bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300' :
                   'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
                 )}>
-                  {hostelScope === 'boys' ? "Boys' Section" : hostelScope === 'girls' ? "Girls' Section" : 'Dual Sections'}
+                  {scopeIsBoysJunior ? "Boys' Section" : hostelScope === 'girls' ? "Girls' Section" : 'Dual Sections'}
                 </span>
               </div>
               <p className="text-xs sm:text-sm font-semibold text-slate-500 dark:text-slate-400 mt-1">
@@ -1509,10 +1576,10 @@ export const WardenDashboard = ({ initialTab = 'overview' }) => {
                 🏢 All Hostels
               </button>
               <button
-                onClick={() => setHostelScope('boys')}
+                onClick={() => setHostelScope('boys_junior')}
                 className={clsx(
                   'px-3 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer',
-                  hostelScope === 'boys'
+                  scopeIsBoysJunior
                     ? 'bg-blue-600 text-white shadow-sm'
                     : 'text-slate-600 dark:text-slate-400 hover:text-blue-600'
                 )}
