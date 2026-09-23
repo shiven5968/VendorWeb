@@ -100,8 +100,6 @@ export const StudentDashboard = () => {
   };
 
   const activeMenu = getActiveMenu(currentUser);
-  const girlsHostels = ["Block A (Girls)", "Block B (Girls)", "Block C (Girls)"];
-  const isGirlsHostel = currentUser && girlsHostels.includes(currentUser.hostelBlock);
 
   const categoryOrder = { Breakfast: 1, Lunch: 2, Snacks: 3, Dinner: 4 };
   const rawMeals = todayMeals && todayMeals.length > 0 ? todayMeals : [];
@@ -232,7 +230,7 @@ export const StudentDashboard = () => {
                 Today's Meals
               </h2>
               <span className="px-2.5 py-0.5 text-[10px] font-black rounded-full bg-emerald-500 text-white">
-                {isGirlsHostel ? "GIRLS' HOSTEL MENU" : "BOYS' HOSTEL MENU"}
+                {menuGroup ? menuGroup.label.toUpperCase() : "MESS ALLOCATION PENDING"}
               </span>
             </div>
             <p className="text-xs text-slate-500 font-semibold">

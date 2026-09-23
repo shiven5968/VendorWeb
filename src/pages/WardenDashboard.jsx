@@ -70,10 +70,10 @@ export const WardenDashboard = ({ initialTab = 'overview' }) => {
   const todayFormattedDate = formatCollegeDateDisplay(currentTime);
 
   // Canonical scope helpers
-  const scopeIsGirls   = hostelScope === 'girls';
-  const scopeIsBoys    = scopeIsBoysJunior || hostelScope === 'boys_junior' || hostelScope === 'boys_senior';
+  const scopeIsGirls       = hostelScope === 'girls';
   const scopeIsBoysSenior  = hostelScope === 'boys_senior';
-  const scopeIsBoysJunior  = scopeIsBoysJunior || hostelScope === 'boys_junior';
+  const scopeIsBoysJunior  = hostelScope === 'boys_junior' || hostelScope === 'boys';
+  const scopeIsBoys        = scopeIsBoysJunior || scopeIsBoysSenior;
 
   // Helper to check if item belongs to chosen hostel scope & block
   const matchHostelScope = (itemBlock) => {

@@ -32,15 +32,8 @@ export const GIRLS_HOSTEL_BLOCKS = [
   'Block C (Girls)',
 ];
 
-export const isGirlsHostelBlock = (hostelBlock) => {
-  if (!hostelBlock || typeof hostelBlock !== 'string') return false;
-  const lower = hostelBlock.toLowerCase();
-  return (
-    lower.includes('(girls)') ||
-    lower.includes('girls') ||
-    (lower.includes('block') && (lower.includes(' a') || lower.includes(' b') || lower.includes(' c')))
-  );
-};
+import { isGirlsHostelBlock } from '../config/menuGroups.js';
+export { isGirlsHostelBlock };
 
 // ── SHARED IMAGE PATHS ──────────────────────────────────────────────────────
 
