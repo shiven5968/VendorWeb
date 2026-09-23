@@ -120,6 +120,21 @@ export const getCurrentMinutes = (date = new Date()) => {
  * - 'CLOSED': Meal rating window has ended for today (Rating disabled)
  */
 export const getMealTimingStatus = (category, now = new Date()) => {
+  // Sunday Snacks is strictly OFF (Kitchen Closed)
+  const isSunday = now.getDay() === 0;
+  if (category === 'Snacks' && isSunday) {
+    return {
+      status: 'CLOSED',
+      isLive: false,
+      isRatingAllowed: false,
+      badgeText: 'OFF',
+      badgeColor: 'bg-slate-800/80 text-slate-400',
+      label: 'OFF',
+      ratingWindowLabel: 'OFF',
+      message: 'Snacks are OFF on Sunday evening'
+    };
+  }
+
   const config = OFFICIAL_MEAL_TIMINGS[category];
   if (!config) {
     return {
