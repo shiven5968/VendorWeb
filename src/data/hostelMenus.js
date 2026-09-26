@@ -796,8 +796,8 @@ export const getHostelMenu = (hostelBlock, messId) => {
  * @param {string} [messId]    - preferred; overrides hostelBlock
  */
 export const getTodayHostelMeals = (dayName, hostelBlock, messId) => {
-  const menuData = messId ? getMenuByMessId(messId) : getHostelMenu(hostelBlock);
-  const dayMenu = menuData[dayName] || menuData['Monday'];
+  const menuData = (messId ? getMenuByMessId(messId) : getHostelMenu(hostelBlock)) || BOYS_JUNIOR_WEEKLY_MENU;
+  const dayMenu = (menuData && (menuData[dayName] || menuData['Monday'])) || {};
   const mealCategories = ['Breakfast', 'Lunch', 'Snacks', 'Dinner'];
 
   return mealCategories.map(cat => {

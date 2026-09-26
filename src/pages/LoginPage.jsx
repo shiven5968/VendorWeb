@@ -34,6 +34,7 @@ export const LoginPage = ({ initialRole = 'student', onBackToRoles }) => {
     register, 
     sendOTP, 
     verifyOTP, 
+    logout,
     resetPassword, 
     isRegisterSubmitting
   } = useAuth();
