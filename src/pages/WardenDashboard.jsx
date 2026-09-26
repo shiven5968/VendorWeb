@@ -86,32 +86,33 @@ export const WardenDashboard = ({ initialTab = 'overview' }) => {
 
   // Filtered complaints by hostel scope & block
   const filteredComplaints = useMemo(() => {
-    return (allComplaints || []).filter(c => matchHostelScope(c.hostelBlock || c.block));
+    return (allComplaints || []).filter(c => c && matchHostelScope(c.hostelBlock || c.block));
   }, [allComplaints, hostelScope, blockFilter]);
 
   const pendingComplaints = useMemo(() => {
     return filteredComplaints.filter(c => {
-      const s = (c.status || '').toLowerCase();
+      const s = (c?.status || '').toLowerCase();
       return s === 'pending' || s === 'in review' || s === 'in progress';
     });
   }, [filteredComplaints]);
 
   const resolvedComplaints = useMemo(() => {
     return filteredComplaints.filter(c => {
-      const s = (c.status || '').toLowerCase();
+      const s = (c?.status || '').toLowerCase();
       return s === 'resolved' || s === 'closed';
     });
   }, [filteredComplaints]);
 
   // Scoped ratings
   const filteredRatings = useMemo(() => {
-    return (allRatings || []).filter(r => matchHostelScope(r.hostelBlock || r.block));
+    return (allRatings || []).filter(r => r && matchHostelScope(r.hostelBlock || r.block));
   }, [allRatings, hostelScope, blockFilter]);
 
   // Aggregate ratings by meal for structured presentation
   const mealRatingsSummary = useMemo(() => {
     const map = {};
     filteredRatings.forEach(r => {
+      if (!r) return;
       const key = r.mealName || r.mealId;
       if (!key) return;
       if (!map[key]) {
@@ -148,35 +149,35 @@ export const WardenDashboard = ({ initialTab = 'overview' }) => {
 
   // Distinct metrics for Boys & Girls sections for executive comparison
   const boysMetrics = useMemo(() => {
-    const bRatings = (allRatings || []).filter(r => !isGirlsHostelBlock(r.hostelBlock || r.block));
-    const bComplaints = (allComplaints || []).filter(c => !isGirlsHostelBlock(c.hostelBlock || c.block));
+    const bRatings = (allRatings || []).filter(r => r && !isGirlsHostelBlock(r.hostelBlock || r.block));
+    const bComplaints = (allComplaints || []).filter(c => c && !isGirlsHostelBlock(c.hostelBlock || c.block));
     const pending = bComplaints.filter(c => {
-      const s = (c.status || '').toLowerCase();
+      const s = (c?.status || '').toLowerCase();
       return s === 'pending' || s === 'in review' || s === 'in progress';
     }).length;
     const resolved = bComplaints.filter(c => {
-      const s = (c.status || '').toLowerCase();
+      const s = (c?.status || '').toLowerCase();
       return s === 'resolved' || s === 'closed';
     }).length;
     const avg = bRatings.length > 0
-      ? (bRatings.reduce((acc, r) => acc + (Number(r.rating) || 0), 0) / bRatings.length).toFixed(1)
+      ? (bRatings.reduce((acc, r) => acc + (Number(r?.rating) || 0), 0) / bRatings.length).toFixed(1)
       : '4.6';
     return { ratingsCount: bRatings.length, avgRating: avg, pending, resolved, totalComplaints: bComplaints.length };
   }, [allRatings, allComplaints]);
 
   const girlsMetrics = useMemo(() => {
-    const gRatings = (allRatings || []).filter(r => isGirlsHostelBlock(r.hostelBlock || r.block));
-    const gComplaints = (allComplaints || []).filter(c => isGirlsHostelBlock(c.hostelBlock || c.block));
+    const gRatings = (allRatings || []).filter(r => r && isGirlsHostelBlock(r.hostelBlock || r.block));
+    const gComplaints = (allComplaints || []).filter(c => c && isGirlsHostelBlock(c.hostelBlock || c.block));
     const pending = gComplaints.filter(c => {
-      const s = (c.status || '').toLowerCase();
+      const s = (c?.status || '').toLowerCase();
       return s === 'pending' || s === 'in review' || s === 'in progress';
     }).length;
     const resolved = gComplaints.filter(c => {
-      const s = (c.status || '').toLowerCase();
+      const s = (c?.status || '').toLowerCase();
       return s === 'resolved' || s === 'closed';
     }).length;
     const avg = gRatings.length > 0
-      ? (gRatings.reduce((acc, r) => acc + (Number(r.rating) || 0), 0) / gRatings.length).toFixed(1)
+      ? (gRatings.reduce((acc, r) => acc + (Number(r?.rating) || 0), 0) / gRatings.length).toFixed(1)
       : '4.7';
     return { ratingsCount: gRatings.length, avgRating: avg, pending, resolved, totalComplaints: gComplaints.length };
   }, [allRatings, allComplaints]);
@@ -202,8 +203,8 @@ export const WardenDashboard = ({ initialTab = 'overview' }) => {
     let messId = 'boys_junior';
     if (hostelScope === 'boys_senior') messId = 'boys_senior';
     else if (hostelScope === 'girls')  messId = 'girls';
-    const menuData = getMenuByMessId(messId);
-    const dayMenu = menuData[selectedDay] || menuData['Monday'];
+    const menuData = getMenuByMessId(messId) || BOYS_JUNIOR_WEEKLY_MENU;
+    const dayMenu = (menuData && (menuData[selectedDay] || menuData['Monday'])) || {};
     const categories = ['Breakfast', 'Lunch', 'Snacks', 'Dinner'];
     return categories.map(cat => {
       const meal = dayMenu[cat] || { title: `${cat} Special`, items: [], image: '', protein: '12g', calories: '400 kcal' };
