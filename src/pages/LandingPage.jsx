@@ -7,19 +7,13 @@ export const LandingPage = ({ onSelectRole }) => {
     <div className="min-h-[85vh] flex flex-col justify-between max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
       
       {/* HERO SECTION */}
-      <div className="text-center space-y-5 pt-8 sm:pt-14 flex flex-col items-center">
-        {/* Official Logo Mark */}
-        <div className="relative group">
-          <div className="absolute -inset-4 bg-gradient-to-r from-emerald-500/20 via-teal-500/20 to-emerald-500/20 rounded-full blur-xl opacity-75 group-hover:opacity-100 transition duration-500" />
-          <MessMatesLogo variant="icon" size="xl" className="relative drop-shadow-md transform hover:scale-105 transition-transform duration-300" />
+      <div className="text-center space-y-4 pt-6 sm:pt-10 flex flex-col items-center">
+        {/* Unified Official Logo Lockup */}
+        <div className="p-1 transition-transform duration-300 hover:scale-[1.02]">
+          <MessMatesLogo variant="full" size="lg" />
         </div>
 
-        {/* Authentic Typography Wordmark */}
-        <div className="pt-1">
-          <MessMatesLogo variant="wordmark" size="xl" className="justify-center" />
-        </div>
-
-        <p className="text-xl sm:text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+        <p className="text-xl sm:text-2xl font-bold text-emerald-600 dark:text-emerald-400 tracking-tight">
           Know Your Meal Before You Eat It
         </p>
 
