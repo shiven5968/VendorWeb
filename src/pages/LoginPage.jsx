@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useApp } from '../context/AppContext';
+import { MessMatesLogo } from '../components/MessMatesLogo';
 import { 
   GraduationCap, 
   Shield, 
@@ -372,6 +373,7 @@ export const LoginPage = ({ initialRole = 'student', onBackToRoles }) => {
             <ArrowLeft className="w-4 h-4" />
             <span>Select Role</span>
           </button>
+          <MessMatesLogo size="xs" />
         </div>
 
         {/* Role Icon & Title */}
