@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="100%" height="100%">
+  <defs>
+    <linearGradient id="ic5-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34D399" />
+      <stop offset="100%" stop-color="#059669" />
+    </linearGradient>
+    <filter id="ic5-shadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="20" stdDeviation="28" flood-color="#10B981" flood-opacity="0.45" />
+    </filter>
+  </defs>
+
+  <!-- High-End iOS/macOS Style Squircle Background -->
+  <rect width="500" height="500" rx="135" fill="url(#ic5-grad)" filter="url(#ic5-shadow)" />
+
+  <g transform="translate(100, 100)">
+    <!-- Outer Dining Plate Ring -->
+    <circle cx="150" cy="150" r="120" fill="none" stroke="#FFFFFF" stroke-width="26" stroke-opacity="0.95" />
+    
+    <!-- Inner Food Bowl / Smile Curve -->
+    <path d="M 85 168 Q 150 236 215 168" fill="none" stroke="#FFFFFF" stroke-width="26" stroke-linecap="round" />
+
+    <!-- Twin Fellowship Mates Dots -->
+    <circle cx="112" cy="106" r="18" fill="#FFFFFF" />
+    <circle cx="188" cy="106" r="18" fill="#FFFFFF" />
+
+    <!-- Center Nutrition Sparkle / Star -->
+    <path d="M 150 62 L 157 84 L 178 91 L 157 98 L 150 120 L 143 98 L 122 91 L 143 84 Z" fill="#FDE047" />
+  </g>
+</svg>

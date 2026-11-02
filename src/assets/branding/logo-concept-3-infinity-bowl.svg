@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 240" width="100%" height="100%">
+  <defs>
+    <!-- Warm Sunrise Gradient: Sunset Orange to Golden Amber -->
+    <linearGradient id="c3-warm-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF5722" />
+      <stop offset="50%" stop-color="#F59E0B" />
+      <stop offset="100%" stop-color="#10B981" />
+    </linearGradient>
+
+    <!-- Bowl Surface Gradient -->
+    <linearGradient id="c3-bowl-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#059669" />
+      <stop offset="100%" stop-color="#047857" />
+    </linearGradient>
+
+    <!-- Warm Glow Filter -->
+    <filter id="c3-shadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#F59E0B" flood-opacity="0.3" />
+    </filter>
+
+    <filter id="c3-soft-shadow" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000000" flood-opacity="0.12" />
+    </filter>
+  </defs>
+
+  <!-- ICON CONTAINER (Circle with Warm Pulse) -->
+  <g transform="translate(30, 20)">
+    <!-- Base Circular Badge -->
+    <circle cx="100" cy="100" r="100" fill="#FFFFFF" filter="url(#c3-shadow)" />
+    <circle cx="100" cy="100" r="97" fill="none" stroke="#F1F5F9" stroke-width="3" />
+
+    <!-- ARTWORK: Connected Infinity Loop forming Dining Bowl & "M" Steam -->
+    <g transform="translate(18, 22)">
+      <!-- Outer Dynamic Swirl (Upper Steam Loop) -->
+      <path d="M 46 80 C 46 48, 70 32, 82 48 C 94 64, 76 80, 82 92 C 86 100, 96 98, 104 88 C 114 74, 118 48, 132 58 C 144 68, 138 92, 120 102"
+            fill="none" stroke="url(#c3-warm-grad)" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" />
+
+      <!-- Twin Rising 'm' Steam Plumes -->
+      <path d="M 66 66 Q 74 46 82 66 Q 90 86 98 66" fill="none" stroke="#F59E0B" stroke-width="6" stroke-linecap="round" />
+
+      <!-- The Dining Bowl (Base) -->
+      <path d="M 32 98 C 36 142, 128 142, 132 98 Z" fill="url(#c3-bowl-grad)" filter="url(#c3-soft-shadow)" />
+      <!-- Bowl Rim Platter Highlight -->
+      <path d="M 26 98 C 26 93, 138 93, 138 98 C 138 103, 26 103, 26 98 Z" fill="#34D399" />
+
+      <!-- Shared Spoon & Chopsticks Silhouette Crossed at Edge -->
+      <circle cx="82" cy="120" r="10" fill="#FFFFFF" fill-opacity="0.25" />
+      <path d="M 72 120 Q 82 128 92 120" fill="none" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round" />
+    </g>
+  </g>
+
+  <!-- TYPOGRAPHY / WORDMARK -->
+  <g transform="translate(265, 52)">
+    <!-- Brand Name with Warm Dynamic Feeling -->
+    <text x="0" y="78" font-family="'Poppins', 'Inter', sans-serif" font-weight="900" font-size="70" letter-spacing="-1">
+      <tspan fill="#1E293B">Mess</tspan><tspan fill="#F97316">Mates</tspan>
+    </text>
+
+    <!-- Friendly Tagline -->
+    <text x="4" y="116" font-family="'Poppins', 'Inter', sans-serif" font-weight="600" font-size="16" fill="#059669" letter-spacing="3">
+      EAT BETTER · CONNECT FASTER
+    </text>
+
+    <!-- Warm Hospitality Pill -->
+    <g transform="translate(4, 134)">
+      <rect x="0" y="0" width="260" height="26" rx="13" fill="#FFF7ED" stroke="#FED7AA" stroke-width="1.5" />
+      <text x="14" y="17" font-family="'Inter', sans-serif" font-weight="700" font-size="11" fill="#C2410C" letter-spacing="0.5">
+        🍲 5,000+ MEALS SERVED DAILY
+      </text>
+    </g>
+  </g>
+</svg>

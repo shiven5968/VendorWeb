@@ -4,6 +4,7 @@ import { AppProvider, useApp } from './context/AppContext';
 import { Navbar } from './components/Navbar';
 import { BottomNav } from './components/BottomNav';
 import { Footer } from './components/Footer';
+import { MessMatesLogo } from './components/MessMatesLogo';
 import { Loader2 } from 'lucide-react';
 
 // Lazy-loaded route pages (Code Splitting / On-Demand Loading)
@@ -168,9 +169,10 @@ const AppContent = () => {
   // Loading Screen — shown during initial Firebase auth resolution or profile fetch for active sessions
   if (isInitialAuthLoading || (user && !profile && isProfileLoading)) {
     return (
-      <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center space-y-3 text-white">
-        <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
-        <p className="text-xs font-bold text-slate-400">MessMates · Loading your session...</p>
+      <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center space-y-4 text-white">
+        <MessMatesLogo size="md" dark />
+        <Loader2 className="w-6 h-6 text-emerald-500 animate-spin" />
+        <p className="text-xs font-semibold text-slate-400">Loading your session...</p>
       </div>
     );
   }

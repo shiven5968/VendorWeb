@@ -1,6 +1,7 @@
 import React from 'react';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
+import { MessMatesLogo } from './MessMatesLogo';
 import { UtensilsCrossed, Bell, LogOut, Home, MessageSquare, Gift, User, Vote, Dumbbell, BarChart3, Camera, ShieldCheck, Clipboard } from 'lucide-react';
 import { clsx } from 'clsx';
 
@@ -46,25 +47,20 @@ export const Navbar = () => {
         <div className="flex justify-between items-center h-14">
           {/* Logo */}
           <div
-            className="flex items-center space-x-2 cursor-pointer"
+            className="flex items-center space-x-2.5 cursor-pointer"
             onClick={() => setCurrentPage('dashboard')}
           >
-            <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center">
-              <UtensilsCrossed className="w-4 h-4" />
-            </div>
-            <div className="flex items-center">
-              <span className="text-base font-bold text-slate-900 dark:text-white tracking-tight">MessMates</span>
-              {role === 'warden' && (
-                <span className="ml-2 text-[10px] font-black uppercase tracking-wider text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 rounded-full border border-blue-200 dark:border-blue-800">
-                  ABES OFFICIALS
-                </span>
-              )}
-              {(role === 'mess_committee' || role === 'committee') && (
-                <span className="ml-2 text-[10px] font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
-                  MESS COMMITTEE
-                </span>
-              )}
-            </div>
+            <MessMatesLogo size="sm" />
+            {role === 'warden' && (
+              <span className="ml-1 text-[10px] font-black uppercase tracking-wider text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 rounded-full border border-blue-200 dark:border-blue-800">
+                ABES OFFICIALS
+              </span>
+            )}
+            {(role === 'mess_committee' || role === 'committee') && (
+              <span className="ml-1 text-[10px] font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
+                MESS COMMITTEE
+              </span>
+            )}
           </div>
 
           {/* Desktop Nav (Empty for ABES Officials to prevent duplicate top/sidebar navigation) */}

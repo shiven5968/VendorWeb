@@ -25,6 +25,8 @@ export default {
       fontFamily: {
         sans: ['Inter', 'Poppins', 'sans-serif'],
         display: ['Poppins', 'Inter', 'sans-serif'],
+        brand: ['"Rubik Dirt"', 'system-ui', 'sans-serif'],
+        messmates: ['"Rubik Dirt"', 'system-ui', 'sans-serif'],
       },
       boxShadow: {
         'glass': '0 8px 32px 0 rgba(16, 185, 129, 0.08)',

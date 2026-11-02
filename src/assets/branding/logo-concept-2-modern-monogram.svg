@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 240" width="100%" height="100%">
+  <defs>
+    <!-- Vibrant Tech Emerald-to-Teal Gradient -->
+    <linearGradient id="c2-stroke-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10B981" />
+      <stop offset="50%" stop-color="#059669" />
+      <stop offset="100%" stop-color="#0284C7" />
+    </linearGradient>
+
+    <!-- Leaf Accent Gradient -->
+    <linearGradient id="c2-leaf-grad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#34D399" />
+      <stop offset="100%" stop-color="#10B981" />
+    </linearGradient>
+
+    <!-- Dark High-Tech Background Plate -->
+    <linearGradient id="c2-badge-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0F172A" />
+      <stop offset="100%" stop-color="#1E293B" />
+    </linearGradient>
+
+    <filter id="c2-shadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#0F172A" flood-opacity="0.25" />
+    </filter>
+
+    <filter id="c2-glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="#10B981" flood-opacity="0.35" />
+    </filter>
+  </defs>
+
+  <!-- ICON CONTAINER (Modern Dark Pill/Squircle) -->
+  <g transform="translate(30, 20)">
+    <!-- Base Squircle -->
+    <rect x="0" y="0" width="200" height="200" rx="52" fill="url(#c2-badge-grad)" filter="url(#c2-shadow)" />
+    
+    <!-- Neon Accent Ring -->
+    <rect x="2" y="2" width="196" height="196" rx="50" fill="none" stroke="#334155" stroke-width="2" />
+    <path d="M 52 2 L 148 2" stroke="url(#c2-stroke-grad)" stroke-width="4" stroke-linecap="round" />
+
+    <!-- MONOGRAM "M" WITH INTEGRATED FORK & LEAF -->
+    <g transform="translate(34, 38)" filter="url(#c2-glow)">
+      <!-- Left Stem with Fork Silhouette -->
+      <path d="M 22 124 L 22 48" stroke="#FFFFFF" stroke-width="14" stroke-linecap="round" />
+      <!-- Fork Prongs at the top of left stem -->
+      <path d="M 12 28 L 12 44 C 12 52, 32 52, 32 44 L 32 28" fill="none" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round" />
+      <line x1="22" y1="26" x2="22" y2="46" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round" />
+
+      <!-- Center V Apex with Nutrition Leaf Shape -->
+      <path d="M 22 56 L 66 106 L 110 56" fill="none" stroke="url(#c2-stroke-grad)" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" />
+      
+      <!-- Right Stem -->
+      <path d="M 110 52 L 110 124" stroke="#FFFFFF" stroke-width="14" stroke-linecap="round" />
+
+      <!-- Organic Nutrition Leaf Accent floating inside the V -->
+      <path d="M 66 50 C 50 36, 50 18, 66 12 C 82 18, 82 36, 66 50 Z" fill="url(#c2-leaf-grad)" />
+      <!-- Leaf Vein -->
+      <line x1="66" y1="18" x2="66" y2="44" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" stroke-opacity="0.8" />
+
+      <!-- Active Pulse Dot -->
+      <circle cx="110" cy="28" r="6" fill="#10B981" />
+    </g>
+  </g>
+
+  <!-- TYPOGRAPHY / WORDMARK -->
+  <g transform="translate(265, 52)">
+    <!-- Primary Logotype with Custom Kerned Modern Style -->
+    <text x="0" y="78" font-family="'Inter', 'Outfit', 'Montserrat', sans-serif" font-weight="900" font-size="68" letter-spacing="-1">
+      <tspan fill="#0F172A">MESS</tspan><tspan fill="#059669">MATES</tspan>
+    </text>
+
+    <!-- Modern Tech Slogan -->
+    <text x="4" y="116" font-family="'Inter', -apple-system, sans-serif" font-weight="700" font-size="15" fill="#475569" letter-spacing="3.5">
+      KNOW YOUR MEAL BEFORE YOU EAT IT
+    </text>
+
+    <!-- Feature Tags -->
+    <g transform="translate(4, 134)">
+      <g transform="translate(0, 0)">
+        <rect x="0" y="0" width="105" height="26" rx="8" fill="#F1F5F9" />
+        <text x="12" y="17" font-family="'Inter', sans-serif" font-weight="700" font-size="11" fill="#334155">⚡ REAL-TIME</text>
+      </g>
+      <g transform="translate(115, 0)">
+        <rect x="0" y="0" width="105" height="26" rx="8" fill="#F1F5F9" />
+        <text x="14" y="17" font-family="'Inter', sans-serif" font-weight="700" font-size="11" fill="#334155">🥗 NUTRITION</text>
+      </g>
+      <g transform="translate(230, 0)">
+        <rect x="0" y="0" width="105" height="26" rx="8" fill="#F1F5F9" />
+        <text x="14" y="17" font-family="'Inter', sans-serif" font-weight="700" font-size="11" fill="#334155">★ RATINGS</text>
+      </g>
+    </g>
+  </g>
+</svg>
