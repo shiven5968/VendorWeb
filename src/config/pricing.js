@@ -8,6 +8,17 @@
  * 4. 1 Year: ₹449 / year (365 days)
  */
 
+export const MUSCLE_PASS_TRIAL_CONFIG = {
+  enabled: true,
+  durationDays: 7,
+  durationMs: 7 * 24 * 60 * 60 * 1000,
+  maxTrialsPerUser: 1,
+  badgeText: '7-DAY FREE TRIAL',
+  ctaText: 'START 7-DAY FREE DEMO',
+  timezone: 'Asia/Kolkata',
+  description: 'Full unconstrained access to Muscle Pass smart meal planner & macro tracker for 7 days.'
+};
+
 export const MUSCLE_PASS_PLANS = {
   MUSCLE_MONTHLY: {
     id: 'MUSCLE_MONTHLY',

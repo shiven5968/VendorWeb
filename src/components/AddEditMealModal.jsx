@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext';
-import { X, Utensils, Save, UploadCloud, CheckCircle2, AlertCircle, Loader2, Image as ImageIcon, RotateCcw } from 'lucide-react';
+import { X, Utensils, Save, UploadCloud, CheckCircle2, AlertCircle, Loader2, Image as ImageIcon, RotateCcw, Sparkles } from 'lucide-react';
 import { uploadMealImage, validateMealImage } from '../services/storage';
+import { lookupDishNutrition } from '../data/dishNutrition';
 
 export const AddEditMealModal = () => {
   const { isAddMealModalOpen, setIsAddMealModalOpen, editingMeal, setEditingMeal, saveMeal, selectedDay } = useApp();
@@ -17,11 +18,15 @@ export const AddEditMealModal = () => {
     protein: 20,
     carbs: 50,
     fats: 12,
+    servingSize: '1 bowl (150g)',
+    dietaryCategory: 'Vegetarian',
+    allergensStr: '',
     image: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&q=80&w=800',
     ingredientsStr: 'Paneer, Wheat Flour, Spices',
     items: 'Veg Dish + Roti + Rice + Curd',
     gymRecommended: true,
     description: 'Freshly prepared nutritious hostel meal.',
+    isAutoEstimated: false,
   });
 
   const [selectedFile, setSelectedFile] = useState(null);
@@ -32,6 +37,7 @@ export const AddEditMealModal = () => {
   const [imageUploadError, setImageUploadError] = useState('');
   const [saveError, setSaveError] = useState('');
   const [statusText, setStatusText] = useState('');
+  const [autoFilledInfo, setAutoFilledInfo] = useState('');
 
   // Memory cleanup for object URLs
   const cleanupPreviewUrl = () => {
@@ -55,11 +61,15 @@ export const AddEditMealModal = () => {
         protein: editingMeal.protein || 20,
         carbs: editingMeal.carbs || 50,
         fats: editingMeal.fats || 12,
+        servingSize: editingMeal.servingSize || '1 bowl (150g)',
+        dietaryCategory: editingMeal.dietaryCategory || editingMeal.category_diet || 'Vegetarian',
+        allergensStr: Array.isArray(editingMeal.allergens) ? editingMeal.allergens.join(', ') : (editingMeal.allergens || ''),
         image: editingMeal.image || 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&q=80&w=800',
         ingredientsStr: editingMeal.ingredients ? editingMeal.ingredients.join(', ') : '',
         items: editingMeal.items || editingMeal.description || '',
         gymRecommended: editingMeal.gymRecommended || false,
         description: editingMeal.description || '',
+        isAutoEstimated: editingMeal.isAutoEstimated || false,
       });
       setImagePreview(editingMeal.image || 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&q=80&w=800');
     } else {
@@ -71,11 +81,15 @@ export const AddEditMealModal = () => {
         protein: 20,
         carbs: 50,
         fats: 12,
+        servingSize: '1 bowl (150g)',
+        dietaryCategory: 'Vegetarian',
+        allergensStr: '',
         image: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&q=80&w=800',
         ingredientsStr: 'Paneer, Wheat Flour, Spices',
         items: 'Veg Dish + Roti + Rice + Curd',
         gymRecommended: true,
         description: 'Nutritious chef prepared dish.',
+        isAutoEstimated: false,
       });
       setImagePreview('https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&q=80&w=800');
     }
@@ -87,11 +101,39 @@ export const AddEditMealModal = () => {
     setImageUploadError('');
     setSaveError('');
     setStatusText('');
+    setAutoFilledInfo('');
 
     return () => cleanupPreviewUrl();
   }, [editingMeal, isAddMealModalOpen, selectedDay]);
 
   if (!isAddMealModalOpen) return null;
+
+  // Auto-fill nutrition lookup from ICMR-NIN IFCT 2017 database
+  const handleAutoEstimateNutrition = () => {
+    const query = formData.name || formData.items;
+    if (!query) {
+      setSaveError('Please enter a Dish Name or Combo Items to estimate nutrition.');
+      return;
+    }
+    const match = lookupDishNutrition(query);
+    if (match) {
+      setFormData(prev => ({
+        ...prev,
+        calories: match.calories !== undefined ? match.calories : prev.calories,
+        protein: match.proteinG !== undefined ? match.proteinG : prev.protein,
+        carbs: match.carbsG !== undefined ? match.carbsG : prev.carbs,
+        fats: match.fatG !== undefined ? match.fatG : prev.fats,
+        servingSize: match.servingSize || prev.servingSize,
+        dietaryCategory: match.category || prev.dietaryCategory,
+        allergensStr: match.allergens?.length ? match.allergens.join(', ') : prev.allergensStr,
+        isAutoEstimated: true,
+      }));
+      setSaveError('');
+      setAutoFilledInfo(`Estimated from ICMR-NIN IFCT 2017 (${match.itemName || query}) — ${match.servingSize || ''}`);
+    } else {
+      setSaveError(`No exact baseline found in ICMR-NIN for "${query}". You can enter custom values directly.`);
+    }
+  };
 
   // Handle local file selection with immediate validation & local preview
   const handleFileChange = (e) => {
@@ -103,14 +145,10 @@ export const AddEditMealModal = () => {
     setUploadSuccess(false);
 
     try {
-      // Validate file type (JPG, PNG, WEBP) & max size (5 MB)
       validateMealImage(file);
       setSelectedFile(file);
-
-      // Clean up previous blob URL
       cleanupPreviewUrl();
 
-      // Create instant local blob preview
       const localBlobUrl = URL.createObjectURL(file);
       previewBlobUrlRef.current = localBlobUrl;
       setImagePreview(localBlobUrl);
@@ -129,8 +167,6 @@ export const AddEditMealModal = () => {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  // Form Submission with Strict State Transitions & Timeout Protection:
-  // idle -> uploading (if file) -> saving -> success | error
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (isUploadingImage || isSaving) return;
@@ -143,7 +179,6 @@ export const AddEditMealModal = () => {
     const mealId = editingMeal?.id || `meal_${Date.now()}`;
 
     try {
-      // STEP 1: If a real local image file is selected, upload to Firebase Storage
       if (selectedFile) {
         setIsUploadingImage(true);
         setStatusText('UPLOADING...');
@@ -156,7 +191,6 @@ export const AddEditMealModal = () => {
         setFormData(prev => ({ ...prev, image: finalImageUrl }));
       }
 
-      // STEP 2: Save updated meal with download URL to Firestore
       setIsUploadingImage(false);
       setIsSaving(true);
       setStatusText('SAVING...');
@@ -169,19 +203,23 @@ export const AddEditMealModal = () => {
         protein: Number(formData.protein) || 0,
         carbs: Number(formData.carbs) || 0,
         fats: Number(formData.fats) || 0,
+        servingSize: formData.servingSize || '1 bowl (150g)',
+        dietaryCategory: formData.dietaryCategory || 'Vegetarian',
+        allergens: typeof formData.allergensStr === 'string'
+          ? formData.allergensStr.split(',').map(s => s.trim()).filter(Boolean)
+          : (formData.allergens || []),
         ingredients: typeof formData.ingredientsStr === 'string'
           ? formData.ingredientsStr.split(',').map(s => s.trim()).filter(Boolean)
           : (formData.ingredients || []),
+        nutritionSource: formData.isAutoEstimated ? 'ICMR-NIN IFCT 2017 Auto-Estimated' : 'Mess Committee Verified',
       };
 
-      // Atomic write to Firestore
       await saveMeal(finalMeal, formData.targetDay);
 
       setUploadSuccess(true);
       setStatusText('');
       cleanupPreviewUrl();
 
-      // Brief confirmation before closing
       setTimeout(() => {
         setIsAddMealModalOpen(false);
         setEditingMeal(null);
@@ -232,6 +270,14 @@ export const AddEditMealModal = () => {
           <div className="mx-6 mt-4 p-3 rounded-2xl bg-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-bold flex items-center space-x-2 border border-rose-500/30">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{saveError}</span>
+          </div>
+        )}
+
+        {/* Auto-filled Notification Banner */}
+        {autoFilledInfo && (
+          <div className="mx-6 mt-4 p-3 rounded-2xl bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 text-xs font-bold flex items-center space-x-2 border border-emerald-500/20">
+            <Sparkles className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>{autoFilledInfo}</span>
           </div>
         )}
 
@@ -295,6 +341,48 @@ export const AddEditMealModal = () => {
             />
           </div>
 
+          {/* Nutrition Meta (Serving Size, Dietary Category, Auto-Fill button) */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Serving Size</label>
+              <input
+                type="text"
+                disabled={isBusy}
+                value={formData.servingSize}
+                onChange={e => setFormData({ ...formData, servingSize: e.target.value })}
+                placeholder="e.g. 1 bowl (150g)"
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs outline-none font-semibold disabled:opacity-50"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Dietary Category</label>
+              <select
+                disabled={isBusy}
+                value={formData.dietaryCategory}
+                onChange={e => setFormData({ ...formData, dietaryCategory: e.target.value })}
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold outline-none disabled:opacity-50"
+              >
+                <option value="Vegetarian">Vegetarian</option>
+                <option value="Eggetarian">Eggetarian</option>
+                <option value="Non-Vegetarian">Non-Vegetarian</option>
+              </select>
+            </div>
+
+            <div className="flex flex-col justify-end">
+              <button
+                type="button"
+                disabled={isBusy}
+                onClick={handleAutoEstimateNutrition}
+                className="w-full py-2 px-3 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 text-xs font-bold flex items-center justify-center space-x-1.5 transition-colors cursor-pointer disabled:opacity-50"
+                title="Lookup ICMR-NIN IFCT 2017 institutional nutritional reference"
+              >
+                <Sparkles className="w-3.5 h-3.5 shrink-0" />
+                <span>Auto-Fill ICMR-NIN</span>
+              </button>
+            </div>
+          </div>
+
           {/* Macros Grid */}
           <div className="grid grid-cols-4 gap-2">
             <div>
@@ -337,6 +425,18 @@ export const AddEditMealModal = () => {
                 className="w-full px-2.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold disabled:opacity-50"
               />
             </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Known Allergens (comma separated)</label>
+            <input
+              type="text"
+              disabled={isBusy}
+              value={formData.allergensStr}
+              onChange={e => setFormData({ ...formData, allergensStr: e.target.value })}
+              placeholder="e.g. Dairy, Gluten, Peanuts, Mustard"
+              className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs outline-none font-semibold disabled:opacity-50"
+            />
           </div>
 
           {/* REAL MEAL IMAGE UPLOAD & PREVIEW SECTION */}
