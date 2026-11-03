@@ -16,7 +16,7 @@ export const MESS_BLOCK_MAP = {
       Breakfast: '07:20 AM - 08:30 AM',
       Lunch: '12:20 PM - 02:00 PM',
       Snacks: '05:00 PM - 06:00 PM',
-      Dinner: '07:40 PM - 09:00 PM',
+      Dinner: '07:30 PM - 09:00 PM',
     }
   },
   'VKB Block': {
@@ -26,7 +26,7 @@ export const MESS_BLOCK_MAP = {
       Breakfast: '07:20 AM - 08:30 AM',
       Lunch: '12:20 PM - 02:00 PM',
       Snacks: '05:00 PM - 06:00 PM',
-      Dinner: '07:40 PM - 09:00 PM',
+      Dinner: '07:30 PM - 09:00 PM',
     }
   },
   'RKB Block': {
@@ -36,7 +36,7 @@ export const MESS_BLOCK_MAP = {
       Breakfast: '07:20 AM - 08:30 AM',
       Lunch: '12:20 PM - 02:00 PM',
       Snacks: '05:00 PM - 06:00 PM',
-      Dinner: '07:40 PM - 09:00 PM',
+      Dinner: '07:30 PM - 09:00 PM',
     }
   },
   'ABB Block': {
@@ -46,7 +46,7 @@ export const MESS_BLOCK_MAP = {
       Breakfast: '07:20 AM - 08:30 AM',
       Lunch: '12:20 PM - 02:00 PM',
       Snacks: '05:00 PM - 06:00 PM',
-      Dinner: '07:40 PM - 09:00 PM',
+      Dinner: '07:30 PM - 09:00 PM',
     }
   },
   'Block A (Girls)': {
@@ -56,7 +56,7 @@ export const MESS_BLOCK_MAP = {
       Breakfast: '07:20 AM - 08:30 AM',
       Lunch: '12:20 PM - 02:00 PM',
       Snacks: '05:00 PM - 06:00 PM',
-      Dinner: '07:40 PM - 09:00 PM',
+      Dinner: '07:30 PM - 09:00 PM',
     }
   },
   'Block B (Girls)': {
@@ -66,7 +66,7 @@ export const MESS_BLOCK_MAP = {
       Breakfast: '07:20 AM - 08:30 AM',
       Lunch: '12:20 PM - 02:00 PM',
       Snacks: '05:00 PM - 06:00 PM',
-      Dinner: '07:40 PM - 09:00 PM',
+      Dinner: '07:30 PM - 09:00 PM',
     }
   },
   'Block C (Girls)': {
@@ -76,7 +76,7 @@ export const MESS_BLOCK_MAP = {
       Breakfast: '07:20 AM - 08:30 AM',
       Lunch: '12:20 PM - 02:00 PM',
       Snacks: '05:00 PM - 06:00 PM',
-      Dinner: '07:40 PM - 09:00 PM',
+      Dinner: '07:30 PM - 09:00 PM',
     }
   }
 };
@@ -198,7 +198,7 @@ export const INITIAL_MEALS_DB = [
     name: 'Arhar Daal & Aloo Shimla Mirch',
     day: 'Monday',
     category: 'Dinner',
-    time: '07:40 PM - 09:00 PM',
+    time: '07:30 PM - 09:00 PM',
     items: 'Arhar Daal, Aloo Shimla Mirch, Rice, Roti, Suji Halwa, Matar Mushroom, Moong Dal Halwa (Monthly Special)',
     servingUsed: '150g Arhar Daal, 150g Aloo Shimla Mirch, 200g Cooked Rice, 200g Roti (4 pcs), 100g Suji Halwa, 150g Matar Mushroom (Moong Dal Halwa 100g Once Monthly)',
     servingSize: '150g Arhar Daal, 150g Aloo Shimla Mirch, 200g Cooked Rice, 200g Roti (4 pcs), 100g Suji Halwa, 150g Matar Mushroom',
@@ -284,7 +284,7 @@ export const INITIAL_MEALS_DB = [
     name: 'Mix Dal & Aloo Matar Patta Gobhi',
     day: 'Tuesday',
     category: 'Dinner',
-    time: '07:40 PM - 09:00 PM',
+    time: '07:30 PM - 09:00 PM',
     items: 'Mix Dal, Aloo Matar Patta Gobhi, Rice, Roti, Ice Cream (Butterscotch), Mix Salad',
     servingUsed: '150g Mix Dal, 150g Aloo Matar Patta Gobhi, 200g Cooked Rice, 200g Roti (4 pcs), 60g Ice Cream (Butterscotch), 50g Mix Salad',
     servingSize: '150g Mix Dal, 150g Aloo Matar Patta Gobhi, 200g Cooked Rice, 200g Roti (4 pcs), 60g Ice Cream (Butterscotch), 50g Mix Salad',
@@ -370,7 +370,7 @@ export const INITIAL_MEALS_DB = [
     name: 'Butter Paneer Masala / Kadhai Paneer',
     day: 'Wednesday',
     category: 'Dinner',
-    time: '07:40 PM - 09:00 PM',
+    time: '07:30 PM - 09:00 PM',
     items: 'Butter Paneer Masala / Kadhai Paneer, Aloo Pyaaz, Puri / Roti, Veg Pulao, Onion Salad',
     servingUsed: '150g Butter Paneer Masala / Kadhai Paneer, 150g Aloo Pyaaz, Puri (4 small pcs) / Roti (4 pcs), 200g Veg Pulao, 50g Onion Salad',
     servingSize: '150g Butter Paneer Masala / Kadhai Paneer, 150g Aloo Pyaaz, Puri (4 small pcs) / Roti (4 pcs), 200g Veg Pulao, 50g Onion Salad',
@@ -456,7 +456,7 @@ export const INITIAL_MEALS_DB = [
     name: 'Daal Makhani & Aloo Gobhi',
     day: 'Thursday',
     category: 'Dinner',
-    time: '07:40 PM - 09:00 PM',
+    time: '07:30 PM - 09:00 PM',
     items: 'Daal Makhani, Aloo Gobhi, Roti, Rice, Gulab Jamun, Mix Salad, Achar',
     servingUsed: '150g Daal Makhani, 150g Aloo Gobhi, 200g Roti (4 pcs), 200g Cooked Rice, Gulab Jamun (1 pc), 50g Mix Salad, Achar',
     servingSize: '150g Daal Makhani, 150g Aloo Gobhi, 200g Roti (4 pcs), 200g Cooked Rice, Gulab Jamun (1 pc), 50g Mix Salad, Achar',
@@ -542,7 +542,7 @@ export const INITIAL_MEALS_DB = [
     name: 'Chhole & Aloo Beans',
     day: 'Friday',
     category: 'Dinner',
-    time: '07:40 PM - 09:00 PM',
+    time: '07:30 PM - 09:00 PM',
     items: 'Chhole, Aloo Beans, Rice, Roti, Besan Laddoo, Mix Salad, Achar',
     servingUsed: '150g Chhole, 150g Aloo Beans, 200g Cooked Rice, 200g Roti (4 pcs), Besan Laddoo (1 pc), 50g Mix Salad, Achar',
     servingSize: '150g Chhole, 150g Aloo Beans, 200g Cooked Rice, 200g Roti (4 pcs), Besan Laddoo (1 pc), 50g Mix Salad, Achar',
@@ -628,7 +628,7 @@ export const INITIAL_MEALS_DB = [
     name: 'Arhar Dal & Lauki',
     day: 'Saturday',
     category: 'Dinner',
-    time: '07:40 PM - 09:00 PM',
+    time: '07:30 PM - 09:00 PM',
     items: 'Arhar Dal, Lauki, Rice, Roti, Mix Salad',
     servingUsed: '150g Arhar Dal, 150g Lauki, 200g Cooked Rice, 200g Roti (4 pcs), 50g Mix Salad',
     servingSize: '150g Arhar Dal, 150g Lauki, 200g Cooked Rice, 200g Roti (4 pcs), 50g Mix Salad',
@@ -714,7 +714,7 @@ export const INITIAL_MEALS_DB = [
     name: 'Kali Masoor Dal & Aloo Parwal',
     day: 'Sunday',
     category: 'Dinner',
-    time: '07:40 PM - 09:00 PM',
+    time: '07:30 PM - 09:00 PM',
     items: 'Kali Masoor Dal, Aloo Parwal, Rice, Roti, Kheer / Sewai',
     servingUsed: '150g Kali Masoor Dal, 150g Aloo Parwal, 200g Cooked Rice, 200g Roti (4 pcs), 150g Kheer / Sewai',
     servingSize: '150g Kali Masoor Dal, 150g Aloo Parwal, 200g Cooked Rice, 200g Roti (4 pcs), 150g Kheer / Sewai',

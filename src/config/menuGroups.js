@@ -143,14 +143,31 @@ export const getMessForStudent = (profile) => {
 
   // ELSE: Any other valid/known non-empty hostel block is established as BOYS.
   // Then use admission number prefix to route to Junior or Senior:
-  const admissionNumber = (profile.admissionNumber || '').trim().toUpperCase();
-  if (admissionNumber.length >= 5) {
-    const prefix5 = admissionNumber.substring(0, 5); // e.g. "2025B", "2026B", "2024B", "2023B"
-    if (prefix5 === '2025B' || prefix5 === '2026B') {
-      return MESS_CONFIG.boys_junior;
+  let admissionNumber = (profile.admissionNumber || '').trim().toUpperCase();
+
+  // If admissionNumber is missing, attempt extraction from student institutional email
+  if (!admissionNumber && typeof profile.email === 'string') {
+    const emailMatch = profile.email.match(/(20[2-3][0-9]B|[2-3][0-9]B)\w*/i);
+    if (emailMatch) {
+      admissionNumber = emailMatch[0].toUpperCase();
     }
-    if (prefix5 === '2023B' || prefix5 === '2024B') {
-      return MESS_CONFIG.boys_senior;
+  }
+
+  if (admissionNumber) {
+    // Normalize 2-digit batch prefix to 4 digits (e.g. "25B..." -> "2025B...")
+    let normalized = admissionNumber;
+    if (/^[2-3][0-9]B/i.test(normalized)) {
+      normalized = '20' + normalized;
+    }
+
+    if (normalized.length >= 5) {
+      const prefix5 = normalized.substring(0, 5); // e.g. "2025B", "2026B", "2024B", "2023B"
+      if (prefix5 === '2025B' || prefix5 === '2026B') {
+        return MESS_CONFIG.boys_junior;
+      }
+      if (prefix5 === '2023B' || prefix5 === '2024B') {
+        return MESS_CONFIG.boys_senior;
+      }
     }
   }
 

@@ -187,7 +187,7 @@ for (const meal of meals) {
   } else if (meal.category === 'Snacks') {
     assert.strictEqual(meal.time, '05:00 PM - 06:00 PM', `Snacks meal ${meal.id} must show 05:00 PM - 06:00 PM`);
   } else if (meal.category === 'Dinner') {
-    assert.strictEqual(meal.time, '07:40 PM - 09:00 PM', `Dinner meal ${meal.id} must show 07:40 PM - 09:00 PM`);
+    assert.strictEqual(meal.time, OFFICIAL_MEAL_TIMINGS.Dinner.label, `Dinner meal ${meal.id} must show ${OFFICIAL_MEAL_TIMINGS.Dinner.label}`);
   }
 }
 assert.strictEqual(OFFICIAL_MEAL_TIMINGS.Lunch.label, '12:20 PM – 2:00 PM');

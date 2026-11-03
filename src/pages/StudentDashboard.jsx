@@ -32,7 +32,13 @@ import {
 
 const getActiveMenu = (user) => {
   const mess = getMessForStudent(user);
-  return getMenuByMessId(mess.menuId || mess.id);
+  if (mess) {
+    return getMenuByMessId(mess.menuId || mess.id);
+  }
+  if (user && isGirlsHostelBlock(user.hostelBlock || user.block)) {
+    return getMenuByMessId('girls');
+  }
+  return getMenuByMessId('boys_junior');
 };
 
 const getMealTiming = (mealType, selectedDay) => {

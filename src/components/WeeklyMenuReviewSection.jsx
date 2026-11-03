@@ -2,20 +2,21 @@ import React, { useState, useEffect } from 'react';
 import { Star, MessageSquare, Calendar, Sun, UtensilsCrossed, Coffee, Moon, X, Check, Send, Sparkles } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
-import { getMessForStudent } from '../config/menuGroups';
+import { getMessForStudent, isGirlsHostelBlock } from '../config/menuGroups';
 import { getMenuByMessId } from '../data/hostelMenus';
 
 const MEAL_SLOTS = [
   { name: 'Breakfast', time: '07:20 AM - 08:30 AM', icon: Sun, color: 'text-amber-500 bg-amber-500/10' },
   { name: 'Lunch', time: '12:20 PM - 02:00 PM', icon: UtensilsCrossed, color: 'text-emerald-500 bg-emerald-500/10' },
   { name: 'Snacks', time: '05:00 PM - 06:00 PM', icon: Coffee, color: 'text-orange-500 bg-orange-500/10' },
-  { name: 'Dinner', time: '07:40 PM - 09:00 PM', icon: Moon, color: 'text-indigo-500 bg-indigo-500/10' }
+  { name: 'Dinner', time: '07:30 PM - 09:00 PM', icon: Moon, color: 'text-indigo-500 bg-indigo-500/10' }
 ];
 
 export const WeeklyMenuReviewSection = () => {
   const { currentUser } = useApp();
   const studentMess = getMessForStudent(currentUser);
-  const weeklyMenu = getMenuByMessId(studentMess.menuId || studentMess.id);
+  const fallbackMenuId = isGirlsHostelBlock(currentUser?.hostelBlock || currentUser?.block) ? 'girls' : 'boys_junior';
+  const weeklyMenu = getMenuByMessId(studentMess ? (studentMess.menuId || studentMess.id) : fallbackMenuId);
 
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
   
