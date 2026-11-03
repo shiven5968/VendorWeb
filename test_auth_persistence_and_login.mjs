@@ -45,7 +45,7 @@ console.assert(parth.year === '2nd Year', 'Parth year must be 2nd Year');
 console.assert(parth.branch === 'AIML', 'Parth branch must be AIML');
 console.assert(parth.scale === 1.0 && shivendra.scale === 1.0, 'Founder photos use aligned 1.0 natural portrait scale');
 
-console.assert(shivendra && shivendra.role === 'FOUNDER', 'Shivendra must be FOUNDER');
+console.assert(shivendra && shivendra.role === 'CO-FOUNDER', 'Shivendra must be CO-FOUNDER');
 console.assert(shivendra.year === '2nd Year', 'Shivendra year must be 2nd Year');
 console.assert(shivendra.branch === 'CSE', 'Shivendra branch must be CSE');
 console.assert(shivendra.linkedin === 'https://www.linkedin.com/in/shivendra-pratap-singh-7358b837', 'Shivendra LinkedIn exact');

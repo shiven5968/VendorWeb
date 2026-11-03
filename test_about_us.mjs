@@ -34,7 +34,7 @@ console.log('  Branch:  ', shivendra.branch);
 console.log('  LinkedIn:', shivendra.linkedin);
 
 console.assert(shivendra.name === 'Shivendra Pratap Singh', 'Name must be Shivendra Pratap Singh');
-console.assert(shivendra.role === 'FOUNDER', 'Role must be FOUNDER');
+console.assert(shivendra.role === 'CO-FOUNDER', 'Role must be CO-FOUNDER');
 console.assert(shivendra.year === '2nd Year', 'Year must be 2nd Year');
 console.assert(shivendra.branch === 'CSE', 'Branch must be CSE');
 console.assert(shivendra.linkedin === 'https://www.linkedin.com/in/shivendra-pratap-singh-7358b837', 'LinkedIn URL must match exactly');
