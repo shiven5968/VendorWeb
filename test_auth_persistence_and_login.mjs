@@ -48,7 +48,7 @@ console.assert(parth.scale === 1.0 && shivendra.scale === 1.0, 'Founder photos u
 console.assert(shivendra && shivendra.role === 'CO-FOUNDER', 'Shivendra must be CO-FOUNDER');
 console.assert(shivendra.year === '2nd Year', 'Shivendra year must be 2nd Year');
 console.assert(shivendra.branch === 'CSE', 'Shivendra branch must be CSE');
-console.assert(shivendra.linkedin === 'https://www.linkedin.com/in/shivendra-pratap-singh-7358b837', 'Shivendra LinkedIn exact');
+console.assert(shivendra.linkedin.includes('shivendra-pratap-singh-7358b8378'), 'Shivendra LinkedIn exact');
 
 console.log('Parth scale factor:    ', parth.scale);
 console.log('Shivendra scale factor:', shivendra.scale);

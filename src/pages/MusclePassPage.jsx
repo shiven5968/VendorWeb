@@ -8,28 +8,26 @@ import {
   CreditCard, 
   Flame, 
   Zap, 
-  Lock,
-  Clock,
-  AlertCircle,
-  CheckCircle2,
-  Calendar,
-  Check,
-  TrendingUp,
-  Sliders,
-  UtensilsCrossed,
-  Plus,
-  RefreshCw,
-  Award,
-  ChevronRight,
+  Clock, 
+  AlertCircle, 
+  CheckCircle2, 
+  Check, 
+  TrendingUp, 
+  Sliders, 
+  UtensilsCrossed, 
+  Plus, 
+  ChevronRight, 
   Info,
-  RotateCcw
+  Calendar,
+  Layers,
+  Award
 } from 'lucide-react';
 
 import { initiateMusclePassPayment } from '../services/payment';
-import { MUSCLE_PASS_PLAN_LIST, getMusclePassPlan, MUSCLE_PASS_TRIAL_CONFIG } from '../config/pricing';
+import { MUSCLE_PASS_PLAN_LIST, getMusclePassPlan } from '../config/pricing';
 import { getCollegeDateString, formatCollegeDateDisplay } from '../utils/dateTime';
 import { getTodayHostelMeals } from '../data/hostelMenus';
-import { generateSmartMealPlan, calculateDailyNutritionSummary } from '../services/nutritionEngine';
+import { generateSmartMealPlan } from '../services/nutritionEngine';
 import { 
   startTrial, 
   checkStatus, 
@@ -49,9 +47,9 @@ import { WeeklyInsightsCard } from '../components/musclePass/WeeklyInsightsCard'
 export const MusclePassPage = () => {
   const { 
     currentUser, 
-    activeMess,
-    todayDay,
-    todayMeals: contextTodayMeals,
+    activeMess, 
+    todayDay, 
+    todayMeals: contextTodayMeals, 
     musclePassSubscription,
     updateUserProfile,
     addNotification
@@ -62,13 +60,12 @@ export const MusclePassPage = () => {
 
   // Active status & entitlement
   const [entitlement, setEntitlement] = useState({
-    hasActivePass: true, // Default to true so features are never hidden
+    hasActivePass: true,
     isTrial: false,
     status: 'ACTIVE_TRIAL',
     msLeft: 7 * 24 * 60 * 60 * 1000,
     trialClaimed: true
   });
-  const [isLoadingStatus, setIsLoadingStatus] = useState(true);
   const [isStartingTrial, setIsStartingTrial] = useState(false);
   const [trialSuccessMsg, setTrialSuccessMsg] = useState('');
 
@@ -82,6 +79,13 @@ export const MusclePassPage = () => {
   const [activeTab, setActiveTab] = useState('planner'); // 'planner' | 'insights' | 'plans'
   const [weeklySummaries, setWeeklySummaries] = useState([]);
 
+  // Outside Food Quick Logger
+  const [showOutsideFoodModal, setShowOutsideFoodModal] = useState(false);
+  const [outsideFoodName, setOutsideFoodName] = useState('');
+  const [outsideProteinG, setOutsideProteinG] = useState('25');
+  const [outsideCalories, setOutsideCalories] = useState('130');
+  const [outsideMealSlot, setOutsideMealSlot] = useState('Snacks');
+
   // Payment state (Razorpay)
   const [selectedPlanId, setSelectedPlanId] = useState('MUSCLE_3_MONTHS');
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
@@ -92,13 +96,9 @@ export const MusclePassPage = () => {
 
   // Load entitlement, profile, and daily logs
   const loadEntitlementAndData = async () => {
-    if (!userId) {
-      setIsLoadingStatus(false);
-      return;
-    }
+    if (!userId) return;
 
     try {
-      setIsLoadingStatus(true);
       const [statusRes, profileRes, logsRes, weeklyRes] = await Promise.all([
         checkStatus(userId),
         getNutritionProfile(userId),
@@ -106,14 +106,13 @@ export const MusclePassPage = () => {
         getWeeklySummaries(userId)
       ]);
 
-      // If user has paid subscription from context, give it precedence
       const isPaidActive = musclePassSubscription?.status === 'ACTIVE' && new Date(musclePassSubscription?.expiryDate || 0) > new Date();
       if (isPaidActive) {
         setEntitlement({
           hasActivePass: true,
           isTrial: false,
           status: 'ACTIVE_PAID',
-          planName: musclePassSubscription.planName || 'Muscle Pass Paid',
+          planName: musclePassSubscription.planName || 'Muscle Pass Pro',
           expiresAt: musclePassSubscription.expiryDate,
           msLeft: Math.max(0, new Date(musclePassSubscription.expiryDate).getTime() - Date.now()),
           trialClaimed: true
@@ -121,7 +120,6 @@ export const MusclePassPage = () => {
       } else if (statusRes && statusRes.hasActivePass) {
         setEntitlement(statusRes);
       } else {
-        // Default to active demo mode for authenticated student
         setEntitlement({
           hasActivePass: true,
           isTrial: true,
@@ -131,7 +129,6 @@ export const MusclePassPage = () => {
         });
       }
 
-      // If profile exists in Firestore, use it; otherwise synthesize from currentUser or sensible defaults
       if (profileRes && profileRes.weightKg) {
         setProfile(profileRes);
       } else if (currentUser?.weight || currentUser?.proteinTarget) {
@@ -147,7 +144,6 @@ export const MusclePassPage = () => {
         };
         setProfile(synth);
       } else {
-        // Starter baseline
         setProfile({
           userId,
           weightKg: 60,
@@ -165,8 +161,6 @@ export const MusclePassPage = () => {
       setWeeklySummaries(weeklyRes || []);
     } catch (err) {
       console.error('[MusclePass load error]:', err);
-    } finally {
-      setIsLoadingStatus(false);
     }
   };
 
@@ -178,7 +172,6 @@ export const MusclePassPage = () => {
   const studentMessId = activeMess?.id || activeMess?.menuId || 'boys_junior';
   const resolvedMeals = getTodayHostelMeals(todayDay, null, studentMessId) || contextTodayMeals || [];
 
-  // Active target
   const activeProteinTarget = profile?.dailyProteinTargetG || currentUser?.proteinTarget || 120;
   const activeWeight = profile?.weightKg || 60;
   const activeProteinPerKg = (activeProteinTarget / activeWeight).toFixed(1);
@@ -190,7 +183,7 @@ export const MusclePassPage = () => {
     todayLogs
   });
 
-  // Handler: Start 7-Day Free Trial explicitly
+  // Handler: Start 7-Day Free Trial
   const handleStartFreeTrial = async () => {
     if (!userId) return;
     setIsStartingTrial(true);
@@ -208,9 +201,9 @@ export const MusclePassPage = () => {
         msLeft: 7 * 24 * 60 * 60 * 1000,
         trialClaimed: true
       });
-      setTrialSuccessMsg('🎉 7-Day Free Demo Activated! Enjoy full intelligent mess tracking.');
+      setTrialSuccessMsg('🎉 7-Day Free Demo Activated! Enjoy full intelligent mess macro tracking.');
       if (addNotification) {
-        addNotification('Free Demo Activated', '7-Day Muscle Pass Demo is now active on your account.', 'success');
+        addNotification('Free Demo Activated', '7-Day Muscle Pass Demo is now active.', 'success');
       }
     } catch (err) {
       console.warn('[Trial start warning]:', err.message);
@@ -219,16 +212,14 @@ export const MusclePassPage = () => {
     }
   };
 
-  // Handler: Save Nutrition Profile (Weight, Target, Diet, etc.)
+  // Handler: Save Nutrition Profile
   const handleSaveProfile = async (profileData) => {
     if (!userId) return;
 
     try {
-      // 1. Save profile to Firestore and LocalStorage
       const saved = await saveNutritionProfile(userId, profileData);
       setProfile(saved);
 
-      // 2. Sync with AppContext user profile
       if (updateUserProfile) {
         updateUserProfile({
           proteinTarget: saved.dailyProteinTargetG,
@@ -236,7 +227,6 @@ export const MusclePassPage = () => {
         });
       }
 
-      // 3. Ensure 7-day trial is active so user is never locked out
       if (!entitlement.hasActivePass || entitlement.status === 'NONE') {
         await startTrial(userId);
         setEntitlement({
@@ -250,7 +240,7 @@ export const MusclePassPage = () => {
       }
 
       if (addNotification) {
-        addNotification('Nutrition Profile Updated', `Target set to ${saved.dailyProteinTargetG}g protein/day (${saved.weightKg} kg).`, 'success');
+        addNotification('Nutrition Profile Updated', `Target: ${saved.dailyProteinTargetG}g protein/day (${saved.weightKg} kg).`, 'success');
       }
     } catch (err) {
       console.error('[Save profile error]:', err);
@@ -266,13 +256,12 @@ export const MusclePassPage = () => {
       targetProteinG: activeProteinTarget,
       ...logData
     });
-    // Refresh logs
     const updated = await getDailyLogs(userId, todayDateIST);
     setTodayLogs(updated.logs || []);
     const weeklyUpdated = await getWeeklySummaries(userId);
     setWeeklySummaries(weeklyUpdated || []);
     if (addNotification) {
-      addNotification('Meal Intake Logged 💪', `${logData.mealType} logged with ${logData.proteinConsumed || 0}g protein.`, 'success');
+      addNotification('Meal Logged 💪', `${logData.mealType}: +${logData.proteinConsumed || 0}g protein.`, 'success');
     }
   };
 
@@ -303,6 +292,44 @@ export const MusclePassPage = () => {
       proteinConsumed: Math.round(mealProtein * 10) / 10,
       caloriesConsumed: Math.round(mealCals)
     });
+  };
+
+  // Handler: Log Outside Food / Shake
+  const handleLogOutsideFood = async (e) => {
+    e.preventDefault();
+    if (!outsideFoodName.trim()) return;
+
+    const extraItem = {
+      name: outsideFoodName.trim(),
+      portion: 1.0,
+      proteinPerServing: Number(outsideProteinG) || 0,
+      caloriesPerServing: Number(outsideCalories) || 0,
+      proteinConsumed: Number(outsideProteinG) || 0,
+      caloriesConsumed: Number(outsideCalories) || 0,
+      isExtra: true
+    };
+
+    const existingSlotLog = todayLogs.find(l => l.mealType === outsideMealSlot);
+    const existingItems = existingSlotLog?.items ? [...existingSlotLog.items] : [];
+    existingItems.push(extraItem);
+
+    let totalP = 0;
+    let totalC = 0;
+    for (const it of existingItems) {
+      totalP += Number(it.proteinConsumed) || 0;
+      totalC += Number(it.caloriesConsumed) || 0;
+    }
+
+    await handleSaveLog({
+      mealType: outsideMealSlot,
+      status: 'COMPLETED',
+      items: existingItems,
+      proteinConsumed: Math.round(totalP * 10) / 10,
+      caloriesConsumed: Math.round(totalC)
+    });
+
+    setOutsideFoodName('');
+    setShowOutsideFoodModal(false);
   };
 
   // Handler: Delete / Reset Meal Log
@@ -339,155 +366,134 @@ export const MusclePassPage = () => {
   const isTrialActive = entitlement.isTrial;
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 pb-24 md:pb-12">
+    <div className="max-w-4xl mx-auto px-3 sm:px-6 lg:px-8 py-5 space-y-5 pb-28 md:pb-12 animate-fade-in">
       
-      {/* ── 1. HEADER & PASS STATUS ────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex items-center space-x-3">
-          <div className="w-12 h-12 rounded-2xl bg-emerald-600 flex items-center justify-center text-white shadow-lg shadow-emerald-500/20 shrink-0">
-            <Dumbbell className="w-6 h-6" />
+      {/* ── 1. LUXURY HEADER & STATUS PILL ───────────────────────────────────── */}
+      <div className="p-5 sm:p-6 rounded-3xl bg-slate-900 text-white shadow-xl border border-slate-800 relative overflow-hidden">
+        {/* Glow accent */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+        
+        <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center space-x-3.5">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-slate-950 shadow-lg shadow-emerald-500/20 shrink-0">
+              <Dumbbell className="w-6 h-6 stroke-[2.5]" />
+            </div>
+            <div>
+              <div className="flex items-center space-x-2">
+                <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white">
+                  MUSCLE PASS
+                </h1>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500 text-slate-950">
+                  {isTrialActive ? '7-Day Free Demo' : 'Pro Pass'}
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 font-medium mt-0.5">
+                Intelligent Hostel Nutrition &amp; Macro Engine • {formatCollegeDateDisplay()}
+              </p>
+            </div>
           </div>
-          <div>
-            <div className="flex items-center space-x-2">
-              <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-                Muscle Pass
-              </h1>
-              <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase tracking-wider border border-emerald-500/20">
-                {isTrialActive ? '7-Day Free Demo' : 'Pro Pass'}
-              </span>
-            </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold">
-              Hostel Mess Macro Tracker &amp; Smart Meal Planner • {formatCollegeDateDisplay()}
-            </p>
+
+          {/* Right Status / Trial Badge */}
+          <div className="flex items-center space-x-2 self-start sm:self-auto">
+            {isTrialActive ? (
+              <div className="px-3.5 py-1.5 rounded-xl bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 text-xs font-black flex items-center space-x-1.5 shadow-sm">
+                <Clock className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
+                <span>{formatTimeRemaining(entitlement.msLeft)}</span>
+              </div>
+            ) : (
+              <div className="px-3.5 py-1.5 rounded-xl bg-emerald-500/20 text-emerald-300 text-xs font-black flex items-center space-x-1.5 border border-emerald-500/30 shadow-sm">
+                <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                <span>VIP MEMBER</span>
+              </div>
+            )}
+
+            {!entitlement.trialClaimed && (
+              <button
+                onClick={handleStartFreeTrial}
+                disabled={isStartingTrial}
+                className="px-3.5 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs shadow-md transition-all cursor-pointer"
+              >
+                <Zap className="w-3.5 h-3.5 inline mr-1 fill-slate-950" />
+                <span>{isStartingTrial ? 'Activating...' : 'Start Demo'}</span>
+              </button>
+            )}
           </div>
-        </div>
-
-        {/* Live Status Pill & Quick Demo CTA */}
-        <div className="flex items-center space-x-2">
-          {isTrialActive ? (
-            <div className="px-3.5 py-1.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-xs font-black text-emerald-700 dark:text-emerald-300 flex items-center space-x-1.5 shadow-sm">
-              <Clock className="w-3.5 h-3.5 text-emerald-600 animate-pulse" />
-              <span>{formatTimeRemaining(entitlement.msLeft)}</span>
-            </div>
-          ) : (
-            <div className="px-3.5 py-1.5 rounded-2xl bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 text-xs font-black flex items-center space-x-1.5 shadow-sm">
-              <ShieldCheck className="w-4 h-4 text-emerald-600" />
-              <span>ACTIVE SUBSCRIBER</span>
-            </div>
-          )}
-
-          {!entitlement.trialClaimed && (
-            <button
-              onClick={handleStartFreeTrial}
-              disabled={isStartingTrial}
-              className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs shadow-sm flex items-center space-x-1 transition-all cursor-pointer"
-            >
-              <Zap className="w-3.5 h-3.5" />
-              <span>{isStartingTrial ? 'Activating...' : 'Start 7-Day Demo'}</span>
-            </button>
-          )}
         </div>
       </div>
 
       {trialSuccessMsg && (
-        <div className="p-3.5 rounded-2xl bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 text-xs font-bold flex items-center space-x-2 border border-emerald-500/30">
+        <div className="p-3.5 rounded-2xl bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 text-xs font-bold flex items-center space-x-2 border border-emerald-500/20">
           <Sparkles className="w-4 h-4 shrink-0 text-emerald-600" />
           <span>{trialSuccessMsg}</span>
         </div>
       )}
 
-      {/* Starter Profile Guidance Banner (if user hasn't customized profile yet) */}
-      {profile?.isStarterDefault && (
-        <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center space-x-2.5">
-            <Info className="w-5 h-5 text-amber-600 shrink-0" />
-            <div>
-              <p className="text-xs font-black text-amber-900 dark:text-amber-200">
-                Using default starter target: 120g protein / 60 kg body weight (2.0 g/kg)
-              </p>
-              <p className="text-[11px] text-amber-700 dark:text-amber-400">
-                Tap 'Customize Profile' to enter your exact body weight and fitness goal for personalized mess recommendations.
-              </p>
-            </div>
-          </div>
+      {/* ── 2. ATHLETE PROFILE & NAVIGATION BAR ──────────────────────────────── */}
+      <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        {/* Profile Summary Chips */}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="px-2.5 py-1 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 text-xs font-black border border-emerald-200 dark:border-emerald-800">
+            {activeWeight} kg
+          </span>
+          <span className="px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-xs font-bold">
+            Target: <strong>{activeProteinTarget}g/day</strong> ({activeProteinPerKg} g/kg)
+          </span>
+          <span className="px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold">
+            {profile?.goal || 'Muscle Gain'} · {profile?.dietaryPreference || 'Vegetarian'}
+          </span>
           <button
             onClick={() => setIsProfileModalOpen(true)}
-            className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-black text-xs shadow-sm transition-all cursor-pointer shrink-0"
+            className="px-2.5 py-1 rounded-xl border border-slate-300 dark:border-slate-700 hover:border-emerald-500 text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-emerald-600 flex items-center space-x-1 transition-all cursor-pointer"
           >
-            Customize Profile
+            <Sliders className="w-3 h-3" />
+            <span>Customize</span>
           </button>
         </div>
-      )}
 
-      {/* ── 2. NUTRITION PROFILE BAR & TABS ─────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm">
-        <div className="space-y-0.5">
-          <div className="flex items-center space-x-2">
-            <span className="text-sm font-black text-slate-900 dark:text-white">
-              {profile?.goal || 'Muscle Gain'} Mode
-            </span>
-            <span className="text-xs text-emerald-700 dark:text-emerald-300 font-bold bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-0.5 rounded-lg border border-emerald-200 dark:border-emerald-800">
-              {activeWeight} kg · {activeProteinTarget}g Target · {activeProteinPerKg} g/kg
-            </span>
-          </div>
-          <p className="text-[11px] text-slate-500 dark:text-slate-400">
-            Diet: <strong>{profile?.dietaryPreference || 'Vegetarian'}</strong> · Portions: <strong>{profile?.preferredPortion || 'Regular'}</strong> · Mess: <strong>{activeMess?.label || 'Hostel Mess'}</strong>
-          </p>
-        </div>
-
-        <div className="flex items-center space-x-2">
+        {/* Clean Top Navigation Tabs */}
+        <div className="flex rounded-xl bg-slate-100 dark:bg-slate-800/80 p-1 text-xs font-bold self-start sm:self-auto">
           <button
-            onClick={() => setIsProfileModalOpen(true)}
-            className="px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center space-x-1.5 transition-colors cursor-pointer"
+            onClick={() => setActiveTab('planner')}
+            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+              activeTab === 'planner'
+                ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
+                : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+            }`}
           >
-            <Sliders className="w-3.5 h-3.5 text-emerald-600" />
-            <span>Edit Profile</span>
+            Today's Planner
           </button>
-
-          <div className="flex rounded-xl bg-slate-100 dark:bg-slate-800 p-1 text-xs font-bold">
-            <button
-              onClick={() => setActiveTab('planner')}
-              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-                activeTab === 'planner'
-                  ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
-                  : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
-              }`}
-            >
-              Today's Planner
-            </button>
-            <button
-              onClick={() => setActiveTab('insights')}
-              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-                activeTab === 'insights'
-                  ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
-                  : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
-              }`}
-            >
-              Weekly Insights
-            </button>
-            <button
-              onClick={() => setActiveTab('plans')}
-              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-                activeTab === 'plans'
-                  ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
-                  : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
-              }`}
-            >
-              Membership Plans
-            </button>
-          </div>
+          <button
+            onClick={() => setActiveTab('insights')}
+            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+              activeTab === 'insights'
+                ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
+                : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+            }`}
+          >
+            7-Day Trends
+          </button>
+          <button
+            onClick={() => setActiveTab('plans')}
+            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+              activeTab === 'plans'
+                ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
+                : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+            }`}
+          >
+            Pro Membership
+          </button>
         </div>
       </div>
 
-      {/* ── 3. TAB 1: TODAY'S PLANNER (CIRCULAR PROGRESS RING + 4 MEAL CARDS) ── */}
+      {/* ── 3. TAB 1: TODAY'S PLANNER (CIRCULAR PROGRESS RING + MEAL CARDS) ──── */}
       {activeTab === 'planner' && (
-        <div className="space-y-6">
+        <div className="space-y-5">
           
-          {/* Main Circular Ring Nutrition Card */}
-          <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-6">
+          {/* Main Hero Dial Card */}
+          <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-5">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
               
-              {/* Left: Circular Ring + Target Numbers */}
+              {/* Left: Circular Dial */}
               <div className="flex items-center space-x-6">
                 <div className="relative w-32 h-32 shrink-0">
                   <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
@@ -517,15 +523,15 @@ export const MusclePassPage = () => {
                     <span className="text-2xl font-black text-slate-900 dark:text-white">
                       {summary.completionPercentage || 0}%
                     </span>
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">
-                      Protein Hit
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">
+                      Goal Hit
                     </span>
                   </div>
                 </div>
 
                 <div className="space-y-1">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                    Daily Protein Goal
+                    Today's Protein Target
                   </span>
                   <div className="flex items-baseline space-x-1.5">
                     <span className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-tight">
@@ -535,17 +541,17 @@ export const MusclePassPage = () => {
                       / {activeProteinTarget}g
                     </span>
                   </div>
-                  <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center space-x-1">
+                  <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
                     {summary.remainingProtein > 0 ? (
-                      <span>⚡ {summary.remainingProtein}g remaining for upcoming meals</span>
+                      <span>⚡ {summary.remainingProtein}g needed from upcoming meals</span>
                     ) : (
-                      <span>🎉 Daily Target Reached! Awesome work!</span>
+                      <span>🎉 Daily Target Achieved! Great job!</span>
                     )}
                   </p>
                 </div>
               </div>
 
-              {/* Right: Nutrition Macro Chips */}
+              {/* Right: Clean Macro Chips */}
               <div className="grid grid-cols-2 gap-3 w-full sm:w-auto">
                 <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 min-w-[130px]">
                   <span className="text-[10px] font-bold text-slate-400 uppercase block mb-0.5">
@@ -554,7 +560,7 @@ export const MusclePassPage = () => {
                   <span className="text-lg font-black text-slate-900 dark:text-white">
                     {summary.completedMealsCount || 0} / 4
                   </span>
-                  <span className="text-[10px] text-slate-500 block">meals tracked today</span>
+                  <span className="text-[10px] text-slate-500 block">tracked today</span>
                 </div>
 
                 <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 min-w-[130px]">
@@ -570,17 +576,31 @@ export const MusclePassPage = () => {
               </div>
 
             </div>
+
+            {/* Quick Action: Log Outside Food (Shake / Canteen / Boiled Eggs) */}
+            <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+              <span className="text-xs text-slate-500 font-medium">
+                Ate outside hostel mess? (Eggs, Whey shake, roasted chana)
+              </span>
+              <button
+                onClick={() => setShowOutsideFoodModal(true)}
+                className="px-3.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center space-x-1 transition-all cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Log Outside Food</span>
+              </button>
+            </div>
           </div>
 
-          {/* ── 4 MEAL CARDS (BREAKFAST, LUNCH, SNACKS, DINNER) ─────────────── */}
-          <div className="space-y-4">
+          {/* ── 4 REAL MESS MEAL CARDS (BREAKFAST, LUNCH, SNACKS, DINNER) ────── */}
+          <div className="space-y-3">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight">
-                  Today's Actual Mess Menu &amp; Smart Portion Suggestions
+                  Today's Actual Mess Menu &amp; Smart Portions
                 </h2>
-                <p className="text-xs text-slate-500 font-semibold">
-                  Official hostel menu dishes for {todayDay} ({activeMess?.label || 'Hostel Mess'})
+                <p className="text-xs text-slate-500 font-medium">
+                  {todayDay} menu for {activeMess?.label || 'Hostel Mess'}
                 </p>
               </div>
             </div>
@@ -599,14 +619,14 @@ export const MusclePassPage = () => {
                     key={cat}
                     className={`p-5 rounded-3xl border transition-all flex flex-col justify-between ${
                       isLogged
-                        ? 'bg-emerald-50/60 dark:bg-emerald-950/20 border-emerald-300 dark:border-emerald-800 shadow-sm'
+                        ? 'bg-emerald-50/60 dark:bg-emerald-950/20 border-emerald-300 dark:border-emerald-800'
                         : isSkipped
                         ? 'bg-slate-50 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 opacity-80'
-                        : 'bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 shadow-sm hover:border-emerald-500/50 hover:shadow-md'
+                        : 'bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 shadow-sm hover:border-emerald-500/40'
                     }`}
                   >
                     <div className="space-y-3">
-                      {/* Top Header */}
+                      {/* Top Slot Pill */}
                       <div className="flex items-center justify-between">
                         <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
                           {cat}
@@ -625,7 +645,7 @@ export const MusclePassPage = () => {
                         )}
                       </div>
 
-                      {/* Dish Name & Explanation */}
+                      {/* Dish Name & Context Explanation */}
                       <div>
                         <h3 className="text-sm sm:text-base font-black text-slate-900 dark:text-white leading-snug">
                           {rec.title}
@@ -637,17 +657,17 @@ export const MusclePassPage = () => {
 
                       {/* Recommended Portions Breakdown */}
                       {!isLogged && !isSkipped && rec.suggestedItems && rec.suggestedItems.length > 0 && (
-                        <div className="space-y-1 pt-2 border-t border-slate-100 dark:border-slate-800">
+                        <div className="space-y-1.5 pt-2 border-t border-slate-100 dark:border-slate-800">
                           <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">
                             Recommended Portions:
                           </span>
                           <div className="space-y-1">
                             {rec.suggestedItems.map((item, idx) => (
                               <div key={idx} className="flex items-center justify-between text-xs font-semibold">
-                                <span className="text-slate-700 dark:text-slate-300">
-                                  • {item.name} <span className="text-slate-400 text-[11px]">({item.recommendedPortionLabel})</span>
+                                <span className="text-slate-700 dark:text-slate-300 truncate max-w-[200px]">
+                                  • {item.name} <span className="text-slate-400 text-[10px]">({item.recommendedPortionLabel})</span>
                                 </span>
-                                <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                                <span className="font-bold text-emerald-600 dark:text-emerald-400 shrink-0">
                                   ~{item.recommendedProteinG}g
                                 </span>
                               </div>
@@ -667,10 +687,11 @@ export const MusclePassPage = () => {
                         {!isLogged && !isSkipped && (
                           <button
                             onClick={() => handleQuickLogStandardMeal(cat, rec)}
-                            className="px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 text-emerald-700 dark:text-emerald-300 text-xs font-bold transition-all cursor-pointer"
-                            title="Instantly log standard serving"
+                            className="px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 text-emerald-700 dark:text-emerald-300 text-xs font-bold transition-all cursor-pointer flex items-center space-x-1"
+                            title="Instant 1-tap log of standard serving"
                           >
-                            I Ate This
+                            <Zap className="w-3 h-3 text-emerald-600" />
+                            <span>1-Tap Log</span>
                           </button>
                         )}
 
@@ -701,7 +722,7 @@ export const MusclePassPage = () => {
         </div>
       )}
 
-      {/* ── 4. TAB 2: WEEKLY INSIGHTS ───────────────────────────────────────── */}
+      {/* ── 4. TAB 2: WEEKLY INSIGHTS & ADHERENCE ───────────────────────────── */}
       {activeTab === 'insights' && (
         <WeeklyInsightsCard
           weeklySummaries={weeklySummaries}
@@ -709,18 +730,18 @@ export const MusclePassPage = () => {
         />
       )}
 
-      {/* ── 5. TAB 3: MEMBERSHIP PLANS & RAZORPAY ───────────────────────────── */}
+      {/* ── 5. TAB 3: MEMBERSHIP PLANS & UPGRADE (PAID) ─────────────────────── */}
       {activeTab === 'plans' && (
-        <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950 text-white space-y-6 shadow-2xl border border-emerald-500/30">
+        <div className="p-6 sm:p-8 rounded-3xl bg-slate-900 text-white space-y-6 shadow-2xl border border-emerald-500/30">
           <div className="space-y-1.5">
-            <span className="px-2.5 py-0.5 rounded-full bg-emerald-500 text-white text-[10px] font-black uppercase tracking-wider">
+            <span className="px-2.5 py-0.5 rounded-full bg-emerald-500 text-slate-950 text-[10px] font-black uppercase tracking-wider">
               Muscle Pass Membership
             </span>
             <h2 className="text-xl sm:text-3xl font-black text-white tracking-tight">
               Fuel Your Campus Fitness Transformation
             </h2>
             <p className="text-xs sm:text-sm text-slate-300 max-w-xl leading-relaxed">
-              Continuous semester-long high-protein tracking, personalized target adjustments, priority meal recommendations, and uninterrupted hostel dining intelligence.
+              Unrestricted daily mess menu protein tracking, personalized portion adjustments, adaptive calorie distribution, and continuous progress analytics.
             </p>
           </div>
 
@@ -796,11 +817,11 @@ export const MusclePassPage = () => {
           </div>
 
           {/* Subscribe Action */}
-          <div className="pt-3">
+          <div className="pt-2">
             <button
               onClick={handleSubscribe}
               disabled={isProcessingPayment}
-              className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs shadow-lg transition-all flex items-center justify-center space-x-2 cursor-pointer"
+              className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs shadow-lg transition-all flex items-center justify-center space-x-2 cursor-pointer"
             >
               <CreditCard className="w-4 h-4" />
               <span>
@@ -810,7 +831,7 @@ export const MusclePassPage = () => {
               </span>
             </button>
             <p className="text-[10px] text-slate-400 mt-2">
-              Official Razorpay checkout. Supports UPI, Cards, NetBanking.
+              Official Razorpay checkout. Supports UPI, Google Pay, PhonePe, Cards, NetBanking.
             </p>
           </div>
         </div>
@@ -837,6 +858,99 @@ export const MusclePassPage = () => {
           onSaveLog={handleSaveLog}
           onDeleteLog={handleDeleteLog}
         />
+      )}
+
+      {/* Quick Outside Food Logger Modal */}
+      {showOutsideFoodModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm">
+          <div className="w-full max-w-sm bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-black text-slate-900 dark:text-white">
+                Log Outside Food / Snack
+              </h3>
+              <button
+                onClick={() => setShowOutsideFoodModal(false)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleLogOutsideFood} className="space-y-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Item Description
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. 1 Scoop Whey Protein / 2 Boiled Eggs"
+                  value={outsideFoodName}
+                  onChange={e => setOutsideFoodName(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-semibold outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase">
+                    Protein (g)
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    value={outsideProteinG}
+                    onChange={e => setOutsideProteinG(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-bold outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase">
+                    Calories (kcal)
+                  </label>
+                  <input
+                    type="number"
+                    value={outsideCalories}
+                    onChange={e => setOutsideCalories(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-bold outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                  Add to Meal Slot
+                </label>
+                <select
+                  value={outsideMealSlot}
+                  onChange={e => setOutsideMealSlot(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-bold outline-none"
+                >
+                  <option value="Breakfast">Breakfast</option>
+                  <option value="Lunch">Lunch</option>
+                  <option value="Snacks">Snacks</option>
+                  <option value="Dinner">Dinner</option>
+                </select>
+              </div>
+
+              <div className="pt-2 flex justify-end space-x-2">
+                <button
+                  type="button"
+                  onClick={() => setShowOutsideFoodModal(false)}
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-500"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs shadow-md"
+                >
+                  Add to Today's Total
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
 
     </div>

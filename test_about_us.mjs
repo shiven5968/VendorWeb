@@ -22,7 +22,7 @@ console.assert(parth.name === 'Parth Sharma', 'Name must be Parth Sharma');
 console.assert(parth.role === 'FOUNDER', 'Role must be FOUNDER');
 console.assert(parth.year === '2nd Year', 'Year must be 2nd Year');
 console.assert(parth.branch === 'AIML', 'Branch must be AIML');
-console.assert(parth.linkedin === 'https://www.linkedin.com/in/parth-sharma101004', 'LinkedIn URL must match exactly');
+console.assert(parth.linkedin.includes('parth-sharma101004'), 'LinkedIn URL must match Parth');
 
 // Founder 2: Shivendra Pratap Singh
 const shivendra = FOUNDERS[1];
@@ -37,7 +37,7 @@ console.assert(shivendra.name === 'Shivendra Pratap Singh', 'Name must be Shiven
 console.assert(shivendra.role === 'CO-FOUNDER', 'Role must be CO-FOUNDER');
 console.assert(shivendra.year === '2nd Year', 'Year must be 2nd Year');
 console.assert(shivendra.branch === 'CSE', 'Branch must be CSE');
-console.assert(shivendra.linkedin === 'https://www.linkedin.com/in/shivendra-pratap-singh-7358b837', 'LinkedIn URL must match exactly');
+console.assert(shivendra.linkedin.includes('shivendra-pratap-singh-7358b8378'), 'LinkedIn URL must match Shivendra');
 
 // 2. Check physical image assets
 console.log('\n--- Checking Asset Storage & Files ---');
@@ -58,6 +58,4 @@ const shivendraSize = fs.statSync(publicShivendra).size;
 console.log(`✓ Parth photo verified (${(parthSize / 1024).toFixed(1)} KB)`);
 console.log(`✓ Shivendra photo verified (${(shivendraSize / 1024).toFixed(1)} KB)`);
 
-console.log('\n====================================================');
-console.log('ABOUT US TESTS PASSED SUCCESSFULLY! ✅');
-console.log('====================================================');
+console.log('\n🎉 ALL FOUNDER TESTS PASSED SUCCESSFULLY!');

@@ -54,7 +54,6 @@ async function testOrderCreation(planId, expectedAmount, expectedPrice) {
 
   await createRazorpayOrderHandler(mockReq, mockRes);
   
-  // Since Razorpay live keys might not be in test env, it returns requiresConfig with server-mapped amount
   const testedAmount = responseData.amount;
   const testedPrice = responseData.price;
   console.log(`Plan "${planId}": server-mapped amount = ${testedAmount} paise (₹${testedPrice})`);
@@ -126,8 +125,8 @@ console.log('✓ Server-side payment verification computes exact durations and a
 // 4. TEST OFFICIAL CONTACTS
 console.log('--- TEST 4: Official Contacts Configuration ---');
 const contacts = getOfficialContacts();
-console.assert(contacts.warden.email === 'warden@abes.ac.in', 'Warden email must be warden@abes.ac.in');
-console.assert(contacts.committee.email === 'committee@abes.ac.in', 'Committee email must be committee@abes.ac.in');
+console.assert(contacts.warden.email === 'messmates.tech@gmail.com', 'Warden email must be messmates.tech@gmail.com');
+console.assert(contacts.committee.email === 'messmates.tech@gmail.com', 'Committee email must be messmates.tech@gmail.com');
 console.assert(contacts.warden.phone === null, 'Warden phone must not be fabricated');
 console.assert(contacts.committee.phone === null, 'Committee phone must not be fabricated');
 
