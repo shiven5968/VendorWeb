@@ -34,3 +34,17 @@ export const OFFICIAL_CAMPUS_CONTACTS = {
 export const getOfficialContacts = () => {
   return OFFICIAL_CAMPUS_CONTACTS;
 };
+
+/**
+ * Official MessMates Platform Support Contacts
+ */
+export const MESSMATES_SUPPORT_CONTACTS = {
+  email: 'messmates.tech@gmail.com',
+  phone1: '+91 9236581606',
+  phone2: '+91 8920336768',
+  phones: ['+91 9236581606', '+91 8920336768'],
+  rawPhones: ['9236581606', '8920336768'],
+  address: 'ABES Engineering College, Campus 1, 19th KM Stone, NH-09, Ghaziabad, UP 201009',
+  campus: 'ABES Engineering College',
+  tagline: 'Know Your Meal Before You Eat It'
+};
