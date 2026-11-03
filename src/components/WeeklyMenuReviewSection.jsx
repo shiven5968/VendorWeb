@@ -44,9 +44,10 @@ export const WeeklyMenuReviewSection = () => {
     const seedMessIds = ['boys_junior', 'boys_senior', 'girls'];
     seedMessIds.forEach(messId => {
       const menu = getMenuByMessId(messId);
+      if (!menu) return;
       Object.keys(menu).forEach(day => {
         Object.keys(menu[day]).forEach(slot => {
-          (menu[day][slot].items || []).forEach(item => {
+          (menu[day][slot]?.items || []).forEach(item => {
             if (item && item !== 'OFF') {
               const seedRating = parseFloat((3.8 + Math.random() * 0.9).toFixed(1));
               const seedCount = Math.floor(5 + Math.random() * 25);
@@ -119,19 +120,6 @@ export const WeeklyMenuReviewSection = () => {
       }
     }));
 
-    // Log Firestore-structured payload
-    console.log('--- FIRESTORE PAYLOAD GENERATED ---', {
-      day: activeRateItem.day,
-      mealType: activeRateItem.slot,
-      foodItem: activeRateItem.item,
-      rating: starRating,
-      reviewText: reviewText.trim(),
-      tag: selectedTag,
-      hostelBlock: currentUser?.hostelBlock || 'DNB Block',
-      submittedBy: currentUser?.uid || 'anonymous_uid',
-      timestamp: new Date()
-    });
-
     // Show visual success verification
     setShowSuccessCheck(true);
     setTimeout(() => {
@@ -144,27 +132,28 @@ export const WeeklyMenuReviewSection = () => {
   const activeItems = activeMeal?.items || [];
 
   return (
-    <div className="w-full space-y-6">
+    <div className="w-full space-y-5">
       
       {/* SECTION HEADER */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 pb-3 border-b border-slate-100 dark:border-slate-800">
         <div>
-          <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight flex items-center space-x-2">
-            <Calendar className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-            <span>WEEKLY MENU EXPLORER</span>
+          <h2 className="text-lg font-semibold tracking-tight text-slate-900 dark:text-slate-100 flex items-center space-x-2">
+            <Calendar className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            <span>Weekly Menu Explorer</span>
           </h2>
-          <p className="text-xs text-slate-500 font-semibold mt-0.5">
-            {studentMess ? `${studentMess.label} ${studentMess.caterer ? `(${studentMess.caterer}, W.E.F. ${studentMess.effectiveDate})` : ''} • Day-wise food item reviews` : 'Official hostel mess schedule • Day-wise food item reviews'}
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            {studentMess ? `${studentMess.label} ${studentMess.caterer ? `(${studentMess.caterer}, W.E.F. ${studentMess.effectiveDate})` : ''} · Verified hostel preparation schedule` : 'Official hostel mess schedule · Verified preparation schedule'}
           </p>
         </div>
-        <div className="flex items-center space-x-1.5 text-[10px] font-black uppercase bg-emerald-500/10 text-emerald-600 px-3 py-1 rounded-full">
-          <Sparkles className="w-3.5 h-3.5 animate-pulse" />
-          <span>Interactive Student Rating</span>
+        
+        <div className="inline-flex items-center space-x-1.5 text-[11px] font-medium text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1 rounded-md border border-emerald-500/20">
+          <Sparkles className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+          <span>Interactive Dish Rating</span>
         </div>
       </div>
 
       {/* 1. DAYS NAVIGATION */}
-      <div className="flex items-center space-x-2 overflow-x-auto pb-1.5 scrollbar-none">
+      <div className="flex items-center space-x-1.5 overflow-x-auto pb-1 scrollbar-none">
         {days.map(day => {
           const isSelected = selectedDay === day;
           const isToday = new Date().toLocaleDateString('en-US', { weekday: 'long' }) === day;
@@ -173,10 +162,10 @@ export const WeeklyMenuReviewSection = () => {
             <button
               key={day}
               onClick={() => setSelectedDay(day)}
-              className={`px-4 py-2.5 rounded-2xl text-xs font-black whitespace-nowrap transition-all flex items-center space-x-1.5 ${
+              className={`px-3.5 py-2 rounded-xl text-xs font-medium whitespace-nowrap transition-colors flex items-center space-x-1.5 cursor-pointer ${
                 isSelected
-                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20 scale-102'
-                  : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:border-emerald-500/40'
+                  ? 'bg-emerald-600 text-white'
+                  : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200/80 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
               }`}
             >
               <span>{day}</span>
@@ -198,25 +187,25 @@ export const WeeklyMenuReviewSection = () => {
             <button
               key={slot.name}
               onClick={() => setSelectedSlot(slot.name)}
-              className={`p-3.5 rounded-3xl border transition-all text-left flex flex-col justify-between space-y-3 cursor-pointer ${
+              className={`p-3.5 rounded-xl border transition-all text-left flex flex-col justify-between space-y-2.5 cursor-pointer ${
                 isSelected
-                  ? 'bg-white dark:bg-slate-900 border-emerald-500 shadow-md ring-2 ring-emerald-500/10'
-                  : 'bg-white/50 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800/80 hover:border-slate-300 dark:hover:border-slate-700'
+                  ? 'bg-white dark:bg-slate-900 border-emerald-500 ring-1 ring-emerald-500/20'
+                  : 'bg-white dark:bg-slate-900/60 border-slate-200/80 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
               }`}
             >
               <div className="flex items-center justify-between w-full">
-                <span className={`p-2 rounded-xl ${slot.color}`}>
-                  <SlotIcon className="w-4 h-4" />
+                <span className={`p-1.5 rounded-lg ${slot.color}`}>
+                  <SlotIcon className="w-3.5 h-3.5" />
                 </span>
-                <span className={`text-[9px] font-black tracking-wider uppercase px-2 py-0.5 rounded-full ${
-                  isSelected ? 'bg-emerald-500 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'
+                <span className={`text-[10px] font-medium tracking-wide uppercase px-2 py-0.5 rounded-md ${
+                  isSelected ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
                 }`}>
                   {slot.name}
                 </span>
               </div>
               <div>
-                <h4 className="text-xs font-black text-slate-900 dark:text-white">{slot.name}</h4>
-                <p className="text-[10px] text-slate-400 font-semibold mt-0.5">{slot.time}</p>
+                <h4 className="text-xs font-semibold text-slate-900 dark:text-slate-100">{slot.name}</h4>
+                <p className="text-[11px] text-slate-400 font-medium mt-0.5">{slot.time}</p>
               </div>
             </button>
           );
@@ -225,13 +214,13 @@ export const WeeklyMenuReviewSection = () => {
 
       {/* 3. FOOD ITEMS GRID */}
       {activeItems.length === 1 && activeItems[0] === 'OFF' ? (
-        <div className="p-12 text-center bg-slate-50 dark:bg-slate-900/30 rounded-3xl border border-dashed border-slate-200 dark:border-slate-800 flex flex-col items-center justify-center space-y-2">
-          <Coffee className="w-8 h-8 text-slate-400" />
-          <span className="text-sm font-black text-slate-500">MESS KITCHEN IS CLOSED</span>
-          <span className="text-xs text-slate-400 font-semibold">No snacks served on Sunday evening. Enjoy your holiday!</span>
+        <div className="p-10 text-center bg-slate-50 dark:bg-slate-900/40 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 flex flex-col items-center justify-center space-y-1.5">
+          <Coffee className="w-6 h-6 text-slate-400" />
+          <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">Mess Kitchen Closed</span>
+          <span className="text-[11px] text-slate-400">Snacks are OFF on Sunday evening</span>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {activeItems.map(item => {
             const key = `${selectedDay}_${selectedSlot}_${item}`;
             const meta = ratingsDb[key] || { rating: 4.0, count: 0, reviews: [] };
@@ -239,14 +228,14 @@ export const WeeklyMenuReviewSection = () => {
             return (
               <div
                 key={item}
-                className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col justify-between space-y-3 hover:border-emerald-500/20 hover:shadow-md transition-all"
+                className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex flex-col justify-between space-y-3 hover:border-emerald-500/40 hover:shadow-sm transition-all"
               >
                 <div className="space-y-1.5">
                   <div className="flex items-start justify-between gap-2">
-                    <h4 className="text-sm font-extrabold text-slate-900 dark:text-white leading-snug">
+                    <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100 leading-snug">
                       {item}
                     </h4>
-                    <span className="text-[10px] font-black bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-lg whitespace-nowrap">
+                    <span className="text-[10px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-2 py-0.5 rounded-md whitespace-nowrap">
                       Fresh
                     </span>
                   </div>
@@ -256,27 +245,27 @@ export const WeeklyMenuReviewSection = () => {
                     <div className="flex items-center text-amber-400">
                       <Star className="w-3.5 h-3.5 fill-current" />
                     </div>
-                    <span className="font-extrabold text-slate-700 dark:text-slate-200">{meta.rating}</span>
-                    <span className="text-slate-400">•</span>
-                    <span className="font-bold text-[10px]">{meta.count} reviews</span>
+                    <span className="font-semibold text-slate-700 dark:text-slate-200">{meta.rating}</span>
+                    <span className="text-slate-300 dark:text-slate-700">•</span>
+                    <span className="text-[11px]">{meta.count} reviews</span>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between pt-1 border-t border-slate-50 dark:border-slate-800/80">
+                <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800/80">
                   {meta.reviews.length > 0 ? (
-                    <div className="flex items-center text-[10px] text-emerald-500 font-bold space-x-1">
+                    <div className="flex items-center text-[11px] text-emerald-600 dark:text-emerald-400 font-medium space-x-1">
                       <MessageSquare className="w-3 h-3" />
                       <span className="truncate max-w-[120px]">"{meta.reviews[0].reviewText}"</span>
                     </div>
                   ) : (
-                    <span className="text-[10px] text-slate-400 font-bold italic">No feedback comments yet</span>
+                    <span className="text-[11px] text-slate-400 italic">No comments yet</span>
                   )}
                   
                   <button
                     onClick={() => handleRateClick(item)}
-                    className="px-3.5 py-1.5 text-[10px] font-black rounded-xl bg-slate-100 hover:bg-emerald-600 dark:bg-slate-800 dark:hover:bg-emerald-600 text-slate-800 dark:text-slate-200 hover:text-white dark:hover:text-white transition-all"
+                    className="px-3 py-1 text-[11px] font-medium rounded-lg bg-slate-100 hover:bg-emerald-600 dark:bg-slate-800 dark:hover:bg-emerald-600 text-slate-700 dark:text-slate-300 hover:text-white dark:hover:text-white transition-colors cursor-pointer"
                   >
-                    RATE ITEM
+                    Rate item
                   </button>
                 </div>
               </div>
@@ -287,23 +276,23 @@ export const WeeklyMenuReviewSection = () => {
 
       {/* 4. RATING INTERACTIVE MODAL */}
       {activeRateItem && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden relative">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 overflow-hidden relative">
             
             {/* Modal Header */}
-            <div className="p-4 bg-slate-900 text-white flex items-center justify-between">
+            <div className="p-4 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800">
               <div>
-                <span className="text-[9px] font-black uppercase tracking-wider text-emerald-400">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-emerald-400">
                   {activeRateItem.day} • {activeRateItem.slot}
                 </span>
-                <h3 className="text-base font-extrabold leading-tight">Rate Food Item</h3>
+                <h3 className="text-base font-semibold leading-tight text-white">Rate Food Item</h3>
               </div>
               <button
                 onClick={() => setActiveRateItem(null)}
-                className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 transition-colors"
+                className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
                 aria-label="Close"
               >
-                <X className="w-4.5 h-4.5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
@@ -311,38 +300,38 @@ export const WeeklyMenuReviewSection = () => {
             <form onSubmit={handleRatingSubmit} className="p-5 space-y-4">
               
               {/* Target Item card info */}
-              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800/80 text-center">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Item being evaluated</span>
-                <h4 className="text-lg font-black text-slate-900 dark:text-white mt-1 leading-snug">
+              <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800/80 text-center">
+                <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">Item being evaluated</span>
+                <h4 className="text-base font-semibold text-slate-900 dark:text-white mt-0.5 leading-snug">
                   {activeRateItem.item}
                 </h4>
               </div>
 
               {showSuccessCheck ? (
-                <div className="py-8 flex flex-col items-center justify-center space-y-2 animate-pulse">
-                  <div className="w-14 h-14 rounded-full bg-emerald-500/20 text-emerald-500 flex items-center justify-center border border-emerald-500/40">
-                    <Check className="w-7 h-7" />
+                <div className="py-6 flex flex-col items-center justify-center space-y-1.5">
+                  <div className="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-500 flex items-center justify-center border border-emerald-500/30">
+                    <Check className="w-6 h-6" />
                   </div>
-                  <h5 className="text-sm font-black text-emerald-500">Rating Saved Successfully!</h5>
-                  <p className="text-[11px] text-slate-400 font-bold">Feedback logged for Firestore sync</p>
+                  <h5 className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">Rating Recorded</h5>
+                  <p className="text-xs text-slate-400">Feedback synced to community ledger</p>
                 </div>
               ) : (
                 <>
                   {/* Star Rating Selection */}
                   <div className="space-y-1.5 text-center">
-                    <label className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+                    <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
                       Food Quality Rating
                     </label>
-                    <div className="flex items-center justify-center space-x-2 py-2">
+                    <div className="flex items-center justify-center space-x-1.5 py-1">
                       {[1, 2, 3, 4, 5].map(star => (
                         <button
                           type="button"
                           key={star}
                           onClick={() => setStarRating(star)}
-                          className="p-1 hover:scale-125 transition-transform duration-200"
+                          className="p-1 hover:scale-110 transition-transform cursor-pointer"
                         >
                           <Star
-                            className={`w-8 h-8 ${
+                            className={`w-7 h-7 transition-all ${
                               star <= starRating
                                 ? 'text-amber-400 fill-amber-400'
                                 : 'text-slate-300 dark:text-slate-700 hover:text-amber-300'
@@ -351,14 +340,14 @@ export const WeeklyMenuReviewSection = () => {
                         </button>
                       ))}
                     </div>
-                    <span className="text-xs text-emerald-600 dark:text-emerald-400 font-black">
-                      {starRating === 5 ? 'Excellent!' : starRating === 4 ? 'Good Quality' : starRating === 3 ? 'Average' : starRating === 2 ? 'Sub-par' : 'Terrible'}
+                    <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+                      {starRating === 5 ? 'Excellent' : starRating === 4 ? 'Good Quality' : starRating === 3 ? 'Average' : starRating === 2 ? 'Sub-par' : 'Needs Improvement'}
                     </span>
                   </div>
 
                   {/* Feedback Chips / Tags */}
-                  <div className="space-y-2">
-                    <label className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide block text-center">
                       Quick tags
                     </label>
                     <div className="flex flex-wrap gap-1.5 justify-center">
@@ -367,9 +356,9 @@ export const WeeklyMenuReviewSection = () => {
                           type="button"
                           key={tag}
                           onClick={() => setSelectedTag(tag === selectedTag ? '' : tag)}
-                          className={`px-3 py-1.5 rounded-xl text-[10px] font-black transition-all ${
+                          className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
                             selectedTag === tag
-                              ? 'bg-emerald-600 text-white shadow-md'
+                              ? 'bg-emerald-600 text-white'
                               : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
                           }`}
                         >
@@ -380,27 +369,27 @@ export const WeeklyMenuReviewSection = () => {
                   </div>
 
                   {/* Optional Text Feedback */}
-                  <div className="space-y-1.5">
-                    <label htmlFor="feedback-input" className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
-                      Add Optional Feedback
+                  <div className="space-y-1">
+                    <label htmlFor="feedback-input" className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                      Additional feedback (optional)
                     </label>
                     <textarea
                       id="feedback-input"
                       rows="3"
-                      placeholder="Share details (e.g., roti was hard, sambhar had great spice level)..."
+                      placeholder="Share details (e.g., roti was tender, spice level was balanced)..."
                       value={reviewText}
                       onChange={e => setReviewText(e.target.value)}
-                      className="w-full px-3 py-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition-all resize-none"
+                      className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all resize-none placeholder:text-slate-400"
                     ></textarea>
                   </div>
 
                   {/* Submit Button */}
                   <button
                     type="submit"
-                    className="w-full py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs shadow-md shadow-emerald-600/10 transition-colors flex items-center justify-center space-x-2"
+                    className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs transition-colors flex items-center justify-center space-x-2 cursor-pointer shadow-none"
                   >
                     <Send className="w-3.5 h-3.5" />
-                    <span>SUBMIT RATING</span>
+                    <span>Submit Rating</span>
                   </button>
                 </>
               )}
