@@ -215,7 +215,7 @@ const AppContent = () => {
   if (!user) {
     return (
       <div className="min-h-screen flex flex-col justify-between bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
-        <main className="flex-1 flex items-center justify-center p-4">
+        <main className="flex-1 min-h-screen flex items-center justify-center p-4">
           <Suspense fallback={<PageLoadingFallback />}>
             {!selectedCollegeId ? (
               <CollegeSelectScreen
@@ -315,7 +315,7 @@ const AppContent = () => {
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-300 relative">
       <Navbar />
-      <main className="flex-1 transition-all duration-300">
+      <main className="flex-1 min-h-[calc(100vh-56px)] transition-all duration-300 flex flex-col">
         <Suspense fallback={<PageLoadingFallback />}>
           {renderAuthenticatedPage()}
         </Suspense>

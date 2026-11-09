@@ -29,7 +29,6 @@ export const Navbar = () => {
       default:
         return [
           { id: 'dashboard', label: 'Home', icon: Home },
-          { id: 'menu', label: 'Menu', icon: UtensilsCrossed },
           { id: 'voting', label: 'Voting', icon: Vote },
           { id: 'muscle-pass', label: 'Muscle Pass', icon: Dumbbell },
           { id: 'rewards', label: 'Rewards', icon: Gift },

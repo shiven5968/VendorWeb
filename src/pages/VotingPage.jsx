@@ -87,7 +87,7 @@ export const VotingPage = () => {
   const isClosedPoll = poll && poll.status === 'CLOSED';
 
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 pb-24 md:pb-12">
+    <div className="flex-1 min-h-[calc(100vh-160px)] flex flex-col justify-start max-w-3xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 pb-24 md:pb-16 animate-in fade-in duration-200">
       
       {/* 1. HEADER */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">

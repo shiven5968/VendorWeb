@@ -14,7 +14,6 @@ export const BottomNav = () => {
 
   const tabs = [
     { id: 'dashboard', label: 'Home', icon: Home },
-    { id: 'menu', label: 'Menu', icon: UtensilsCrossed },
     { id: 'muscle-pass', label: 'Muscle Pass', icon: Dumbbell, isPro: true },
     { id: 'complaints', label: 'Complaints', icon: MessageSquare },
     { id: 'voting', label: 'Voting', icon: Vote },

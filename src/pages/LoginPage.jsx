@@ -372,7 +372,7 @@ export const LoginPage = ({
   const RoleIcon = currentMeta.icon;
 
   return (
-    <div className="min-h-[85vh] flex items-center justify-center p-4 sm:p-6 pb-20">
+    <div className="w-full min-h-[92vh] flex items-center justify-center p-4 sm:p-6">
       <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-md border border-slate-200 dark:border-slate-800 p-6 sm:p-8 space-y-6">
         
         {/* Selected Institution Pill Banner with Change College */}

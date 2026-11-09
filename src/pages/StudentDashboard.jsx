@@ -7,26 +7,21 @@ import {
   Sun, 
   Moon, 
   Coffee, 
-  ChevronRight,
-  Dumbbell,
-  Vote,
-  Award,
-  Send,
-  Check,
-  Clock,
-  Flame,
-  X,
-  Sparkles,
-  Info
+  ChevronRight, 
+  Award, 
+  Send, 
+  Check, 
+  Clock, 
+  Flame, 
+  X, 
+  Calendar,
+  Sparkles
 } from 'lucide-react';
-import { WeeklyMenuReviewSection } from '../components/WeeklyMenuReviewSection';
 import { getMessForStudent } from '../config/menuGroups';
 import { formatCollegeDateDisplay, formatRatingRelativeTime } from '../utils/dateTime';
 import { OFFICIAL_MEAL_TIMINGS } from '../services/mealTiming';
 
 import {
-  MEAL_IMAGES,
-  GH_IMAGES,
   getMenuByMessId,
   isGirlsHostelBlock
 } from '../data/hostelMenus';
@@ -49,6 +44,8 @@ const getMealTiming = (mealType, selectedDay) => {
   return OFFICIAL_MEAL_TIMINGS[mealType]?.label || '';
 };
 
+const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
 export const StudentDashboard = () => {
   const { 
     currentUser, 
@@ -58,10 +55,7 @@ export const StudentDashboard = () => {
     getUserRating, 
     getMealStats, 
     setSelectedMealModal, 
-    currentMessInfo,
     setCurrentPage,
-    proteinTarget,
-    consumedProtein,
     currentTime,
     mealSlotInfo,
     getTimingStatus,
@@ -69,6 +63,9 @@ export const StudentDashboard = () => {
     allRatings,
     rewardPoints
   } = useApp();
+
+  // Weekly Schedule Day Selector State (inside Home)
+  const [selectedScheduleDay, setSelectedScheduleDay] = useState(todayDay || 'Monday');
 
   // Modal state for direct meal rating
   const [ratingModalMeal, setRatingModalMeal] = useState(null);
@@ -88,9 +85,6 @@ export const StudentDashboard = () => {
     Dinner: { bg: 'bg-indigo-600', icon: Moon },
   };
 
-  const remainingProtein = Math.max(0, proteinTarget - consumedProtein);
-  const proteinPercent = Math.min(100, Math.round((consumedProtein / proteinTarget) * 100));
-
   const getMealStatsLocal = (mealId) => {
     const mealRatings = (allRatings || []).filter(r => r.mealId === mealId);
     if (mealRatings.length === 0) {
@@ -108,6 +102,7 @@ export const StudentDashboard = () => {
   const activeMenu = getActiveMenu(currentUser);
   const rawMeals = todayMeals && todayMeals.length > 0 ? todayMeals : [];
 
+  // Today's Meals list
   const mealsList = useMemo(() => {
     if (!activeMenu) return [];
     return ['Breakfast', 'Lunch', 'Snacks', 'Dinner'].map(cat => {
@@ -127,6 +122,26 @@ export const StudentDashboard = () => {
       };
     });
   }, [activeMenu, todayDay, rawMeals]);
+
+  // Selected Day's Meals list for the Weekly Schedule
+  const scheduleDayMeals = useMemo(() => {
+    if (!activeMenu) return [];
+    const dayMenu = activeMenu[selectedScheduleDay] || activeMenu['Monday'] || {};
+    return ['Breakfast', 'Lunch', 'Snacks', 'Dinner'].map(cat => {
+      const staticMeal = dayMenu[cat] || { title: `${cat} Special`, items: [], image: '', protein: '15g', calories: '500 kcal' };
+      return {
+        id: `${selectedScheduleDay.toLowerCase().substring(0, 3)}_${cat.toLowerCase().substring(0, 1)}`,
+        category: cat,
+        day: selectedScheduleDay,
+        name: staticMeal.title || `${cat} Special`,
+        items: (staticMeal.items && staticMeal.items.length > 0 ? staticMeal.items.join(', ') : '') || '',
+        image: staticMeal.image || '',
+        servingSize: staticMeal.servingSize || '',
+        protein: (staticMeal.protein || '14g').toString().replace('g', ''),
+        calories: (staticMeal.calories || '520 kcal').toString().replace(' kcal', ''),
+      };
+    });
+  }, [activeMenu, selectedScheduleDay]);
 
   // Determine current active / next upcoming meal to feature on top
   const { featuredMeal, otherMeals } = useMemo(() => {
@@ -211,6 +226,13 @@ export const StudentDashboard = () => {
     }
   };
 
+  const scrollToWeeklySchedule = () => {
+    const el = document.getElementById('weekly-menu-schedule');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   const featuredTiming = featuredMeal ? getTimingStatus(featuredMeal.category) : null;
   const featuredStats = featuredMeal ? getMealStatsLocal(featuredMeal.id) : null;
   const myFeaturedRating = featuredMeal ? getUserRating(featuredMeal.id) : null;
@@ -264,7 +286,7 @@ export const StudentDashboard = () => {
 
         <button
           type="button"
-          onClick={() => setCurrentPage('menu')}
+          onClick={scrollToWeeklySchedule}
           className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 hover:underline flex items-center space-x-1 cursor-pointer"
         >
           <span>Full Week Menu</span>
@@ -511,7 +533,122 @@ export const StudentDashboard = () => {
         </div>
       )}
 
-      {/* 5. DIRECT MEAL RATING MODAL (POPS UP ON "RATE NOW" CLICK OR SCANNER QR) */}
+      {/* 5. INTEGRATED WEEKLY MESS SCHEDULE EXPLORER (ADDED TO HOME SECTION) */}
+      <div id="weekly-menu-schedule" className="space-y-4 pt-6 border-t border-slate-200/80 dark:border-slate-800">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <div className="flex items-center space-x-2">
+              <Calendar className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+              <h3 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-tight">
+                Weekly Mess Schedule
+              </h3>
+            </div>
+            <p className="text-xs text-slate-500 font-semibold mt-0.5">
+              Day-by-day menu schedules, verified ingredients & macro estimates
+            </p>
+          </div>
+        </div>
+
+        {/* Day Pills Bar */}
+        <div className="flex space-x-1.5 overflow-x-auto pb-2 scrollbar-none">
+          {DAYS_OF_WEEK.map(day => {
+            const isSelected = selectedScheduleDay === day;
+            const isToday = day === todayDay;
+
+            return (
+              <button
+                key={day}
+                type="button"
+                onClick={() => setSelectedScheduleDay(day)}
+                className={`px-3.5 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+                  isSelected
+                    ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
+                    : 'bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:border-emerald-500/50'
+                }`}
+              >
+                <span>{day}</span>
+                {isToday && (
+                  <span className={`ml-1.5 px-1.5 py-0.5 rounded-full text-[9px] font-black ${
+                    isSelected ? 'bg-white/20 text-white' : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                  }`}>
+                    Today
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* 4 Meal Cards for Selected Day */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {scheduleDayMeals.map(meal => {
+            const style = categoryStyles[meal.category] || categoryStyles.Lunch;
+            const CategoryIcon = style.icon;
+
+            return (
+              <div
+                key={meal.id}
+                className="rounded-3xl overflow-hidden bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex flex-col justify-between hover:border-emerald-500/30 hover:shadow-md transition-all"
+              >
+                <div>
+                  <div className="relative w-full h-40 overflow-hidden">
+                    {meal.image ? (
+                      <img
+                        src={meal.image}
+                        alt={meal.name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => { e.target.style.display = 'none'; }}
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-slate-800 flex items-center justify-center p-4 text-center">
+                        <Coffee className="w-8 h-8 text-orange-400 mb-1 opacity-80" />
+                        <span className="text-xs font-bold text-white">OFF</span>
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/40 via-transparent to-transparent pointer-events-none"></div>
+
+                    <span className={`absolute top-2.5 left-2.5 px-2.5 py-0.5 rounded-full ${style.bg} text-white text-[10px] font-black flex items-center space-x-1 shadow-md`}>
+                      <CategoryIcon className="w-3 h-3" />
+                      <span>{meal.category}</span>
+                    </span>
+
+                    <span className="absolute bottom-2.5 left-2.5 px-2 py-0.5 rounded-full bg-black/60 backdrop-blur-md text-white text-[10px] font-semibold">
+                      {getMealTiming(meal.category, selectedScheduleDay)}
+                    </span>
+                  </div>
+
+                  <div className="p-4 space-y-1">
+                    <h4 className="text-sm font-black text-slate-900 dark:text-white line-clamp-1">
+                      {meal.name}
+                    </h4>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium line-clamp-2 leading-relaxed">
+                      {meal.items || 'Standard hostel preparation'}
+                    </p>
+                    <div className="flex items-center space-x-2 text-[10px] font-bold text-slate-400 pt-1">
+                      <span className="text-emerald-600 dark:text-emerald-400">{meal.protein}g protein</span>
+                      <span>•</span>
+                      <span>{meal.calories} kcal</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-2.5 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedMealModal(meal)}
+                    className="w-full py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-[11px] font-bold hover:bg-slate-100 transition-colors shadow-xs flex items-center justify-center space-x-1 cursor-pointer"
+                  >
+                    <span>View Ingredients & Details</span>
+                    <ChevronRight className="w-3 h-3 text-slate-400" />
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 6. DIRECT MEAL RATING MODAL (POPS UP ON "RATE NOW" CLICK OR SCANNER QR) */}
       {ratingModalMeal && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-150">
           <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden relative">
@@ -702,73 +839,6 @@ export const StudentDashboard = () => {
           </div>
         </div>
       )}
-
-      {/* 6. MUSCLE PASS & ACTIVE VOTING SUMMARY CARDS */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-        
-        {/* Muscle Pass Entry Card */}
-        <div 
-          onClick={() => setCurrentPage('muscle-pass')}
-          className="glass-card p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 space-y-3 cursor-pointer hover:border-emerald-500/40 transition-all"
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <div className="p-2 rounded-xl bg-emerald-600/10 text-emerald-600 dark:text-emerald-400">
-                <Dumbbell className="w-5 h-5" />
-              </div>
-              <h3 className="text-base font-extrabold text-slate-900 dark:text-white">Muscle Pass</h3>
-            </div>
-            <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">Target: {proteinTarget}g</span>
-          </div>
-
-          <div className="space-y-2">
-            <div className="flex justify-between text-xs font-bold text-slate-600 dark:text-slate-300">
-              <span>Consumed: <strong className="text-emerald-600 dark:text-emerald-400">{consumedProtein}g</strong></span>
-              <span>Remaining: <strong className="text-slate-900 dark:text-white">{remainingProtein}g</strong></span>
-            </div>
-            <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-emerald-500 rounded-full transition-all duration-500" 
-                style={{ width: `${proteinPercent}%` }}
-              ></div>
-            </div>
-          </div>
-
-          <div className="pt-1 flex items-center justify-between text-xs font-bold text-slate-500">
-            <span>Gym Mode & Protein Diet Plans</span>
-            <span className="text-emerald-600 dark:text-emerald-400 flex items-center">Open Section →</span>
-          </div>
-        </div>
-
-        {/* Voting Poll Card */}
-        <div 
-          onClick={() => setCurrentPage('voting')}
-          className="glass-card p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 space-y-3 cursor-pointer hover:border-emerald-500/40 transition-all"
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <div className="p-2 rounded-xl bg-purple-600/10 text-purple-600 dark:text-purple-400">
-                <Vote className="w-5 h-5" />
-              </div>
-              <h3 className="text-base font-extrabold text-slate-900 dark:text-white">Dish Voting</h3>
-            </div>
-            <span className="text-xs font-bold text-purple-600 dark:text-purple-400">Live Poll</span>
-          </div>
-
-          <p className="text-xs text-slate-600 dark:text-slate-300 font-medium">
-            Vote on upcoming dishes and suggest recipe improvements democratically.
-          </p>
-
-          <div className="pt-1 flex items-center justify-between text-xs font-bold text-slate-500">
-            <span>Active Student Polls</span>
-            <span className="text-purple-600 dark:text-purple-400 flex items-center">Vote Now →</span>
-          </div>
-        </div>
-
-      </div>
-
-      {/* 7. WEEKLY MENU REVIEW SECTION */}
-      <WeeklyMenuReviewSection />
 
     </div>
   );

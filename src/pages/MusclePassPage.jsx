@@ -12,15 +12,19 @@ import {
   AlertCircle, 
   CheckCircle2, 
   Check, 
-  TrendingUp, 
   Sliders, 
   UtensilsCrossed, 
   Plus, 
   ChevronRight, 
-  Info,
   Calendar,
   Layers,
-  Award
+  Award,
+  Crown,
+  Target,
+  ArrowRight,
+  Shield,
+  CheckCheck,
+  TrendingUp
 } from 'lucide-react';
 
 import { initiateMusclePassPayment } from '../services/payment';
@@ -366,136 +370,179 @@ export const MusclePassPage = () => {
   const isTrialActive = entitlement.isTrial;
 
   return (
-    <div className="max-w-4xl mx-auto px-3 sm:px-6 lg:px-8 py-5 space-y-5 pb-28 md:pb-12 animate-fade-in">
+    <div className="max-w-5xl mx-auto px-3 sm:px-6 lg:px-8 py-6 space-y-6 pb-28 md:pb-16 animate-fade-in">
       
-      {/* ── 1. LUXURY HEADER & STATUS PILL ───────────────────────────────────── */}
-      <div className="p-5 sm:p-6 rounded-3xl bg-slate-900 text-white shadow-xl border border-slate-800 relative overflow-hidden">
-        {/* Glow accent */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+      {/* ── 1. BESPOKE VIP ATHLETE PASS (LUXURY CARD PRESENTATION) ───────────── */}
+      <div className="relative rounded-3xl overflow-hidden shadow-2xl border border-emerald-500/30 bg-gradient-to-br from-slate-950 via-[#071f18] to-slate-950 text-white p-6 sm:p-8">
         
-        <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center space-x-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-slate-950 shadow-lg shadow-emerald-500/20 shrink-0">
-              <Dumbbell className="w-6 h-6 stroke-[2.5]" />
-            </div>
-            <div>
-              <div className="flex items-center space-x-2">
-                <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white">
-                  MUSCLE PASS
-                </h1>
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500 text-slate-950">
-                  {isTrialActive ? '7-Day Free Demo' : 'Pro Pass'}
-                </span>
+        {/* Subtle Luxury Sheen Background Accents */}
+        <div className="absolute top-0 right-0 -mr-16 -mt-16 w-80 h-80 rounded-full bg-emerald-500/15 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-1/3 -mb-20 w-64 h-64 rounded-full bg-amber-400/10 blur-3xl pointer-events-none" />
+        <div className="absolute inset-0 bg-[radial-gradient(#10b981_1px,transparent_1px)] [background-size:24px_24px] opacity-[0.07] pointer-events-none" />
+
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          
+          {/* Left: Brand, Crest, and Student Athlete Details */}
+          <div className="space-y-4">
+            <div className="flex items-center space-x-3">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-400 via-amber-200 to-amber-500 flex items-center justify-center text-slate-950 shadow-lg shadow-amber-500/20 ring-2 ring-amber-400/40">
+                <Crown className="w-6 h-6 stroke-[2.5]" />
               </div>
-              <p className="text-xs text-slate-400 font-medium mt-0.5">
-                Intelligent Hostel Nutrition &amp; Macro Engine • {formatCollegeDateDisplay()}
-              </p>
+              <div>
+                <div className="flex items-center space-x-2">
+                  <span className="text-[11px] font-black tracking-widest uppercase text-amber-300">
+                    MESSMATES ATHLETICS
+                  </span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                </div>
+                <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center gap-2">
+                  <span>MUSCLE PASS</span>
+                  <span className="text-xs px-2.5 py-0.5 rounded-full font-black uppercase tracking-wider bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 shadow-sm">
+                    {isTrialActive ? 'VIP Demo' : 'VIP Pro Pass'}
+                  </span>
+                </h1>
+              </div>
+            </div>
+
+            {/* Student Pass Bio line */}
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-300 font-medium pt-1 border-t border-white/10">
+              <span className="flex items-center gap-1.5 text-white font-bold">
+                <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                {currentUser?.name || 'Student Athlete'}
+              </span>
+              <span className="text-slate-400">·</span>
+              <span>{currentUser?.block || 'Hostel Campus'}</span>
+              <span className="text-slate-400">·</span>
+              <span className="text-emerald-300 font-semibold">{formatCollegeDateDisplay()}</span>
             </div>
           </div>
 
-          {/* Right Status / Trial Badge */}
-          <div className="flex items-center space-x-2 self-start sm:self-auto">
-            {isTrialActive ? (
-              <div className="px-3.5 py-1.5 rounded-xl bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 text-xs font-black flex items-center space-x-1.5 shadow-sm">
-                <Clock className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
-                <span>{formatTimeRemaining(entitlement.msLeft)}</span>
-              </div>
-            ) : (
-              <div className="px-3.5 py-1.5 rounded-xl bg-emerald-500/20 text-emerald-300 text-xs font-black flex items-center space-x-1.5 border border-emerald-500/30 shadow-sm">
-                <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                <span>VIP MEMBER</span>
-              </div>
-            )}
+          {/* Right: Pass Status Capsule & Quick Actions */}
+          <div className="flex flex-col sm:flex-row md:flex-col items-start md:items-end justify-between gap-3">
+            <div className="flex items-center gap-2">
+              {isTrialActive ? (
+                <div className="px-4 py-2 rounded-2xl bg-slate-900/90 border border-emerald-500/50 text-emerald-300 text-xs font-black flex items-center space-x-2 shadow-inner">
+                  <Clock className="w-4 h-4 text-emerald-400 animate-pulse" />
+                  <span>{formatTimeRemaining(entitlement.msLeft)} Demo Left</span>
+                </div>
+              ) : (
+                <div className="px-4 py-2 rounded-2xl bg-amber-400/20 border border-amber-400/50 text-amber-200 text-xs font-black flex items-center space-x-2 shadow-inner">
+                  <ShieldCheck className="w-4 h-4 text-amber-400" />
+                  <span>ELITE VIP MEMBER</span>
+                </div>
+              )}
 
-            {!entitlement.trialClaimed && (
+              {!entitlement.trialClaimed && (
+                <button
+                  onClick={handleStartFreeTrial}
+                  disabled={isStartingTrial}
+                  className="px-4 py-2 rounded-2xl bg-gradient-to-r from-emerald-400 to-emerald-500 hover:from-emerald-300 hover:to-emerald-400 text-slate-950 font-black text-xs shadow-lg transition-all cursor-pointer flex items-center gap-1.5"
+                >
+                  <Zap className="w-3.5 h-3.5 fill-slate-950" />
+                  <span>{isStartingTrial ? 'Activating...' : 'Activate 7-Day Free Demo'}</span>
+                </button>
+              )}
+            </div>
+
+            {/* Direct Switch to Pro Button */}
+            {isTrialActive && (
               <button
-                onClick={handleStartFreeTrial}
-                disabled={isStartingTrial}
-                className="px-3.5 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs shadow-md transition-all cursor-pointer"
+                onClick={() => setActiveTab('plans')}
+                className="px-4 py-2 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-xs shadow-lg transition-all flex items-center gap-1.5 cursor-pointer"
               >
-                <Zap className="w-3.5 h-3.5 inline mr-1 fill-slate-950" />
-                <span>{isStartingTrial ? 'Activating...' : 'Start Demo'}</span>
+                <Crown className="w-3.5 h-3.5" />
+                <span>Upgrade to Pro (From ₹69)</span>
+                <ChevronRight className="w-3.5 h-3.5" />
               </button>
             )}
           </div>
+
         </div>
       </div>
 
       {trialSuccessMsg && (
-        <div className="p-3.5 rounded-2xl bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 text-xs font-bold flex items-center space-x-2 border border-emerald-500/20">
-          <Sparkles className="w-4 h-4 shrink-0 text-emerald-600" />
+        <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 text-xs font-bold flex items-center space-x-2.5 border border-emerald-200 dark:border-emerald-800 shadow-sm">
+          <Sparkles className="w-4 h-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
           <span>{trialSuccessMsg}</span>
         </div>
       )}
 
-      {/* ── 2. ATHLETE PROFILE & NAVIGATION BAR ──────────────────────────────── */}
-      <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        {/* Profile Summary Chips */}
+      {/* ── 2. ATHLETE METRICS & NAVIGATION TABS ──────────────────────────────── */}
+      <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+        
+        {/* Profile Attributes */}
         <div className="flex flex-wrap items-center gap-2">
-          <span className="px-2.5 py-1 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 text-xs font-black border border-emerald-200 dark:border-emerald-800">
-            {activeWeight} kg
-          </span>
-          <span className="px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-xs font-bold">
-            Target: <strong>{activeProteinTarget}g/day</strong> ({activeProteinPerKg} g/kg)
-          </span>
-          <span className="px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold">
+          <div className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-black flex items-center gap-1.5">
+            <span className="text-slate-400 font-medium">Weight:</span>
+            <span>{activeWeight} kg</span>
+          </div>
+
+          <div className="px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 text-xs font-black border border-emerald-200/80 dark:border-emerald-800 flex items-center gap-1.5">
+            <Target className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Target: {activeProteinTarget}g/day</span>
+            <span className="text-[10px] text-emerald-600/80 dark:text-emerald-400 font-semibold">({activeProteinPerKg} g/kg)</span>
+          </div>
+
+          <div className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold">
             {profile?.goal || 'Muscle Gain'} · {profile?.dietaryPreference || 'Vegetarian'}
-          </span>
+          </div>
+
           <button
             onClick={() => setIsProfileModalOpen(true)}
-            className="px-2.5 py-1 rounded-xl border border-slate-300 dark:border-slate-700 hover:border-emerald-500 text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-emerald-600 flex items-center space-x-1 transition-all cursor-pointer"
+            className="px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 hover:border-emerald-500 text-xs font-black text-slate-700 dark:text-slate-300 hover:text-emerald-600 flex items-center space-x-1.5 transition-all cursor-pointer bg-white dark:bg-slate-800 shadow-xs"
           >
-            <Sliders className="w-3 h-3" />
-            <span>Customize</span>
+            <Sliders className="w-3 h-3 text-slate-500" />
+            <span>Customize Target</span>
           </button>
         </div>
 
-        {/* Clean Top Navigation Tabs */}
-        <div className="flex rounded-xl bg-slate-100 dark:bg-slate-800/80 p-1 text-xs font-bold self-start sm:self-auto">
+        {/* Clean Mode Switcher Tabs */}
+        <div className="flex rounded-xl bg-slate-100 dark:bg-slate-800/80 p-1 text-xs font-black self-start md:self-auto shadow-inner">
           <button
             onClick={() => setActiveTab('planner')}
-            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+            className={`px-3.5 py-1.5 rounded-lg transition-all cursor-pointer ${
               activeTab === 'planner'
                 ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
                 : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
           >
-            Today's Planner
+            ⚡ Daily Fuel Plan
           </button>
           <button
             onClick={() => setActiveTab('insights')}
-            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+            className={`px-3.5 py-1.5 rounded-lg transition-all cursor-pointer ${
               activeTab === 'insights'
                 ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
                 : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
           >
-            7-Day Trends
+            📊 7-Day Trends
           </button>
           <button
             onClick={() => setActiveTab('plans')}
-            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+            className={`px-3.5 py-1.5 rounded-lg transition-all cursor-pointer ${
               activeTab === 'plans'
-                ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
+                ? 'bg-amber-400 text-slate-950 shadow-sm font-black'
                 : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
           >
-            Pro Membership
+            💎 Pro Passes
           </button>
         </div>
+
       </div>
 
-      {/* ── 3. TAB 1: TODAY'S PLANNER (CIRCULAR PROGRESS RING + MEAL CARDS) ──── */}
+      {/* ── 3. TAB 1: TODAY'S FUEL PLAN (PROGRESS RING + MEAL BREAKDOWNS) ─────── */}
       {activeTab === 'planner' && (
-        <div className="space-y-5">
+        <div className="space-y-6">
           
-          {/* Main Hero Dial Card */}
-          <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-5">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
+          {/* Main Hero HUD: Progress Dial & Macros */}
+          <div className="p-6 sm:p-7 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
+            <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
               
-              {/* Left: Circular Dial */}
+              {/* Left: High-Precision Radial Ring */}
               <div className="flex items-center space-x-6">
-                <div className="relative w-32 h-32 shrink-0">
+                <div className="relative w-36 h-36 shrink-0">
                   <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
                     <circle
                       cx="50"
@@ -515,26 +562,31 @@ export const MusclePassPage = () => {
                       strokeWidth="8"
                       strokeLinecap="round"
                       strokeDasharray={2 * Math.PI * 40}
-                      strokeDashoffset={2 * Math.PI * 40 * (1 - (summary.completionPercentage || 0) / 100)}
+                      strokeDashoffset={2 * Math.PI * 40 * (1 - Math.min(100, summary.completionPercentage || 0) / 100)}
                       className="text-emerald-500 transition-all duration-700 ease-out"
                     />
                   </svg>
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-2xl font-black text-slate-900 dark:text-white">
+                    <span className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
                       {summary.completionPercentage || 0}%
                     </span>
-                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">
-                      Goal Hit
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                      Target Hit
                     </span>
                   </div>
                 </div>
 
-                <div className="space-y-1">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                    Today's Protein Target
-                  </span>
-                  <div className="flex items-baseline space-x-1.5">
-                    <span className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-tight">
+                <div className="space-y-1.5">
+                  <div className="flex items-center space-x-1.5">
+                    <span className="text-[11px] font-black text-slate-400 uppercase tracking-wider">
+                      Today's Protein Fuel
+                    </span>
+                    <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400">
+                      LIVE
+                    </span>
+                  </div>
+                  <div className="flex items-baseline space-x-2">
+                    <span className="text-4xl font-black text-slate-900 dark:text-white tracking-tight">
                       {summary.consumedProtein || 0}g
                     </span>
                     <span className="text-base font-bold text-slate-400">
@@ -543,69 +595,79 @@ export const MusclePassPage = () => {
                   </div>
                   <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
                     {summary.remainingProtein > 0 ? (
-                      <span>⚡ {summary.remainingProtein}g needed from upcoming meals</span>
+                      <span>⚡ {summary.remainingProtein}g needed from remaining meals</span>
                     ) : (
-                      <span>🎉 Daily Target Achieved! Great job!</span>
+                      <span>🎉 Daily Target Achieved! Fantastic discipline!</span>
                     )}
                   </p>
                 </div>
               </div>
 
-              {/* Right: Clean Macro Chips */}
-              <div className="grid grid-cols-2 gap-3 w-full sm:w-auto">
-                <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 min-w-[130px]">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase block mb-0.5">
+              {/* Right: Tactile Macro Tiles */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 w-full lg:w-auto">
+                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 text-center min-w-[120px]">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-wide block mb-1">
                     Logged Meals
                   </span>
-                  <span className="text-lg font-black text-slate-900 dark:text-white">
+                  <span className="text-xl font-black text-slate-900 dark:text-white">
                     {summary.completedMealsCount || 0} / 4
                   </span>
-                  <span className="text-[10px] text-slate-500 block">tracked today</span>
+                  <span className="text-[10px] text-slate-500 font-semibold block mt-0.5">tracked today</span>
                 </div>
 
-                <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 min-w-[130px]">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase block mb-0.5">
+                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 text-center min-w-[120px]">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-wide block mb-1">
                     Est. Calories
                   </span>
-                  <span className="text-lg font-black text-slate-900 dark:text-white flex items-center space-x-1">
+                  <span className="text-xl font-black text-slate-900 dark:text-white flex items-center justify-center space-x-1">
                     <Flame className="w-4 h-4 text-amber-500 shrink-0" />
                     <span>{summary.consumedCalories || 0}</span>
                   </span>
-                  <span className="text-[10px] text-slate-500 block">kcal recorded</span>
+                  <span className="text-[10px] text-slate-500 font-semibold block mt-0.5">kcal intake</span>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 text-center min-w-[120px] col-span-2 sm:col-span-1">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-wide block mb-1">
+                    Remaining
+                  </span>
+                  <span className="text-xl font-black text-emerald-600 dark:text-emerald-400">
+                    {Math.max(0, summary.remainingProtein || 0)}g
+                  </span>
+                  <span className="text-[10px] text-slate-500 font-semibold block mt-0.5">protein left</span>
                 </div>
               </div>
 
             </div>
 
             {/* Quick Action: Log Outside Food (Shake / Canteen / Boiled Eggs) */}
-            <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-              <span className="text-xs text-slate-500 font-medium">
-                Ate outside hostel mess? (Eggs, Whey shake, roasted chana)
+            <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                💡 Having a Whey Protein shake, boiled eggs, or outside canteen meal?
               </span>
               <button
                 onClick={() => setShowOutsideFoodModal(true)}
-                className="px-3.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center space-x-1 transition-all cursor-pointer"
+                className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-slate-700 text-xs font-black text-slate-700 dark:text-slate-200 flex items-center justify-center space-x-1.5 transition-all cursor-pointer shadow-xs"
               >
                 <Plus className="w-3.5 h-3.5" />
-                <span>Log Outside Food</span>
+                <span>+ Log Outside Food / Shake</span>
               </button>
             </div>
           </div>
 
           {/* ── 4 REAL MESS MEAL CARDS (BREAKFAST, LUNCH, SNACKS, DINNER) ────── */}
-          <div className="space-y-3">
+          <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight">
+                <h2 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">
                   Today's Actual Mess Menu &amp; Smart Portions
                 </h2>
                 <p className="text-xs text-slate-500 font-medium">
-                  {todayDay} menu for {activeMess?.label || 'Hostel Mess'}
+                  Personalized intake recommendations for {todayDay} ({activeMess?.label || 'Hostel Mess'})
                 </p>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {['Breakfast', 'Lunch', 'Snacks', 'Dinner'].map((cat) => {
                 const rec = recommendations[cat];
                 if (!rec) return null;
@@ -619,22 +681,23 @@ export const MusclePassPage = () => {
                     key={cat}
                     className={`p-5 rounded-3xl border transition-all flex flex-col justify-between ${
                       isLogged
-                        ? 'bg-emerald-50/60 dark:bg-emerald-950/20 border-emerald-300 dark:border-emerald-800'
+                        ? 'bg-emerald-50/70 dark:bg-emerald-950/20 border-emerald-300 dark:border-emerald-800/80 shadow-xs'
                         : isSkipped
                         ? 'bg-slate-50 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 opacity-80'
-                        : 'bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 shadow-sm hover:border-emerald-500/40'
+                        : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm hover:border-emerald-400'
                     }`}
                   >
-                    <div className="space-y-3">
-                      {/* Top Slot Pill */}
+                    <div className="space-y-3.5">
+                      
+                      {/* Top Slot Pill & Status */}
                       <div className="flex items-center justify-between">
-                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                        <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
                           {cat}
                         </span>
 
                         {isLogged && (
-                          <span className="text-xs font-black text-emerald-600 dark:text-emerald-400 flex items-center space-x-1">
-                            <CheckCircle2 className="w-3.5 h-3.5" />
+                          <span className="text-xs font-black text-emerald-600 dark:text-emerald-400 flex items-center space-x-1.5 bg-emerald-100/70 dark:bg-emerald-950/60 px-2.5 py-0.5 rounded-full">
+                            <CheckCheck className="w-3.5 h-3.5" />
                             <span>Logged (+{existingLog?.proteinConsumed || 0}g)</span>
                           </span>
                         )}
@@ -647,27 +710,27 @@ export const MusclePassPage = () => {
 
                       {/* Dish Name & Context Explanation */}
                       <div>
-                        <h3 className="text-sm sm:text-base font-black text-slate-900 dark:text-white leading-snug">
+                        <h3 className="text-base font-black text-slate-900 dark:text-white leading-snug">
                           {rec.title}
                         </h3>
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
                           {rec.explanation}
                         </p>
                       </div>
 
                       {/* Recommended Portions Breakdown */}
                       {!isLogged && !isSkipped && rec.suggestedItems && rec.suggestedItems.length > 0 && (
-                        <div className="space-y-1.5 pt-2 border-t border-slate-100 dark:border-slate-800">
+                        <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
                           <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">
                             Recommended Portions:
                           </span>
-                          <div className="space-y-1">
+                          <div className="space-y-1.5">
                             {rec.suggestedItems.map((item, idx) => (
                               <div key={idx} className="flex items-center justify-between text-xs font-semibold">
-                                <span className="text-slate-700 dark:text-slate-300 truncate max-w-[200px]">
+                                <span className="text-slate-700 dark:text-slate-300 truncate max-w-[220px]">
                                   • {item.name} <span className="text-slate-400 text-[10px]">({item.recommendedPortionLabel})</span>
                                 </span>
-                                <span className="font-bold text-emerald-600 dark:text-emerald-400 shrink-0">
+                                <span className="font-black text-emerald-600 dark:text-emerald-400 shrink-0">
                                   ~{item.recommendedProteinG}g
                                 </span>
                               </div>
@@ -687,7 +750,7 @@ export const MusclePassPage = () => {
                         {!isLogged && !isSkipped && (
                           <button
                             onClick={() => handleQuickLogStandardMeal(cat, rec)}
-                            className="px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 text-emerald-700 dark:text-emerald-300 text-xs font-bold transition-all cursor-pointer flex items-center space-x-1"
+                            className="px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 text-emerald-700 dark:text-emerald-300 text-xs font-black transition-all cursor-pointer flex items-center space-x-1"
                             title="Instant 1-tap log of standard serving"
                           >
                             <Zap className="w-3 h-3 text-emerald-600" />
@@ -730,26 +793,28 @@ export const MusclePassPage = () => {
         />
       )}
 
-      {/* ── 5. TAB 3: MEMBERSHIP PLANS & UPGRADE (PAID) ─────────────────────── */}
+      {/* ── 5. TAB 3: MEMBERSHIP PLANS & UPGRADE (HIGH-CONVERTING LUXURY TIERS) ─ */}
       {activeTab === 'plans' && (
-        <div className="p-6 sm:p-8 rounded-3xl bg-slate-900 text-white space-y-6 shadow-2xl border border-emerald-500/30">
-          <div className="space-y-1.5">
-            <span className="px-2.5 py-0.5 rounded-full bg-emerald-500 text-slate-950 text-[10px] font-black uppercase tracking-wider">
-              Muscle Pass Membership
+        <div className="space-y-6">
+          
+          {/* Header Banner */}
+          <div className="text-center max-w-2xl mx-auto space-y-2 py-2">
+            <span className="px-3 py-1 rounded-full bg-amber-400 text-slate-950 text-xs font-black uppercase tracking-wider shadow-sm">
+              👑 ELITE STUDENT FITNESS PASS
             </span>
-            <h2 className="text-xl sm:text-3xl font-black text-white tracking-tight">
-              Fuel Your Campus Fitness Transformation
+            <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+              Fuel Your Campus Physique Transformation
             </h2>
-            <p className="text-xs sm:text-sm text-slate-300 max-w-xl leading-relaxed">
-              Unrestricted daily mess menu protein tracking, personalized portion adjustments, adaptive calorie distribution, and continuous progress analytics.
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+              Every day your hostel mess serves hundreds of grams of protein. Muscle Pass tells you exactly which dishes to pile onto your plate, how many bowls to take, and what to avoid to hit your exact fitness targets.
             </p>
           </div>
 
           {paymentMessage && (
             <div className={`p-4 rounded-2xl text-xs font-bold flex items-center space-x-2 ${
               paymentMessage.type === 'success'
-                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                ? 'bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30'
+                : 'bg-rose-500/20 text-rose-800 dark:text-rose-300 border border-rose-500/30'
             }`}>
               {paymentMessage.type === 'success' ? <Check className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
               <span>{paymentMessage.text}</span>
@@ -757,83 +822,111 @@ export const MusclePassPage = () => {
           )}
 
           {/* 4 Official Paid Plans Selection */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {MUSCLE_PASS_PLAN_LIST.map((plan) => {
               const isSelected = selectedPlanId === plan.id;
+              const isPopular = plan.popular;
+
               return (
                 <div
                   key={plan.id}
                   onClick={() => setSelectedPlanId(plan.id)}
-                  className={`relative p-4 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between ${
+                  className={`relative p-5 rounded-3xl border-2 transition-all cursor-pointer flex flex-col justify-between ${
                     isSelected
-                      ? 'bg-emerald-950/80 border-emerald-400 ring-2 ring-emerald-400 shadow-xl scale-[1.02]'
-                      : 'bg-slate-800/80 border-slate-700 hover:border-slate-600'
+                      ? 'bg-gradient-to-b from-emerald-950/50 via-slate-900 to-slate-950 text-white border-emerald-400 ring-2 ring-emerald-400 shadow-xl scale-[1.02]'
+                      : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-emerald-400/60 shadow-sm'
                   }`}
                 >
                   {plan.badge && (
-                    <span className={`absolute -top-2.5 right-3 px-2 py-0.5 rounded-full text-[9px] font-black uppercase shadow-md ${
-                      plan.popular ? 'bg-emerald-500 text-white' : 'bg-slate-700 text-slate-200'
+                    <span className={`absolute -top-3 right-4 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase shadow-md ${
+                      isPopular 
+                        ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 font-black' 
+                        : 'bg-emerald-600 text-white'
                     }`}>
                       {plan.badge}
                     </span>
                   )}
 
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <h3 className="text-xs font-black uppercase tracking-wide text-slate-300">{plan.durationLabel}</h3>
+                      <h3 className={`text-xs font-black uppercase tracking-wider ${
+                        isSelected ? 'text-amber-300' : 'text-slate-500 dark:text-slate-400'
+                      }`}>
+                        {plan.durationLabel}
+                      </h3>
                       {isSelected ? (
-                        <div className="w-4 h-4 rounded-full bg-emerald-500 text-white flex items-center justify-center">
-                          <Check className="w-2.5 h-2.5 stroke-[3]" />
+                        <div className="w-5 h-5 rounded-full bg-emerald-400 text-slate-950 flex items-center justify-center font-bold">
+                          <Check className="w-3 h-3 stroke-[3]" />
                         </div>
                       ) : (
-                        <div className="w-4 h-4 rounded-full border border-slate-600" />
+                        <div className="w-5 h-5 rounded-full border border-slate-300 dark:border-slate-700" />
                       )}
                     </div>
 
                     <div>
-                      <div className="flex items-baseline space-x-1">
-                        <span className="text-2xl font-black text-white">₹{plan.price}</span>
-                        <span className="text-[10px] text-slate-400 font-semibold">/ {plan.durationLabel}</span>
+                      <div className="flex items-baseline space-x-1.5">
+                        <span className={`text-3xl font-black ${isSelected ? 'text-white' : 'text-slate-900 dark:text-white'}`}>
+                          ₹{plan.price}
+                        </span>
+                        <span className="text-xs text-slate-400 font-semibold">/ {plan.durationLabel}</span>
                       </div>
                       {plan.savingsLabel && (
-                        <span className="inline-block px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[10px] font-black mt-0.5">
+                        <span className="inline-block px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[10px] font-black mt-1">
                           {plan.savingsLabel}
                         </span>
                       )}
                     </div>
 
-                    <p className="text-[11px] text-slate-300 font-medium leading-snug">
+                    <p className={`text-xs leading-snug font-medium ${
+                      isSelected ? 'text-slate-200' : 'text-slate-600 dark:text-slate-400'
+                    }`}>
                       {plan.tagline}
                     </p>
                   </div>
 
-                  <div className="pt-3 mt-2 border-t border-slate-700/60 flex items-center justify-between text-[10px] text-slate-400">
-                    <span>{plan.durationDays} days</span>
-                    <span className="text-emerald-400 font-bold">Select →</span>
+                  <div className={`pt-4 mt-4 border-t flex items-center justify-between text-xs font-bold ${
+                    isSelected ? 'border-white/10 text-slate-300' : 'border-slate-100 dark:border-slate-800 text-slate-500'
+                  }`}>
+                    <span>{plan.durationDays} days access</span>
+                    <span className="text-emerald-500 dark:text-emerald-400 flex items-center gap-1 font-black">
+                      {isSelected ? 'Selected' : 'Choose'} →
+                    </span>
                   </div>
                 </div>
               );
             })}
           </div>
 
-          {/* Subscribe Action */}
-          <div className="pt-2">
+          {/* Checkout & Guarantees Box */}
+          <div className="p-6 sm:p-7 rounded-3xl bg-slate-900 text-white border border-slate-800 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="space-y-1.5">
+              <div className="flex items-center space-x-2">
+                <span className="text-amber-400 text-xs font-black uppercase tracking-wider">
+                  Selected Plan:
+                </span>
+                <span className="text-white text-base font-black">
+                  {selectedPlan?.name || 'Muscle Pass Pro'} — ₹{selectedPlan?.price}
+                </span>
+              </div>
+              <p className="text-xs text-slate-400">
+                🔒 Instant activation via Razorpay. Supports UPI, Google Pay, PhonePe, Paytm, RuPay &amp; NetBanking.
+              </p>
+            </div>
+
             <button
               onClick={handleSubscribe}
               disabled={isProcessingPayment}
-              className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs shadow-lg transition-all flex items-center justify-center space-x-2 cursor-pointer"
+              className="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-400 to-emerald-500 hover:from-emerald-300 hover:to-emerald-400 text-slate-950 font-black text-xs shadow-xl transition-all flex items-center justify-center space-x-2 cursor-pointer shrink-0"
             >
               <CreditCard className="w-4 h-4" />
               <span>
                 {isProcessingPayment 
                   ? 'CONNECTING RAZORPAY...' 
-                  : `SUBSCRIBE VIA RAZORPAY (₹${selectedPlan.price} FOR ${selectedPlan.durationLabel.toUpperCase()})`}
+                  : `SUBSCRIBE FOR ₹${selectedPlan?.price} (${selectedPlan?.durationLabel.toUpperCase()})`}
               </span>
             </button>
-            <p className="text-[10px] text-slate-400 mt-2">
-              Official Razorpay checkout. Supports UPI, Google Pay, PhonePe, Cards, NetBanking.
-            </p>
           </div>
+
         </div>
       )}
 
@@ -862,15 +955,15 @@ export const MusclePassPage = () => {
 
       {/* Quick Outside Food Logger Modal */}
       {showOutsideFoodModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm">
           <div className="w-full max-w-sm bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-base font-black text-slate-900 dark:text-white">
-                Log Outside Food / Snack
+                Log Outside Food / Shake
               </h3>
               <button
                 onClick={() => setShowOutsideFoodModal(false)}
-                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1"
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 cursor-pointer font-bold"
               >
                 ✕
               </button>
@@ -937,13 +1030,13 @@ export const MusclePassPage = () => {
                 <button
                   type="button"
                   onClick={() => setShowOutsideFoodModal(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-500"
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs shadow-md"
+                  className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs shadow-md cursor-pointer"
                 >
                   Add to Today's Total
                 </button>
