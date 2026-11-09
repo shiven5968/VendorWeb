@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>MessMates — Live Meal Rating Scanner</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800;900&display=swap');
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      background: #f1f5f9;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .standee-card {
+      width: 380px;
+      background: #ffffff;
+      border-radius: 28px;
+      padding: 32px 28px;
+      text-align: center;
+      box-shadow: 0 20px 40px -15px rgba(6, 78, 59, 0.15), 0 0 0 1px rgba(16, 185, 129, 0.2);
+      border: 3px solid #10b981;
+    }
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 20px;
+      font-weight: 900;
+      color: #064e3b;
+      letter-spacing: -0.5px;
+      margin-bottom: 12px;
+    }
+    .tagline {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #059669;
+      background: #ecfdf5;
+      padding: 4px 12px;
+      border-radius: 999px;
+      display: inline-block;
+      margin-bottom: 20px;
+    }
+    .heading {
+      font-size: 22px;
+      font-weight: 900;
+      color: #0f172a;
+      line-height: 1.25;
+      margin-bottom: 6px;
+    }
+    .subtext {
+      font-size: 13px;
+      color: #64748b;
+      font-weight: 500;
+      margin-bottom: 24px;
+      line-height: 1.4;
+    }
+    .qr-container {
+      background: #f8fafc;
+      padding: 16px;
+      border-radius: 24px;
+      border: 2px dashed #cbd5e1;
+      display: inline-block;
+      margin-bottom: 20px;
+    }
+    .qr-img {
+      width: 240px;
+      height: 240px;
+      display: block;
+      border-radius: 12px;
+    }
+    .reward-pill {
+      background: linear-gradient(135deg, #059669, #10b981);
+      color: white;
+      padding: 10px 18px;
+      border-radius: 16px;
+      font-size: 13px;
+      font-weight: 800;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 10px 20px -5px rgba(16, 185, 129, 0.4);
+      margin-bottom: 16px;
+    }
+    .footer-note {
+      font-size: 11px;
+      color: #94a3b8;
+      font-weight: 600;
+    }
+    @media print {
+      body { background: white; padding: 0; }
+      .standee-card { box-shadow: none; border-width: 2px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="standee-card">
+    <div class="brand">
+      <span>🍽️ MESSMATES</span>
+    </div>
+    <br>
+    <div class="tagline">Official Dining Hall Scanner</div>
+    <h1 class="heading">How Was Your Meal?</h1>
+    <p class="subtext">Scan with your phone to instantly rate today's live meal.</p>
+    
+    <div class="qr-container">
+      <img src="data:image/png;base64,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" alt="Scan to Rate Meal" class="qr-img">
+    </div>
+
+    <div class="reward-pill">
+      <span>⭐</span>
+      <span>Earn +1 Health Point per Review</span>
+    </div>
+
+    <p class="footer-note">Direct Live Rating Window • messmates.tech</p>
+  </div>
+</body>
+</html>
