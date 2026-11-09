@@ -42,7 +42,7 @@ export const MESSMATES_SUPPORT_CONTACTS = {
   phone2: '+91 8920336768',
   phones: ['+91 9236581606', '+91 8920336768'],
   rawPhones: ['9236581606', '8920336768'],
-  address: 'ABES Engineering College, Campus 1, 19th KM Stone, NH-09, Ghaziabad, UP 201009',
-  campus: 'ABES Engineering College',
+  address: 'Empowering Student Dining & Nutrition Across Campus Hostels',
+  campus: 'MessMates for Students',
   tagline: 'Know Your Meal Before You Eat It'
 };

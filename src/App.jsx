@@ -219,7 +219,7 @@ const AppContent = () => {
           <Suspense fallback={<PageLoadingFallback />}>
             {!selectedCollegeId ? (
               <CollegeSelectScreen
-                initialSelectedId="abes_ec"
+                initialSelectedId={null}
                 onConfirmInstitution={(chosen) => {
                   setSelectedCollegeId(chosen.id);
                   try {

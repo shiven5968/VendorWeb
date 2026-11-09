@@ -36,14 +36,14 @@ export const Footer = () => {
             </div>
             
             <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed max-w-sm font-medium">
-              MessMates delivers an intelligent campus dining ecosystem for ABES Engineering College. 
-              Connecting hostellers, mess committees, and wardens through transparent live menus, 
+              MessMates delivers an intelligent campus dining ecosystem for college students across universities. 
+              Connecting hostellers, mess committees, and campus administrations through transparent live menus, 
               verified nutrition breakdowns, and audited daily hygiene oversight.
             </p>
 
             <div className="pt-2 text-[11px] text-slate-400 dark:text-slate-500 font-semibold space-y-0.5">
-              <p className="font-bold text-slate-600 dark:text-slate-400">{MESSMATES_SUPPORT_CONTACTS.campus}</p>
-              <p>{MESSMATES_SUPPORT_CONTACTS.address}</p>
+              <p className="font-bold text-slate-700 dark:text-slate-300">MessMates for Students</p>
+              <p>Campus Dining &amp; Nutrition Network</p>
             </div>
           </div>
 
@@ -193,7 +193,7 @@ export const Footer = () => {
               <div className="flex items-start space-x-2.5 pt-1 text-slate-500 dark:text-slate-400">
                 <MapPin className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
                 <span className="text-[11px] leading-relaxed">
-                  {MESSMATES_SUPPORT_CONTACTS.address}
+                  MessMates Student Operations • Supporting Multiple University Hostels
                 </span>
               </div>
 
@@ -205,9 +205,9 @@ export const Footer = () => {
         {/* BOTTOM SUB-FOOTER */}
         <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-slate-400 dark:text-slate-500 font-semibold">
           <div className="flex items-center space-x-2">
-            <span>{MESSMATES_SUPPORT_CONTACTS.campus}</span>
+            <span>MessMates for Students</span>
             <span>•</span>
-            <span>Campus Dining Administration Platform</span>
+            <span>Campus Dining &amp; Nutrition Platform</span>
           </div>
 
           <p>
