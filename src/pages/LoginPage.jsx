@@ -18,9 +18,11 @@ import {
   RotateCw,
   LogIn,
   UserPlus,
-  Edit3
+  Edit3,
+  Building2
 } from 'lucide-react';
 import { isValidAbesEmail } from '../services/otp';
+import { getDefaultInstitution } from '../config/institutions';
 
 // Explicit Step State Constants
 const REG_STEPS = {
@@ -29,7 +31,13 @@ const REG_STEPS = {
   CREATED: 'ACCOUNT_CREATED'
 };
 
-export const LoginPage = ({ initialRole = 'student', onBackToRoles }) => {
+export const LoginPage = ({ 
+  initialRole = 'student', 
+  onBackToRoles,
+  institution = getDefaultInstitution(),
+  onChangeCollege
+}) => {
+  const currentInstitution = institution || getDefaultInstitution();
   const { 
     login, 
     register, 
@@ -88,7 +96,7 @@ export const LoginPage = ({ initialRole = 'student', onBackToRoles }) => {
   // Forgot password state
   const [resetIdentifier, setResetIdentifier] = useState('');
 
-  const hostelBlocks = [
+  const hostelBlocks = currentInstitution.hostelBlocks || [
     'DNB Block',
     'VKB Block',
     'RKB Block',
@@ -138,16 +146,18 @@ export const LoginPage = ({ initialRole = 'student', onBackToRoles }) => {
       return;
     }
 
-    // Student validation: allow Admission Number OR official @abes.ac.in email
+    // Student validation: allow Admission Number OR official college email
     if (activeRole === 'student' && cleanIdentifier.includes('@')) {
-      if (!cleanIdentifier.toLowerCase().endsWith('@abes.ac.in')) {
-        setErrorMessage('Please enter a valid ABES college email ending with @abes.ac.in');
+      const allowedDomains = currentInstitution.emailDomains || ['abes.ac.in'];
+      const matchesDomain = allowedDomains.some(d => cleanIdentifier.toLowerCase().endsWith('@' + d));
+      if (!matchesDomain) {
+        setErrorMessage(`Please enter a valid ${currentInstitution.shortName || 'college'} email ending with @${allowedDomains[0]}`);
         return;
       }
     }
 
-    // Role-specific pre-check for ABES Officials
-    if (activeRole === 'warden') {
+    // Role-specific pre-check for Institution Officials (e.g. ABES Officials)
+    if (activeRole === 'warden' && currentInstitution.id === 'abes_ec') {
       const email = cleanIdentifier.toLowerCase();
       const authorizedOfficials = ['amita@abes.ac.in', 'alok@abes.ac.in'];
       if (!authorizedOfficials.includes(email)) {
@@ -202,8 +212,10 @@ export const LoginPage = ({ initialRole = 'student', onBackToRoles }) => {
       setErrorMessage('College email is required.');
       return;
     }
-    if (!isValidAbesEmail(cleanEmail)) {
-      setErrorMessage('Please enter an official ABES college email ending with @abes.ac.in');
+    const allowedDomains = currentInstitution.emailDomains || ['abes.ac.in'];
+    const matchesDomain = allowedDomains.some(d => cleanEmail.endsWith('@' + d));
+    if (!matchesDomain) {
+      setErrorMessage(`Please enter an official ${currentInstitution.shortName || 'college'} email ending with @${allowedDomains[0]}`);
       return;
     }
     if (regData.password.length < 6) {
@@ -338,18 +350,18 @@ export const LoginPage = ({ initialRole = 'student', onBackToRoles }) => {
   const roleMeta = {
     student: {
       title: 'Student Sign In',
-      subtitle: 'Sign in with your Admission Number & Password',
+      subtitle: `Sign in with your ${currentInstitution.admissionNumberLabel || 'Admission Number'} & Password`,
       icon: GraduationCap,
       color: 'emerald'
     },
     warden: {
-      title: 'ABES Officials',
+      title: currentInstitution.officialsPortalLabel || 'ABES Officials',
       subtitle: 'Institutional oversight & administration',
       icon: Shield,
       color: 'emerald'
     },
     committee: {
-      title: 'Mess Committee',
+      title: currentInstitution.committeePortalLabel || 'Mess Committee',
       subtitle: 'Menu management & operational oversight',
       icon: ChefHat,
       color: 'emerald'
@@ -363,12 +375,31 @@ export const LoginPage = ({ initialRole = 'student', onBackToRoles }) => {
     <div className="min-h-[85vh] flex items-center justify-center p-4 sm:p-6 pb-20">
       <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-md border border-slate-200 dark:border-slate-800 p-6 sm:p-8 space-y-6">
         
+        {/* Selected Institution Pill Banner with Change College */}
+        <div className="flex items-center justify-between p-2.5 px-3 rounded-xl bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/80">
+          <div className="flex items-center space-x-2 min-w-0">
+            <Building2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
+              {currentInstitution.name}
+            </span>
+          </div>
+          {onChangeCollege && (
+            <button
+              type="button"
+              onClick={onChangeCollege}
+              className="shrink-0 text-[11px] font-bold text-emerald-700 dark:text-emerald-400 hover:text-emerald-900 dark:hover:text-emerald-200 hover:underline ml-2 cursor-pointer"
+            >
+              Change college
+            </button>
+          )}
+        </div>
+
         {/* Top Role Switcher Header */}
         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
           <button
             type="button"
             onClick={onBackToRoles}
-            className="flex items-center space-x-1.5 text-xs font-bold text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors"
+            className="flex items-center space-x-1.5 text-xs font-bold text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Select Role</span>
@@ -563,12 +594,14 @@ export const LoginPage = ({ initialRole = 'student', onBackToRoles }) => {
 
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Admission No. *</label>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                      {currentInstitution.admissionNumberLabel || 'Admission No.'} *
+                    </label>
                     <input
                       type="text"
                       required
                       name="admissionNumber"
-                      placeholder="e.g. 2100320100001"
+                      placeholder={currentInstitution.admissionNumberPlaceholder || "e.g. 2100320100001"}
                       value={regData.admissionNumber}
                       onChange={handleRegChange}
                       className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold outline-none"
@@ -591,7 +624,9 @@ export const LoginPage = ({ initialRole = 'student', onBackToRoles }) => {
 
                 <div>
                   <div className="flex justify-between items-center mb-1">
-                    <label className="block text-[10px] font-bold text-slate-500 uppercase">College Email (ABES only) *</label>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase">
+                      College Email ({currentInstitution.primaryEmailDomain || '@abes.ac.in'}) *
+                    </label>
                     <span className="text-[9px] text-slate-400 font-semibold">For OTP verification</span>
                   </div>
                   <div className="relative">
@@ -600,7 +635,7 @@ export const LoginPage = ({ initialRole = 'student', onBackToRoles }) => {
                       type="email"
                       required
                       name="email"
-                      placeholder="e.g. student@abes.ac.in"
+                      placeholder={`e.g. student${currentInstitution.primaryEmailDomain || '@abes.ac.in'}`}
                       value={regData.email}
                       onChange={handleRegChange}
                       className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold outline-none"

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Suspense, lazy } from 'react';
+import React, { useState, useEffect, useMemo, Suspense, lazy } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { AppProvider, useApp } from './context/AppContext';
 import { Navbar } from './components/Navbar';
@@ -6,6 +6,9 @@ import { BottomNav } from './components/BottomNav';
 import { Footer } from './components/Footer';
 import { MessMatesLogo } from './components/MessMatesLogo';
 import { Loader2 } from 'lucide-react';
+import { CollegeSelectScreen } from './components/college/CollegeSelectScreen';
+import { CollegePendingModal } from './components/college/CollegePendingModal';
+import { getInstitutionById, isInstitutionActive, getDefaultInstitution } from './config/institutions';
 
 // Lazy-loaded route pages (Code Splitting / On-Demand Loading)
 const LandingPage = lazy(() => import('./pages/LandingPage').then(m => ({ default: m.LandingPage })));
@@ -63,6 +66,22 @@ const AppContent = () => {
   const [selectedRole, setSelectedRole] = useState('student');
   const [isLoginFlow, setIsLoginFlow] = useState(false);
 
+  // Universal Multi-College Institutional State
+  const [selectedCollegeId, setSelectedCollegeId] = useState(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const fromUrl = params.get('college');
+      if (fromUrl && getInstitutionById(fromUrl)) return fromUrl;
+      return localStorage.getItem('messmates_selected_college_id') || null;
+    } catch (e) {
+      return null;
+    }
+  });
+
+  const activeInstitution = useMemo(() => {
+    return getInstitutionById(selectedCollegeId);
+  }, [selectedCollegeId]);
+
   // Android Capacitor Hardware Back Button Navigation Handler
   useEffect(() => {
     let listener = null;
@@ -79,6 +98,18 @@ const AppContent = () => {
           } else if (isNotificationsOpen || isNotificationOpen) {
             setIsNotificationsOpen?.(false);
             setIsNotificationOpen?.(false);
+          } else if (!user) {
+            // Unauthenticated back navigation
+            if (isLoginFlow) {
+              setIsLoginFlow(false);
+            } else if (selectedCollegeId) {
+              setSelectedCollegeId(null);
+              try { localStorage.removeItem('messmates_selected_college_id'); } catch (e) {}
+            } else if (canGoBack) {
+              window.history.back();
+            } else {
+              CapApp.exitApp();
+            }
           } else if (currentPage !== 'dashboard') {
             setCurrentPage('dashboard');
           } else if (canGoBack) {
@@ -118,6 +149,7 @@ const AppContent = () => {
     if (path.startsWith('/student')) {
       if (!user) {
         setSelectedRole('student');
+        if (!selectedCollegeId) setSelectedCollegeId('abes_ec');
         setIsLoginFlow(true);
       } else if (role !== 'student') {
         const target = role === 'warden' ? '/warden' : '/committee';
@@ -129,6 +161,7 @@ const AppContent = () => {
     } else if (path.startsWith('/committee')) {
       if (!user) {
         setSelectedRole('committee');
+        if (!selectedCollegeId) setSelectedCollegeId('abes_ec');
         setIsLoginFlow(true);
       } else if (role !== 'mess_committee') {
         const target = role === 'warden' ? '/warden' : '/student';
@@ -140,6 +173,7 @@ const AppContent = () => {
     } else if (path.startsWith('/warden')) {
       if (!user) {
         setSelectedRole('warden');
+        if (!selectedCollegeId) setSelectedCollegeId('abes_ec');
         setIsLoginFlow(true);
       } else if (role !== 'warden') {
         const target = role === 'mess_committee' ? '/committee' : '/student';
@@ -177,24 +211,58 @@ const AppContent = () => {
     );
   }
 
-  // 1. PUBLIC LAYOUT: Unauthenticated Entry (Landing -> Role Selection -> Login)
-  // Strictly isolates public visitors from authenticated navigation, user controls, and internal modals
+  // 1. PUBLIC LAYOUT: Universal Multi-College Entry
   if (!user) {
     return (
       <div className="min-h-screen flex flex-col justify-between bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
         <main className="flex-1 flex items-center justify-center p-4">
           <Suspense fallback={<PageLoadingFallback />}>
-            {isLoginFlow ? (
+            {!selectedCollegeId ? (
+              <CollegeSelectScreen
+                initialSelectedId="abes_ec"
+                onConfirmInstitution={(chosen) => {
+                  setSelectedCollegeId(chosen.id);
+                  try {
+                    localStorage.setItem('messmates_selected_college_id', chosen.id);
+                  } catch (e) {}
+                }}
+              />
+            ) : !isInstitutionActive(activeInstitution) ? (
+              <CollegePendingModal
+                institution={activeInstitution}
+                onBackToSearch={() => {
+                  setSelectedCollegeId(null);
+                  try {
+                    localStorage.removeItem('messmates_selected_college_id');
+                  } catch (e) {}
+                }}
+              />
+            ) : isLoginFlow ? (
               <LoginPage 
-                initialRole={selectedRole} 
-                onBackToRoles={() => setIsLoginFlow(false)} 
+                initialRole={selectedRole}
+                institution={activeInstitution}
+                onBackToRoles={() => setIsLoginFlow(false)}
+                onChangeCollege={() => {
+                  setSelectedCollegeId(null);
+                  setIsLoginFlow(false);
+                  try {
+                    localStorage.removeItem('messmates_selected_college_id');
+                  } catch (e) {}
+                }}
               />
             ) : (
               <LandingPage 
+                institution={activeInstitution}
                 onSelectRole={(chosenRole) => {
                   setSelectedRole(chosenRole);
                   setIsLoginFlow(true);
-                }} 
+                }}
+                onChangeCollege={() => {
+                  setSelectedCollegeId(null);
+                  try {
+                    localStorage.removeItem('messmates_selected_college_id');
+                  } catch (e) {}
+                }}
               />
             )}
           </Suspense>
