@@ -10,22 +10,34 @@ import { lookupDishNutrition } from '../data/dishNutrition.js';
 
 export const PORTION_MULTIPLIERS = {
   'NONE': 0,
-  'QUARTER': 0.25,
-  'HALF': 0.5,
-  'THREE_QUARTER': 0.75,
+  'ONE': 1,
+  'TWO': 2,
+  'THREE': 3,
+  'FOUR': 4,
+  // Backward compatibility with previous runs and tests
   'FULL': 1.0,
-  'ONE_AND_HALF': 1.5,
-  'DOUBLE': 2.0
+  'DOUBLE': 2.0,
+  'HALF': 0.5,
+  'QUARTER': 0.25,
+  'THREE_QUARTER': 0.75,
+  'ONE_AND_HALF': 1.5
 };
 
 export const PORTION_LABELS = {
   0: 'Skipped (0 serving)',
-  0.25: '1/4 serving (light bite)',
-  0.5: '1/2 serving (small portion)',
-  0.75: '3/4 serving',
-  1.0: '1 full standard serving',
-  1.5: '1.5 servings (extra)',
-  2.0: '2 full servings (double)'
+  1: '1 Serving (Standard plate)',
+  2: '2 Servings (Double portion)',
+  3: '3 Servings (Large portion)',
+  4: '4 Servings (Maximum)',
+  // Backward compatibility fallbacks
+  0.25: '1 Serving',
+  0.5: '1 Serving',
+  0.75: '1 Serving',
+  1.0: '1 Serving (Standard plate)',
+  1.5: '2 Servings (Double portion)',
+  2.0: '2 Servings (Double portion)',
+  3.0: '3 Servings (Large portion)',
+  4.0: '4 Servings (Maximum)'
 };
 
 /**
@@ -34,7 +46,7 @@ export const PORTION_LABELS = {
  * @param {object} params
  * @param {number} params.proteinPerServing - Stored baseline protein in grams
  * @param {number} [params.caloriesPerServing] - Stored baseline calories
- * @param {number} params.portion - Multiplier (e.g. 1.0, 0.5, 1.5)
+ * @param {number} params.portion - Multiplier (e.g. 1, 2, 3, 4)
  * @returns {object} { proteinConsumed: number, caloriesConsumed: number }
  */
 export function calculateItemNutrition({ proteinPerServing = 0, caloriesPerServing = 0, portion = 1.0 }) {
@@ -197,7 +209,8 @@ export function generateSmartMealPlan({ todayMeals = [], profile = {}, todayLogs
         items: [],
         suggestedItems: [],
         totalSuggestedProtein: 0,
-        explanation: 'No menu data available for this meal slot.'
+        explanation: 'No menu data available for this meal slot.',
+        plateTip: 'Check with your hostel mess committee for today\'s menu.'
       };
       continue;
     }
@@ -224,7 +237,8 @@ export function generateSmartMealPlan({ todayMeals = [], profile = {}, todayLogs
         totalSuggestedProtein: existingLog?.proteinConsumed || 0,
         explanation: existingLog?.status === 'SKIPPED' 
           ? 'You skipped this meal. Remaining targets have been redistributed.'
-          : `Logged ${existingLog?.proteinConsumed || 0}g protein.`
+          : `Logged ${existingLog?.proteinConsumed || 0}g protein.`,
+        plateTip: existingLog?.status === 'SKIPPED' ? 'Meal skipped.' : 'Meal intake logged successfully.'
       };
       continue;
     }
@@ -253,17 +267,17 @@ export function generateSmartMealPlan({ todayMeals = [], profile = {}, todayLogs
     for (const item of sortedContributors) {
       if (accumulatedProtein >= slotTargetProtein && suggestedItems.length >= 2) break;
 
-      let portion = 1.0 * portionMultiplier;
+      let portion = 1;
       // If student needs significantly more protein and item is a high-protein staple (Paneer, Dal, Eggs, Chole, Sprouts, Milk)
-      if (item.proteinG >= 6 && remainingProteinNeeded > 50 && portionMultiplier >= 1.0) {
-        portion = 1.5;
+      if (item.proteinG >= 6 && remainingProteinNeeded > 40 && portionMultiplier >= 1.0) {
+        portion = 2;
       }
 
       const itemProtein = Math.round((item.proteinG * portion) * 10) / 10;
       suggestedItems.push({
         ...item,
         recommendedPortion: portion,
-        recommendedPortionLabel: PORTION_LABELS[portion] || `${portion}x serving`,
+        recommendedPortionLabel: PORTION_LABELS[portion] || `${portion} Serving${portion > 1 ? 's' : ''}`,
         recommendedProteinG: itemProtein
       });
       accumulatedProtein += itemProtein;
@@ -271,12 +285,24 @@ export function generateSmartMealPlan({ todayMeals = [], profile = {}, todayLogs
 
     accumulatedProtein = Math.round(accumulatedProtein * 10) / 10;
 
-    // Build supportive, transparent explanation
+    // Build supportive, transparent explanation & practical student plate tip
     let explanation = '';
+    let plateTip = '';
+    const topItem = suggestedItems[0];
+    const secondItem = suggestedItems[1];
+
     if (suggestedItems.length === 0) {
       explanation = 'Nutrition estimates for this meal are currently being updated by the mess team.';
+      plateTip = 'Standard hostel serving. Eat a balanced portion of dal, roti and sabji.';
     } else {
       explanation = `Provides ~${accumulatedProtein}g protein towards your remaining ${remainingProteinNeeded}g daily goal.`;
+      if (topItem && secondItem) {
+        plateTip = `Take ${topItem.recommendedPortion} serving${topItem.recommendedPortion > 1 ? 's' : ''} of ${topItem.name} + ${secondItem.recommendedPortion} serving${secondItem.recommendedPortion > 1 ? 's' : ''} of ${secondItem.name} for an easy ~${accumulatedProtein}g protein boost.`;
+      } else if (topItem) {
+        plateTip = `Take ${topItem.recommendedPortion} serving${topItem.recommendedPortion > 1 ? 's' : ''} of ${topItem.name} along with rotis. Avoid excess plain white rice so you stay light and alert.`;
+      } else {
+        plateTip = 'Prioritize taking extra dal/paneer katoris and keeping plain white rice moderate.';
+      }
     }
 
     mealRecommendations[cat] = {
@@ -288,7 +314,8 @@ export function generateSmartMealPlan({ todayMeals = [], profile = {}, todayLogs
       suggestedItems,
       targetProteinForSlot: slotTargetProtein,
       totalSuggestedProtein: accumulatedProtein,
-      explanation
+      explanation,
+      plateTip
     };
   }
 

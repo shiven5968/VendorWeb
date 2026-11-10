@@ -15,7 +15,12 @@ import {
   HelpCircle,
   XCircle,
   Layers,
-  ArrowRight
+  ArrowRight,
+  Sun,
+  Utensils,
+  Coffee,
+  Moon,
+  Info
 } from 'lucide-react';
 import { getSmartAlternatives } from '../../services/nutritionAlternatives.js';
 import { formatCollegeDateDisplay } from '../../utils/dateTime.js';
@@ -23,9 +28,9 @@ import { formatCollegeDateDisplay } from '../../utils/dateTime.js';
 export const TodayDashboard = ({
   profile,
   summary,
-  recommendations,
-  todayMeals,
-  todayLogs,
+  recommendations = {},
+  todayMeals = [],
+  todayLogs = [],
   entitlement,
   onOpenProfileModal,
   onOpenOutsideFoodModal,
@@ -47,15 +52,46 @@ export const TodayDashboard = ({
     remainingProteinNeeded: remaining
   });
 
+  const MEAL_META = {
+    Breakfast: {
+      time: '7:20 AM - 8:30 AM',
+      icon: Sun,
+      color: 'text-amber-500',
+      bgColor: 'bg-amber-50',
+      borderColor: 'border-amber-200'
+    },
+    Lunch: {
+      time: '12:20 PM - 2:00 PM',
+      icon: Utensils,
+      color: 'text-emerald-600',
+      bgColor: 'bg-emerald-50',
+      borderColor: 'border-emerald-200'
+    },
+    Snacks: {
+      time: '5:00 PM - 6:00 PM',
+      icon: Coffee,
+      color: 'text-orange-500',
+      bgColor: 'bg-orange-50',
+      borderColor: 'border-orange-200'
+    },
+    Dinner: {
+      time: '7:30 PM - 9:00 PM',
+      icon: Moon,
+      color: 'text-indigo-600',
+      bgColor: 'bg-indigo-50',
+      borderColor: 'border-indigo-200'
+    }
+  };
+
   return (
     <div className="space-y-6">
       
-      {/* ── 1. PRIMARY NUTRITION HERO (APPLE FITNESS / LINEAR CALIBRE) ────── */}
-      <div className="p-6 sm:p-7 rounded-3xl bg-white border border-slate-200/80 shadow-xs space-y-6">
+      {/* ── 1. PRIMARY NUTRITION HERO (CLEAN, BOLD, APPLE FITNESS CALIBRE) ── */}
+      <div className="p-6 sm:p-8 rounded-3xl bg-white border border-slate-200/90 shadow-xs space-y-6">
         <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
           
-          {/* Left: High-Precision Radial Ring */}
-          <div className="flex items-center space-x-6">
+          {/* Left: High-Precision Radial Ring & Numbers */}
+          <div className="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-6 text-center sm:text-left">
             <div className="relative w-36 h-36 shrink-0">
               <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
                 <circle
@@ -91,27 +127,27 @@ export const TodayDashboard = ({
             </div>
 
             <div className="space-y-1.5">
-              <div className="flex items-center space-x-2">
-                <span className="text-[11px] font-black text-slate-400 uppercase tracking-wider">
+              <div className="flex items-center justify-center sm:justify-start space-x-2">
+                <span className="text-xs font-black text-slate-400 uppercase tracking-wider">
                   Today's Daily Target
                 </span>
-                <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-emerald-50 text-emerald-700">
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800">
                   LIVE IST
                 </span>
               </div>
-              <div className="flex items-baseline space-x-2">
-                <span className="text-4xl font-black text-slate-900 tracking-tight">
+              <div className="flex items-baseline justify-center sm:justify-start space-x-2">
+                <span className="text-4xl sm:text-5xl font-black text-slate-900 tracking-tight">
                   {consumed}g
                 </span>
-                <span className="text-base font-bold text-slate-400">
+                <span className="text-lg font-bold text-slate-400">
                   / {activeTarget}g
                 </span>
               </div>
-              <p className="text-xs font-bold text-emerald-600">
+              <p className="text-xs sm:text-sm font-bold text-emerald-700">
                 {remaining > 0 ? (
-                  <span>⚡ {remaining}g needed from upcoming meals</span>
+                  <span>⚡ {remaining}g remaining to reach your goal today</span>
                 ) : (
-                  <span>🎉 Daily Target Achieved! Fantastic discipline!</span>
+                  <span>🎉 Daily Target Achieved! Outstanding consistency!</span>
                 )}
               </p>
             </div>
@@ -119,35 +155,35 @@ export const TodayDashboard = ({
 
           {/* Right: Tactile Macro Tiles */}
           <div className="grid grid-cols-3 gap-3 w-full lg:w-auto">
-            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 text-center min-w-[105px]">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-wide block mb-1">
+            <div className="p-4 sm:p-5 rounded-2xl bg-slate-50 border border-slate-200/80 text-center min-w-[110px]">
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">
                 Meals
               </span>
-              <span className="text-xl font-black text-slate-900">
+              <span className="text-2xl font-black text-slate-900">
                 {summary.completedMealsCount || 0} / 4
               </span>
-              <span className="text-[10px] text-slate-500 font-semibold block mt-0.5">tracked</span>
+              <span className="text-xs text-slate-500 font-semibold block mt-0.5">logged</span>
             </div>
 
-            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 text-center min-w-[105px]">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-wide block mb-1">
+            <div className="p-4 sm:p-5 rounded-2xl bg-slate-50 border border-slate-200/80 text-center min-w-[110px]">
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">
                 Calories
               </span>
-              <span className="text-xl font-black text-slate-900 flex items-center justify-center space-x-1">
-                <Flame className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+              <span className="text-2xl font-black text-slate-900 flex items-center justify-center space-x-1">
+                <Flame className="w-4 h-4 text-amber-500 shrink-0" />
                 <span>{summary.consumedCalories || 0}</span>
               </span>
-              <span className="text-[10px] text-slate-500 font-semibold block mt-0.5">kcal intake</span>
+              <span className="text-xs text-slate-500 font-semibold block mt-0.5">kcal intake</span>
             </div>
 
-            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 text-center min-w-[105px]">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-wide block mb-1">
-                Deficit
+            <div className="p-4 sm:p-5 rounded-2xl bg-emerald-50/70 border border-emerald-200/80 text-center min-w-[110px]">
+              <span className="text-[10px] font-black text-emerald-800 uppercase tracking-wider block mb-1">
+                Remaining
               </span>
-              <span className="text-xl font-black text-emerald-600">
+              <span className="text-2xl font-black text-emerald-700">
                 {remaining}g
               </span>
-              <span className="text-[10px] text-slate-500 font-semibold block mt-0.5">to goal</span>
+              <span className="text-xs text-emerald-800 font-semibold block mt-0.5">protein left</span>
             </div>
           </div>
 
@@ -155,13 +191,13 @@ export const TodayDashboard = ({
 
         {/* Action Row */}
         <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center space-x-2 text-xs text-slate-500 font-medium">
-            <span>💡 Having eggs, a whey protein shake, or canteen snack?</span>
+          <div className="flex items-center space-x-2 text-xs text-slate-500 font-semibold">
+            <span>💡 Having eggs, canteen snacks, or a whey protein shake?</span>
           </div>
           <div className="flex items-center space-x-2">
             <button
               onClick={() => setShowAlternatives(!showAlternatives)}
-              className="px-3.5 py-2 rounded-xl border border-slate-200 hover:border-emerald-500 text-xs font-bold text-slate-700 hover:text-emerald-700 transition-all cursor-pointer flex items-center space-x-1.5"
+              className="px-4 py-2 rounded-xl border border-slate-200 hover:border-emerald-500 text-xs font-black text-slate-700 hover:text-emerald-700 transition-all cursor-pointer flex items-center space-x-1.5"
             >
               <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
               <span>{showAlternatives ? 'Hide Alternatives' : 'View Smart Alternatives'}</span>
@@ -177,24 +213,24 @@ export const TodayDashboard = ({
         </div>
       </div>
 
-      {/* ── 2. SMART CAMPUS FOOD ALTERNATIVES (PHASE 9) ───────────────────────── */}
+      {/* ── 2. SMART CAMPUS FOOD ALTERNATIVES ───────────────────────────────── */}
       {showAlternatives && (
-        <div className="p-5 sm:p-6 rounded-3xl bg-emerald-50/70 border border-emerald-200/80 space-y-4">
+        <div className="p-6 rounded-3xl bg-emerald-50/70 border border-emerald-200/90 space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-sm font-black text-emerald-950 flex items-center gap-1.5">
+              <h3 className="text-base font-black text-emerald-950 flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-emerald-600" />
-                <span>Smart Campus Alternatives (To Bridge Your {remaining}g Deficit)</span>
+                <span>Smart Campus Alternatives (Bridge Your {remaining}g Protein Gap)</span>
               </h3>
-              <p className="text-xs text-emerald-800 mt-0.5">
-                Affordable, verified protein staples available on campus or hostel rooms ({profile?.dietaryPreference || 'Vegetarian'}).
+              <p className="text-xs text-emerald-800 font-medium mt-0.5">
+                Verified high-protein staples easily available on campus ({profile?.dietaryPreference || 'Vegetarian'}).
               </p>
             </div>
             <button
               onClick={() => setShowAlternatives(false)}
-              className="text-xs text-emerald-700 hover:text-emerald-950 font-bold cursor-pointer"
+              className="text-xs text-emerald-700 hover:text-emerald-950 font-bold p-1 cursor-pointer"
             >
-              ✕
+              ✕ Close
             </button>
           </div>
 
@@ -202,18 +238,22 @@ export const TodayDashboard = ({
             {alternatives.slice(0, 6).map(alt => (
               <div 
                 key={alt.id}
-                className="p-3.5 rounded-2xl bg-white border border-emerald-100 shadow-xs flex flex-col justify-between space-y-2"
+                className="p-4 rounded-2xl bg-white border border-emerald-100 shadow-xs flex flex-col justify-between space-y-2"
               >
                 <div>
                   <div className="flex items-center justify-between">
-                    <h4 className="text-xs font-black text-slate-900">{alt.name}</h4>
-                    <span className="text-xs font-black text-emerald-700">~{alt.proteinG}g</span>
+                    <h4 className="text-xs sm:text-sm font-black text-slate-900">{alt.name}</h4>
+                    <span className="text-xs font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
+                      ~{alt.proteinG}g
+                    </span>
                   </div>
-                  <span className="text-[10px] text-slate-400 font-semibold block">{alt.servingSize} • {alt.costEstimate}</span>
-                  <p className="text-[11px] text-slate-600 mt-1 leading-snug">{alt.recommendationTip}</p>
+                  <span className="text-[11px] text-slate-400 font-semibold block mt-0.5">
+                    {alt.servingSize} • {alt.costEstimate}
+                  </span>
+                  <p className="text-xs text-slate-600 mt-1 leading-snug">{alt.recommendationTip}</p>
                 </div>
-                <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[10px]">
-                  <span className="text-slate-400 truncate max-w-[140px]">{alt.availability}</span>
+                <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+                  <span className="text-slate-400 truncate max-w-[140px] text-[10px]">{alt.availability}</span>
                   <button
                     onClick={() => {
                       onOpenOutsideFoodModal({
@@ -233,20 +273,18 @@ export const TodayDashboard = ({
         </div>
       )}
 
-      {/* ── 3. FOUR REAL MESS MEAL CARDS (BREAKFAST, LUNCH, SNACKS, DINNER) ──── */}
+      {/* ── 3. FOUR SPATIOUS, BEAUTIFULLY LAID-OUT MESS MEAL CARDS ─────────── */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-black text-slate-900 tracking-tight">
-              Today's Actual Mess Menu &amp; Smart Portions
-            </h2>
-            <p className="text-xs text-slate-500 font-medium">
-              Real hostel menu with personalized portion sizing to hit your remaining target.
-            </p>
-          </div>
+        <div>
+          <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">
+            Today's Mess Menu &amp; What to Put on Your Plate
+          </h2>
+          <p className="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">
+            Clear, spacious portion guidelines for each meal so you can eat smart without technical confusion.
+          </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           {['Breakfast', 'Lunch', 'Snacks', 'Dinner'].map((cat) => {
             const rec = recommendations[cat];
             if (!rec) return null;
@@ -254,96 +292,169 @@ export const TodayDashboard = ({
             const isLogged = rec.status === 'COMPLETED';
             const isSkipped = rec.status === 'SKIPPED';
             const existingLog = (todayLogs || []).find(l => l.mealType === cat);
+            const meta = MEAL_META[cat] || MEAL_META.Lunch;
+            const IconComponent = meta.icon;
 
             return (
               <div
                 key={cat}
-                className={`p-5 rounded-3xl border transition-all flex flex-col justify-between ${
+                className={`p-6 sm:p-7 rounded-3xl border transition-all flex flex-col justify-between space-y-5 ${
                   isLogged
-                    ? 'bg-emerald-50/70 border-emerald-300 shadow-xs'
+                    ? 'bg-emerald-50/50 border-emerald-300 shadow-xs'
                     : isSkipped
-                    ? 'bg-slate-50 border-slate-200 opacity-75'
-                    : 'bg-white border-slate-200/80 shadow-xs hover:border-emerald-400'
+                    ? 'bg-slate-50/80 border-slate-200 opacity-75'
+                    : 'bg-white border-slate-200/90 shadow-xs hover:border-emerald-400 hover:shadow-md'
                 }`}
               >
-                <div className="space-y-3.5">
+                <div className="space-y-4">
                   
-                  {/* Top Slot Pill & Status */}
-                  <div className="flex items-center justify-between">
-                    <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-slate-100 text-slate-700">
-                      {cat}
-                    </span>
+                  {/* Top Bar: Meal Category, Timing & Logged Status */}
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center space-x-2">
+                      <div className={`w-8 h-8 rounded-xl ${meta.bgColor} flex items-center justify-center`}>
+                        <IconComponent className={`w-4 h-4 ${meta.color}`} />
+                      </div>
+                      <div>
+                        <span className="text-xs font-black text-slate-900 uppercase tracking-wider block">
+                          {cat}
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-bold block">
+                          {meta.time}
+                        </span>
+                      </div>
+                    </div>
 
-                    {isLogged && (
-                      <span className="text-xs font-black text-emerald-700 flex items-center space-x-1.5 bg-emerald-100/70 px-2.5 py-0.5 rounded-full">
-                        <CheckCheck className="w-3.5 h-3.5 text-emerald-600" />
-                        <span>Logged (+{existingLog?.proteinConsumed || 0}g)</span>
-                      </span>
-                    )}
-                    {isSkipped && (
-                      <span className="text-xs font-bold text-slate-500 bg-slate-200 px-2.5 py-0.5 rounded-full">
-                        Skipped
-                      </span>
-                    )}
+                    <div>
+                      {isLogged && (
+                        <span className="text-xs font-black text-emerald-800 flex items-center space-x-1.5 bg-emerald-100 px-3 py-1 rounded-full">
+                          <CheckCheck className="w-3.5 h-3.5 text-emerald-600" />
+                          <span>Logged (+{existingLog?.proteinConsumed || 0}g)</span>
+                        </span>
+                      )}
+                      {isSkipped && (
+                        <span className="text-xs font-bold text-slate-500 bg-slate-200 px-3 py-1 rounded-full">
+                          Skipped
+                        </span>
+                      )}
+                      {!isLogged && !isSkipped && (
+                        <span className="text-[11px] font-black text-emerald-800 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full">
+                          Target: ~{rec.targetProteinForSlot || 25}g
+                        </span>
+                      )}
+                    </div>
                   </div>
 
-                  {/* Dish Name & Context Explanation */}
+                  {/* Big Bold Dish Title */}
                   <div>
-                    <h3 className="text-base font-black text-slate-900 leading-snug">
+                    <h3 className="text-lg sm:text-xl font-black text-slate-900 leading-snug">
                       {rec.title}
                     </h3>
-                    <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                    <p className="text-xs text-slate-500 font-medium mt-1 leading-relaxed">
                       {rec.explanation}
                     </p>
                   </div>
 
-                  {/* Recommended Portions Breakdown */}
-                  {!isLogged && !isSkipped && rec.suggestedItems && rec.suggestedItems.length > 0 && (
-                    <div className="space-y-2 pt-2 border-t border-slate-100">
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">
-                        Recommended Plate Portions:
+                  {/* Dishes Served Chips */}
+                  {Array.isArray(rec.items) && rec.items.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {rec.items.map((it, idx) => (
+                        <span
+                          key={idx}
+                          className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 text-slate-700"
+                        >
+                          {it.name}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* ── HERO PLATE GUIDANCE: "What to Put on Your Plate" ── */}
+                  {!isLogged && !isSkipped && (
+                    <div className="bg-gradient-to-br from-emerald-50/90 to-teal-50/50 border border-emerald-200/90 rounded-2xl p-4 sm:p-5 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-black text-emerald-950 uppercase tracking-wide flex items-center gap-1.5">
+                          <Utensils className="w-3.5 h-3.5 text-emerald-700" />
+                          <span>What to Put on Your Plate</span>
+                        </span>
+                        <span className="text-xs font-black text-emerald-800 bg-white/80 px-2 py-0.5 rounded-full border border-emerald-200">
+                          ~{rec.totalSuggestedProtein || 25}g protein
+                        </span>
+                      </div>
+
+                      {/* Item-by-item clear integer servings */}
+                      {rec.suggestedItems && rec.suggestedItems.length > 0 ? (
+                        <div className="space-y-2">
+                          {rec.suggestedItems.map((item, idx) => (
+                            <div 
+                              key={idx} 
+                              className="p-2.5 rounded-xl bg-white border border-emerald-100 flex items-center justify-between gap-2 shadow-2xs"
+                            >
+                              <div className="flex items-center space-x-2">
+                                <span className="px-2.5 py-0.5 rounded-full bg-emerald-600 text-white text-[11px] font-black">
+                                  {item.recommendedPortion || 1} Serving{item.recommendedPortion > 1 ? 's' : ''}
+                                </span>
+                                <span className="text-xs sm:text-sm font-bold text-slate-800 truncate max-w-[200px]">
+                                  {item.name}
+                                </span>
+                              </div>
+                              <span className="text-xs sm:text-sm font-black text-emerald-700 shrink-0">
+                                ~{item.recommendedProteinG}g
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : null}
+
+                      {/* Friendly Student Mess Tip */}
+                      <div className="flex items-start space-x-2 text-xs text-emerald-900 bg-emerald-100/60 p-2.5 rounded-xl border border-emerald-200/60 font-medium">
+                        <Info className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" />
+                        <p className="leading-snug">
+                          {rec.plateTip || "Prioritize extra dal or paneer katoris over excess plain rice to hit your target easily."}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* If already logged, show what student ate */}
+                  {isLogged && existingLog && Array.isArray(existingLog.items) && (
+                    <div className="p-4 rounded-2xl bg-white border border-emerald-200 space-y-2">
+                      <span className="text-[11px] font-black text-emerald-900 uppercase tracking-wide block">
+                        Recorded on Your Plate:
                       </span>
-                      <div className="space-y-1.5">
-                        {rec.suggestedItems.map((item, idx) => (
-                          <div key={idx} className="flex items-center justify-between text-xs font-semibold">
-                            <span className="text-slate-700 truncate max-w-[210px]">
-                              • {item.name} <span className="text-slate-400 text-[10px]">({item.recommendedPortionLabel})</span>
-                            </span>
-                            <span className="font-black text-emerald-700 shrink-0">
-                              ~{item.recommendedProteinG}g
-                            </span>
-                          </div>
+                      <div className="flex flex-wrap gap-2">
+                        {existingLog.items.map((it, idx) => (
+                          <span key={idx} className="px-2.5 py-1 rounded-xl text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-100">
+                            {it.name} ({it.portion || 1} serving{it.portion > 1 ? 's' : ''}): +{it.proteinConsumed || 0}g
+                          </span>
                         ))}
                       </div>
                     </div>
                   )}
+
                 </div>
 
                 {/* Action Buttons Row */}
-                <div className="pt-4 mt-3 border-t border-slate-100 flex items-center justify-between gap-2">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-[11px] font-bold text-slate-400">
-                      {isLogged ? 'Recorded' : `Target: ~${rec.targetProteinForSlot || 25}g`}
-                    </span>
+                <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
                     {!isLogged && !isSkipped && (
                       <button
                         onClick={() => onSkipMeal(cat)}
-                        className="text-[10px] text-slate-400 hover:text-slate-700 font-semibold cursor-pointer underline"
+                        className="text-xs text-slate-400 hover:text-slate-700 font-bold cursor-pointer transition-colors"
                       >
-                        Skip
+                        Skip This Meal
                       </button>
                     )}
                   </div>
 
-                  <div className="flex items-center space-x-1.5">
+                  <div className="flex items-center space-x-2">
                     {!isLogged && !isSkipped && (
                       <button
                         onClick={() => onQuickLogStandardMeal(cat, rec)}
-                        className="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-black transition-all cursor-pointer flex items-center space-x-1"
-                        title="Instant 1-tap log of standard serving"
+                        className="px-4 py-2.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-black transition-all cursor-pointer flex items-center space-x-1.5 border border-emerald-200"
+                        title="Instant 1-tap log of 1 standard serving"
                       >
-                        <Zap className="w-3 h-3 text-emerald-600" />
-                        <span>1-Tap Log</span>
+                        <Zap className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>1-Tap Ate Standard</span>
                       </button>
                     )}
 
@@ -354,17 +465,18 @@ export const TodayDashboard = ({
                         items: rec.items,
                         existingLog
                       })}
-                      className={`px-3.5 py-1.5 rounded-xl text-xs font-black flex items-center space-x-1 transition-all cursor-pointer ${
+                      className={`px-5 py-2.5 rounded-xl text-xs sm:text-sm font-black flex items-center space-x-1.5 transition-all cursor-pointer ${
                         isLogged
-                          ? 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                          : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs'
+                          ? 'bg-slate-100 text-slate-800 hover:bg-slate-200'
+                          : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-md'
                       }`}
                     >
-                      <span>{isLogged ? 'Edit Intake' : 'Customize / Log'}</span>
-                      <ChevronRight className="w-3.5 h-3.5" />
+                      <span>{isLogged ? 'Edit Intake' : 'Customize Servings (1, 2, 3, 4)'}</span>
+                      <ChevronRight className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
+
               </div>
             );
           })}

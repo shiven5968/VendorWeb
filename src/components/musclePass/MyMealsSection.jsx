@@ -147,15 +147,18 @@ export const MyMealsSection = ({
                       {/* Items details */}
                       {!isSkipped && items.length > 0 && (
                         <div className="flex flex-wrap items-center gap-1.5 pt-1.5">
-                          {items.map((it, idx) => (
-                            <span 
-                              key={idx}
-                              className="px-2.5 py-1 rounded-xl text-[11px] font-semibold bg-slate-50 text-slate-700 border border-slate-200/60"
-                            >
-                              {it.name} <span className="text-slate-400 text-[10px]">({it.portion || 1}x)</span>
-                              <strong className="text-emerald-700 ml-1">+{it.proteinConsumed || 0}g</strong>
-                            </span>
-                          ))}
+                          {items.map((it, idx) => {
+                            const srvCount = Math.max(1, Math.round(Number(it.portion) || 1));
+                            return (
+                              <span 
+                                key={idx}
+                                className="px-2.5 py-1 rounded-xl text-[11px] font-semibold bg-slate-50 text-slate-700 border border-slate-200/60"
+                              >
+                                {it.name} <span className="text-emerald-700 text-[10px] font-bold">({srvCount} serving{srvCount > 1 ? 's' : ''})</span>
+                                <strong className="text-emerald-800 ml-1">+{it.proteinConsumed || 0}g</strong>
+                              </span>
+                            );
+                          })}
                         </div>
                       )}
                     </div>
