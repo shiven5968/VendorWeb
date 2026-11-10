@@ -14,6 +14,19 @@
   }
 }
 
+/* Premium 'The Saviour' Brand Font Setup */
+@font-face {
+  font-family: 'The Saviour';
+  src: local('The Saviour'), local('TheSaviour'), local('The Savior'), local('Savior');
+  font-weight: 400 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+.font-saviour {
+  font-family: 'The Saviour', 'TheSaviour', 'The Savior', 'Savior', 'Cinzel Decorative', 'Cinzel', 'Playfair Display', Georgia, serif;
+}
+
 .font-messmates,
 .font-brand-stamp {
   font-family: 'Rubik Dirt', system-ui, -apple-system, sans-serif;

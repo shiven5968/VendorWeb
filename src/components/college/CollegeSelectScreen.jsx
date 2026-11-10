@@ -51,17 +51,17 @@ export const CollegeSelectScreen = ({
   const isAdjusted = Boolean(selectedInstitution || isDropdownOpen);
 
   return (
-    <div className={`w-full max-w-lg mx-auto px-4 transition-all duration-300 ease-in-out ${
+    <div className={`w-full max-w-xl mx-auto px-4 transition-all duration-300 ease-in-out ${
       isAdjusted ? 'py-4 sm:py-6' : 'py-8 sm:py-14'
     }`}>
       
-      {/* ── 1. BIG HERO LOGO & TAGLINE (UPPER POSITION) ─────────────────────── */}
-      <div className={`text-center transition-all duration-300 ease-in-out ${
+      {/* ── 1. BIG 4K VECTOR HERO LOGO & SINGLE-LINE TAGLINE (THE SAVIOUR FONT) ── */}
+      <div className={`text-center transition-all duration-300 ease-in-out flex flex-col items-center justify-center ${
         isAdjusted ? 'mb-4 sm:mb-5' : 'mb-6 sm:mb-8'
       }`}>
-        {/* Dynamic Big Logo positioned UP */}
+        {/* Dynamic 4K Vector Big Logo positioned UP */}
         <div className={`flex justify-center transition-all duration-300 ease-in-out ${
-          isAdjusted ? 'mb-2 scale-90' : 'mb-4 scale-100 sm:scale-110'
+          isAdjusted ? 'mb-2 scale-90' : 'mb-3.5 scale-100 sm:scale-110'
         }`}>
           <MessMatesLogo 
             variant="full" 
@@ -69,15 +69,17 @@ export const CollegeSelectScreen = ({
           />
         </div>
 
-        {/* Tagline directly below Logo */}
-        <div className="space-y-1 transition-all duration-300">
-          <h1 className={`font-black text-emerald-600 dark:text-emerald-400 tracking-tight transition-all duration-300 ${
-            isAdjusted ? 'text-base sm:text-lg' : 'text-xl sm:text-2xl md:text-3xl'
+        {/* Tagline directly below Logo - strictly single line in 'The Saviour' font */}
+        <div className="w-full flex flex-col items-center justify-center space-y-1 transition-all duration-300 overflow-visible">
+          <h1 className={`font-saviour font-extrabold text-emerald-600 dark:text-emerald-400 tracking-wider uppercase whitespace-nowrap text-center transition-all duration-300 select-none ${
+            isAdjusted 
+              ? 'text-xs min-[400px]:text-sm sm:text-base' 
+              : 'text-[13px] min-[390px]:text-sm sm:text-lg md:text-xl'
           }`}>
             Know your meal before you eat it
           </h1>
-          <p className={`text-slate-500 dark:text-slate-400 font-medium transition-all duration-300 ${
-            isAdjusted ? 'text-[11px] sm:text-xs' : 'text-xs sm:text-sm'
+          <p className={`text-slate-500 dark:text-slate-400 font-medium whitespace-nowrap transition-all duration-300 ${
+            isAdjusted ? 'text-[10px] sm:text-xs' : 'text-xs sm:text-sm'
           }`}>
             Select your college or university to continue
           </p>
@@ -234,3 +236,5 @@ export const CollegeSelectScreen = ({
     </div>
   );
 };
+
+export default CollegeSelectScreen;

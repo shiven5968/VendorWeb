@@ -40,7 +40,7 @@ export const LandingPage = ({ onSelectRole, institution = getDefaultInstitution(
           )}
         </div>
 
-        <p className="text-xl sm:text-2xl font-bold text-emerald-600 dark:text-emerald-400 tracking-tight">
+        <p className="font-saviour text-lg sm:text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 tracking-wider uppercase whitespace-nowrap">
           Know Your Meal Before You Eat It
         </p>
 

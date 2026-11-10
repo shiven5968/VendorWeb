@@ -25,6 +25,7 @@ export default {
       fontFamily: {
         sans: ['Inter', 'Poppins', 'sans-serif'],
         display: ['Poppins', 'Inter', 'sans-serif'],
+        saviour: ['"The Saviour"', '"TheSaviour"', '"The Savior"', '"Savior"', '"Cinzel Decorative"', '"Cinzel"', '"Playfair Display"', 'Georgia', 'serif'],
         brand: ['"Rubik Dirt"', 'system-ui', 'sans-serif'],
         messmates: ['"Rubik Dirt"', 'system-ui', 'sans-serif'],
       },
@@ -36,6 +37,8 @@ export default {
       animation: {
         'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         'float': 'float 6s ease-in-out infinite',
+        'bounce-subtle': 'bounce 2s infinite',
+        'pulse-subtle': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
       },
       keyframes: {
         float: {

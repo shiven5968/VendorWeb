@@ -1,28 +1,30 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import { resolveMenuGroup } from '../config/menuGroups';
-import { getRoleConfig } from '../config/roles';
 import { 
-  User, 
-  Mail, 
-  Building2, 
-  Utensils, 
-  Award, 
-  ShieldCheck, 
   Camera, 
   Save, 
-  Check, 
   LogOut, 
-  Lock, 
-  IdCard, 
-  GraduationCap,
+  Award, 
+  Check, 
+  HelpCircle, 
+  ShieldAlert, 
+  Sparkles, 
+  Building2, 
+  Utensils, 
+  Flame, 
+  ExternalLink, 
+  HeartHandshake, 
+  FileText,
   Users, 
   UserCheck 
 } from 'lucide-react';
 import { AboutUsSection } from '../components/AboutUsSection';
 
 const PRESET_AVATARS = [
+  '/founders/parth_avatar_4k.jpg',
+  '/founders/shivendra_avatar_4k.jpg',
   'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=300',
   'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&q=80&w=300',
   'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=300',
@@ -35,81 +37,83 @@ export const ProfilePage = () => {
   const { currentUser, updateUserProfile, logout, rewardPoints } = useApp();
   const { role } = useAuth();
 
+  const isParth = currentUser?.name?.toLowerCase().includes('parth') || currentUser?.email?.toLowerCase().includes('parth');
+
   const [activeTab, setActiveTab] = useState('about_us'); // 'about_us' (Tab 1 default) | 'profile' (Tab 2)
   const [dietPreference, setDietPreference] = useState(currentUser?.dietPreference || 'Vegetarian');
-  const [avatar, setAvatar] = useState(currentUser?.avatar || PRESET_AVATARS[0]);
+  const [avatar, setAvatar] = useState(
+    currentUser?.avatar || (isParth ? '/founders/parth_avatar_4k.jpg' : PRESET_AVATARS[0])
+  );
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
   const [saving, setSaving] = useState(false);
   const [savedNotice, setSavedNotice] = useState(false);
 
   const menuGroup = resolveMenuGroup(currentUser);
-  const roleConfig = getRoleConfig(role);
 
-  // Sync preferences with authenticated user profile
-  useEffect(() => {
-    if (currentUser) {
-      if (currentUser.dietPreference) setDietPreference(currentUser.dietPreference);
-      if (currentUser.avatar) setAvatar(currentUser.avatar);
-    }
-  }, [currentUser]);
-
-  const handleSave = async (e) => {
+  const handleSavePreferences = async (e) => {
     e.preventDefault();
+    setSaving(true);
     try {
-      setSaving(true);
       await updateUserProfile({
         dietPreference,
         avatar
       });
       setSavedNotice(true);
-      setTimeout(() => setSavedNotice(false), 2500);
-    } catch (e) {
-      console.error('Profile update failed:', e);
+      setTimeout(() => setSavedNotice(false), 3000);
+    } catch (err) {
+      console.error('Failed to update profile:', err);
     } finally {
       setSaving(false);
     }
   };
 
-  // Derive course and year from admission number or profile
-  const admissionNumber = currentUser?.admissionNumber || '';
-  const currentYear = new Date().getFullYear();
-  let calculatedYear = '1st Year';
-  if (admissionNumber.length >= 4) {
-    const joinYear = parseInt(admissionNumber.substring(0, 4), 10);
-    if (!isNaN(joinYear)) {
-      const diff = currentYear - joinYear + 1;
-      calculatedYear = diff === 1 ? '1st Year' : diff === 2 ? '2nd Year' : diff === 3 ? '3rd Year' : '4th Year';
+  const getRoleBadge = (userRole) => {
+    switch (userRole) {
+      case 'warden':
+        return { label: 'Hostel Warden / Official', bg: 'bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/20' };
+      case 'mess_committee':
+      case 'committee':
+        return { label: 'Mess Committee Member', bg: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20' };
+      default:
+        return { label: 'Verified Hostel Student', bg: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20' };
     }
-  }
+  };
+
+  const roleConfig = getRoleBadge(role);
 
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 pb-24 md:pb-12">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 animate-in fade-in duration-200">
       
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      {/* ── TOP SECTION HEADER & TAB SELECTOR ──────────────────────────────── */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pb-2 border-b border-slate-200/80 dark:border-slate-800">
         <div>
-          <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">Account & Team</h1>
-          <p className="text-xs text-slate-500 font-semibold">
-            About Us & Official Student Identity
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight text-center sm:text-left">
+            Account & Team
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-500 font-medium text-center sm:text-left">
+            Official platform founders and student profile settings.
           </p>
         </div>
 
-        {/* Tab Switcher: Tab 1 About Us, Tab 2 Profile */}
-        <div className="flex items-center space-x-1 p-1 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 self-start sm:self-auto">
+        {/* Concise Tab Selector */}
+        <div className="inline-flex p-1 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700">
           <button
+            type="button"
             onClick={() => setActiveTab('about_us')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center space-x-1.5 ${
+            className={`px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center space-x-1.5 cursor-pointer ${
               activeTab === 'about_us'
                 ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm'
                 : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
             }`}
           >
             <Users className="w-3.5 h-3.5" />
-            <span>1. About Us</span>
+            <span>1. About Us (Founders)</span>
           </button>
+
           <button
+            type="button"
             onClick={() => setActiveTab('profile')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center space-x-1.5 ${
+            className={`px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center space-x-1.5 cursor-pointer ${
               activeTab === 'profile'
                 ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm'
                 : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
@@ -129,7 +133,7 @@ export const ProfilePage = () => {
       )}
 
       {/* ========================================================================= */}
-      {/* 1. ABOUT US SECTION (CONCISE & DIGNIFIED - FOUNDERS & MISSION) */}
+      {/* 1. ABOUT US SECTION (FOUNDERS & MISSION WITH 4K INTERACTIVE PROFILES)    */}
       {/* ========================================================================= */}
       {activeTab === 'about_us' && (
         <div className="space-y-4">
@@ -138,7 +142,7 @@ export const ProfilePage = () => {
       )}
 
       {/* ========================================================================= */}
-      {/* 2. OFFICIAL STUDENT PROFILE & PREFERENCES */}
+      {/* 2. OFFICIAL STUDENT PROFILE & PREFERENCES                                */}
       {/* ========================================================================= */}
       {activeTab === 'profile' && (
         <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-6">
@@ -182,151 +186,101 @@ export const ProfilePage = () => {
             </div>
           </div>
 
-          {/* Avatar Picker Modal / Drawer */}
+          {/* Avatar Picker Modal/Dropdown */}
           {showAvatarPicker && (
-            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-2">
-              <span className="text-xs font-black text-slate-700 dark:text-slate-200 block">Choose Profile Photo</span>
-              <div className="grid grid-cols-6 gap-2">
-                {PRESET_AVATARS.map((url, i) => (
-                  <img
-                    key={i}
-                    src={url}
-                    alt={`Avatar option ${i}`}
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-2 animate-in fade-in duration-150">
+              <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                Choose Avatar:
+              </span>
+              <div className="flex flex-wrap gap-2.5">
+                {PRESET_AVATARS.map((av, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
                     onClick={() => {
-                      setAvatar(url);
+                      setAvatar(av);
                       setShowAvatarPicker(false);
                     }}
-                    className={`w-12 h-12 rounded-2xl object-cover cursor-pointer transition-all hover:scale-105 ${
-                      avatar === url ? 'ring-4 ring-emerald-500' : 'opacity-70 hover:opacity-100'
+                    className={`w-12 h-12 rounded-2xl overflow-hidden border-2 transition-all cursor-pointer ${
+                      avatar === av ? 'border-emerald-500 ring-2 ring-emerald-500/30 scale-105' : 'border-transparent opacity-75 hover:opacity-100'
                     }`}
-                  />
+                  >
+                    <img src={av} alt="Preset avatar" className="w-full h-full object-cover" />
+                  </button>
                 ))}
               </div>
             </div>
           )}
 
-          {/* OFFICIAL COLLEGE IDENTITY (READ-ONLY) */}
-          <div className="space-y-3 border-t border-slate-100 dark:border-slate-800 pt-6">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xs font-black uppercase tracking-wider text-slate-400 flex items-center space-x-1.5">
-                <Lock className="w-3.5 h-3.5 text-slate-400" />
-                <span>Official College Identity (Verified)</span>
-              </h3>
-              <span className="text-[10px] font-bold text-slate-400">ABES Campus Registry</span>
+          {/* Details Form */}
+          <form onSubmit={handleSavePreferences} className="space-y-4 pt-2">
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">
+                  College / University
+                </label>
+                <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800 text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center space-x-2">
+                  <Building2 className="w-4 h-4 text-emerald-500" />
+                  <span>ABES Engineering College</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">
+                  Hostel Block & Assigned Mess
+                </label>
+                <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800 text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center space-x-2">
+                  <Utensils className="w-4 h-4 text-emerald-500" />
+                  <span>{currentUser?.hostelBlock || 'DNB Block'} • {menuGroup.name}</span>
+                </div>
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              
-              {/* Full Name */}
-              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-800 space-y-1">
-                <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase">
-                  <span>Full Name</span>
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-                </div>
-                <p className="text-xs sm:text-sm font-black text-slate-900 dark:text-white">
-                  {currentUser?.name || 'Not available'}
-                </p>
-              </div>
-
-              {/* Admission Number */}
-              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-800 space-y-1">
-                <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase">
-                  <span>Admission Number</span>
-                  <IdCard className="w-3.5 h-3.5 text-emerald-500" />
-                </div>
-                <p className="text-xs sm:text-sm font-black text-slate-900 dark:text-white">
-                  {currentUser?.admissionNumber || 'Not available'}
-                </p>
-              </div>
-
-              {/* Course & Year */}
-              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-800 space-y-1">
-                <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase">
-                  <span>Academic Standing</span>
-                  <GraduationCap className="w-3.5 h-3.5 text-emerald-500" />
-                </div>
-                <p className="text-xs sm:text-sm font-black text-slate-900 dark:text-white">
-                  B.Tech · {calculatedYear}
-                </p>
-              </div>
-
-              {/* Assigned Menu Group */}
-              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-800 space-y-1">
-                <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase">
-                  <span>Assigned Menu Group</span>
-                  <Utensils className="w-3.5 h-3.5 text-emerald-500" />
-                </div>
-                <p className="text-xs sm:text-sm font-black text-emerald-600 dark:text-emerald-400">
-                  {menuGroup?.label} ({menuGroup?.description})
-                </p>
-              </div>
-
-              {/* Hostel Residence Block */}
-              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-800 space-y-1">
-                <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase">
-                  <span>Hostel Residence</span>
-                  <Building2 className="w-3.5 h-3.5 text-emerald-500" />
-                </div>
-                <p className="text-xs sm:text-sm font-black text-slate-900 dark:text-white">
-                  {currentUser?.hostelBlock || 'DNB Block'}
-                </p>
-              </div>
-
-              {/* College Email */}
-              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-800 space-y-1">
-                <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase">
-                  <span>Official College Email</span>
-                  <Mail className="w-3.5 h-3.5 text-emerald-500" />
-                </div>
-                <p className="text-xs sm:text-sm font-black text-slate-900 dark:text-white">
-                  {currentUser?.email || 'Not available'}
-                </p>
-              </div>
-
-            </div>
-          </div>
-
-          {/* EDITABLE MESS PREFERENCES */}
-          <form onSubmit={handleSave} className="space-y-4 border-t border-slate-100 dark:border-slate-800 pt-6">
-            <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">
-              Dietary Preferences
-            </h3>
-
-            <div className="space-y-1.5">
-              <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300">
-                Dietary Category
+            {/* Diet Preference */}
+            <div>
+              <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5">
+                Diet Preference
               </label>
-              <select
-                value={dietPreference}
-                onChange={e => setDietPreference(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white outline-none focus:border-emerald-500"
-              >
-                <option value="Vegetarian">Pure Vegetarian</option>
-                <option value="High Protein / Eggetarian">High Protein / Eggetarian</option>
-                <option value="Jain (No Onion/Garlic)">Jain (No Onion / Garlic)</option>
-                <option value="Vegan">Vegan</option>
-              </select>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {['Vegetarian', 'Eggetarian', 'Non-Vegetarian', 'Jain Meal'].map((pref) => (
+                  <button
+                    key={pref}
+                    type="button"
+                    onClick={() => setDietPreference(pref)}
+                    className={`p-3 rounded-2xl text-xs font-black transition-all border cursor-pointer ${
+                      dietPreference === pref
+                        ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-500 text-emerald-700 dark:text-emerald-300 shadow-xs'
+                        : 'bg-white dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-slate-300'
+                    }`}
+                  >
+                    {pref}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            <div className="pt-3 flex items-center justify-between gap-3">
+            {/* Save Button */}
+            <div className="pt-4 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-slate-200/80 dark:border-slate-800">
               <button
                 type="submit"
                 disabled={saving}
-                className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black shadow-md flex items-center space-x-1.5 cursor-pointer"
+                className="w-full sm:w-auto py-3 px-6 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center justify-center space-x-2 shadow-lg shadow-emerald-600/20 transition-all cursor-pointer disabled:opacity-50"
               >
                 <Save className="w-4 h-4" />
-                <span>{saving ? 'Saving...' : 'Save Preferences'}</span>
+                <span>{saving ? 'Saving...' : 'SAVE PREFERENCES'}</span>
               </button>
 
               <button
                 type="button"
                 onClick={logout}
-                className="px-4 py-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 hover:bg-rose-100 text-xs font-bold flex items-center space-x-1.5 border border-rose-500/20 cursor-pointer"
+                className="w-full sm:w-auto py-2.5 px-4 rounded-xl text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 text-xs font-bold flex items-center justify-center space-x-1.5 transition-colors cursor-pointer"
               >
                 <LogOut className="w-4 h-4" />
-                <span>Log Out</span>
+                <span>Sign Out</span>
               </button>
             </div>
+
           </form>
 
         </div>
@@ -335,3 +289,5 @@ export const ProfilePage = () => {
     </div>
   );
 };
+
+export default ProfilePage;

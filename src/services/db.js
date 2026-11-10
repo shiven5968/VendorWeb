@@ -96,7 +96,7 @@ export const INITIAL_USERS = [
     dietPreference: 'High Protein / Eggetarian',
     proteinTarget: 120,
     rewardPoints: 0,
-    avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=300',
+    avatar: '/founders/parth_avatar_4k.jpg',
     createdAt: '2026-08-26T00:00:00.000Z'
   },
   {
