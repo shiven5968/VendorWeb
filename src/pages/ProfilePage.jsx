@@ -107,7 +107,7 @@ export const ProfilePage = () => {
             }`}
           >
             <Users className="w-3.5 h-3.5" />
-            <span>1. About Us (Founders)</span>
+            <span>1. About Us</span>
           </button>
 
           <button
@@ -242,8 +242,8 @@ export const ProfilePage = () => {
               <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5">
                 Diet Preference
               </label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                {['Vegetarian', 'Eggetarian', 'Non-Vegetarian', 'Jain Meal'].map((pref) => (
+              <div className="grid grid-cols-2 gap-3 max-w-sm">
+                {['Vegetarian', 'Eggetarian'].map((pref) => (
                   <button
                     key={pref}
                     type="button"
