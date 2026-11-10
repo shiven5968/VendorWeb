@@ -405,5 +405,44 @@ service cloud.firestore {
       // Students can dismiss/delete their own notifications
       allow delete: if isAuthenticated() && (resource == null || resource.data.userId == request.auth.uid);
     }
+
+    // ===============================================================
+    // 17. MUSCLE PASS PROFILES (/musclePassProfiles/{userId})
+    // Student personal nutrition targets, diet preferences, allergies
+    // ===============================================================
+    match /musclePassProfiles/{userId} {
+      // Students can read and write ONLY their own nutrition profile
+      allow read, write: if isOwner(userId) || isStaff();
+    }
+
+    // ===============================================================
+    // 18. MUSCLE PASS TRIALS (/musclePassTrials/{userId})
+    // 7-day free trial entitlement records
+    // ===============================================================
+    match /musclePassTrials/{userId} {
+      // Students can read and manage their own trial entitlement
+      allow read, create, update: if isOwner(userId) || isStaff();
+      allow delete: if isWarden();
+    }
+
+    // ===============================================================
+    // 19. MUSCLE PASS LOGS (/musclePassLogs/{logId})
+    // Daily meal logs: {userId}_{dateIST}
+    // ===============================================================
+    match /musclePassLogs/{logId} {
+      // Student can read/write their own daily meal logs; Staff can audit
+      allow read: if isAuthenticated() && (resource == null || resource.data.userId == request.auth.uid || isStaff());
+      allow create, update: if isAuthenticated() && (request.resource.data.userId == request.auth.uid || isStaff());
+      allow delete: if isAuthenticated() && (resource == null || resource.data.userId == request.auth.uid || isWarden());
+    }
+
+    // ===============================================================
+    // 20. MUSCLE PASS JOURNAL (/musclePassJournal/{userId})
+    // Private fitness notes, weigh-in records, personal diary
+    // ===============================================================
+    match /musclePassJournal/{userId} {
+      // Strictly private: ONLY the student owner can read or write their journal entries
+      allow read, write: if isOwner(userId);
+    }
   }
 }
