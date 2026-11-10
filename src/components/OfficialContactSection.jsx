@@ -1,5 +1,5 @@
 import React from 'react';
-import { Mail, Phone, MapPin, Clock, ShieldAlert, Users, PhoneOff } from 'lucide-react';
+import { Mail, Phone, MapPin, Clock, ShieldAlert, Users, PhoneOff, Smartphone } from 'lucide-react';
 import { OFFICIAL_CAMPUS_CONTACTS } from '../config/contacts';
 
 export const OfficialContactSection = () => {
@@ -10,10 +10,10 @@ export const OfficialContactSection = () => {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white uppercase tracking-tight">
-            Official Mess & Hostel Contacts
+            Official Mess &amp; App Contacts
           </h2>
           <p className="text-xs text-slate-500 font-semibold mt-0.5">
-            Direct communication channels for student grievances & assistance
+            Direct communication channels for student grievances, mess operations &amp; app support
           </p>
         </div>
       </div>
@@ -51,7 +51,7 @@ export const OfficialContactSection = () => {
             </div>
           </div>
 
-          {/* Quick Action Buttons (Mobile-First Tap Targets) */}
+          {/* Quick Action Buttons */}
           <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
             <a
               href={`mailto:${warden.email}?subject=Hostel%20Mess%20Inquiry%20from%20Student`}
@@ -112,7 +112,7 @@ export const OfficialContactSection = () => {
             </div>
           </div>
 
-          {/* Quick Action Buttons (Mobile-First Tap Targets) */}
+          {/* Quick Action Buttons */}
           <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
             <a
               href={`mailto:${committee.email}?subject=Mess%20Issue%20/%20Feedback`}
@@ -139,6 +139,47 @@ export const OfficialContactSection = () => {
                 <span>EMAIL PREFERRED</span>
               </div>
             )}
+          </div>
+        </div>
+
+        {/* ── MESSMATES APP & PLATFORM TECHNICAL SUPPORT CARD ── */}
+        <div className="p-5 rounded-3xl bg-gradient-to-br from-slate-900 to-slate-800 text-white border border-slate-700 shadow-sm flex flex-col justify-between space-y-4 md:col-span-2">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2.5">
+                <div className="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shadow-sm border border-emerald-500/30">
+                  <Smartphone className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-white">MessMates App &amp; Technical Grievances</h3>
+                  <span className="text-[11px] font-bold text-emerald-400">Engineering &amp; Platform Support</span>
+                </div>
+              </div>
+
+              <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-black uppercase tracking-wider border border-emerald-500/30">
+                24/7 Monitoring
+              </span>
+            </div>
+
+            <div className="space-y-1.5 text-xs text-slate-300 font-medium">
+              <div className="flex items-start space-x-2">
+                <Mail className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                <span>Email: <strong>messmates.tech@gmail.com</strong></span>
+              </div>
+              <p className="text-slate-400 text-[11px] leading-relaxed">
+                Reach out for technical bugs, student login troubleshooting, Muscle Pass activation inquiries, or general app feedback.
+              </p>
+            </div>
+          </div>
+
+          <div className="pt-2 border-t border-slate-700/80">
+            <a
+              href="mailto:messmates.tech@gmail.com?subject=MessMates%20App%20Support%20Inquiry&body=Hello%20MessMates%20Team%2C%0A%0AStudent%20Name%3A%20%0AIssue%20Description%3A%20%0A"
+              className="py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center justify-center space-x-2 shadow-sm transition-all"
+            >
+              <Mail className="w-3.5 h-3.5" />
+              <span>EMAIL APP SUPPORT (messmates.tech@gmail.com)</span>
+            </a>
           </div>
         </div>
 

@@ -47,6 +47,7 @@ import {
   formatTimeRemaining
 } from '../services/musclePassService';
 
+import { Modal } from '../components/ui';
 import { NutritionOnboardingModal } from '../components/musclePass/NutritionOnboardingModal';
 import { MealLoggingModal } from '../components/musclePass/MealLoggingModal';
 import { TodayDashboard } from '../components/musclePass/TodayDashboard';
@@ -79,6 +80,7 @@ export const MusclePassPage = () => {
   });
   const [isStartingTrial, setIsStartingTrial] = useState(false);
   const [trialSuccessMsg, setTrialSuccessMsg] = useState('');
+  const [isBuyPremiumModalOpen, setIsBuyPremiumModalOpen] = useState(false);
 
   // Nutrition Profile
   const [profile, setProfile] = useState(null);
@@ -159,39 +161,40 @@ export const MusclePassPage = () => {
         setProfile({
           userId,
           name: currentUser?.name || 'Student Athlete',
-          weightKg: 60,
-          dailyProteinTargetG: 120,
+          weightKg: 65,
+          dailyProteinTargetG: 130,
           goal: 'Muscle Gain',
           dietaryPreference: 'Vegetarian',
           preferredPortion: 'Regular',
           allergies: [],
-          proteinPerKg: 2.0,
-          isStarterDefault: true
+          proteinPerKg: 2.0
         });
       }
 
       setTodayLogs(logsRes?.logs || []);
       setWeeklySummaries(weeklyRes || []);
     } catch (err) {
-      console.error('[MusclePass load error]:', err);
+      console.warn('[MusclePass load error]:', err);
     }
   };
 
   useEffect(() => {
     loadEntitlementAndData();
-  }, [userId, todayDateIST]);
+  }, [userId, musclePassSubscription]);
 
-  // Resolve today's meals for student's actual mess (Junior, Senior, Girls)
-  const studentMessId = activeMess?.id || activeMess?.menuId || 'boys_junior';
-  const resolvedMeals = getTodayHostelMeals(todayDay, null, studentMessId) || contextTodayMeals || [];
+  // Resolve today's actual 4 mess meals
+  const dayName = todayDay || new Date().toLocaleDateString('en-US', { weekday: 'long' });
+  const rawHostelMeals = getTodayHostelMeals(activeMess || 'boys_junior', dayName);
+  const resolvedMeals = (contextTodayMeals && contextTodayMeals.length > 0) ? contextTodayMeals : rawHostelMeals;
 
-  const activeProteinTarget = profile?.dailyProteinTargetG || currentUser?.proteinTarget || 120;
-  const activeWeight = profile?.weightKg || 60;
+  // Active student targets
+  const activeProteinTarget = profile?.dailyProteinTargetG || 120;
+  const activeWeight = profile?.weightKg || 65;
 
-  // Run Smart Nutrition Engine
+  // Run Smart Nutrition & Recommendation Engine
   const { summary, recommendations } = generateSmartMealPlan({
     todayMeals: resolvedMeals,
-    profile: profile || { dailyProteinTargetG: activeProteinTarget, weightKg: activeWeight },
+    profile: profile || { dailyProteinTargetG: activeProteinTarget, dietaryPreference: 'Vegetarian' },
     todayLogs
   });
 
@@ -213,7 +216,7 @@ export const MusclePassPage = () => {
         msLeft: 7 * 24 * 60 * 60 * 1000,
         trialClaimed: true
       });
-      setTrialSuccessMsg('🎉 7-Day Free Demo Activated! No payment required. Full nutrition intelligence is now unlocked.');
+      setTrialSuccessMsg('🎉 7-Day Free Demo Activated! Full nutrition intelligence is now unlocked.');
       if (addNotification) {
         addNotification('Free Demo Activated', '7-Day Muscle Pass Demo is now active.', 'success');
       }
@@ -321,9 +324,12 @@ export const MusclePassPage = () => {
     });
   };
 
-  // Handler: Quick log preset from My Meals / Alternatives
-  const handleQuickLogPreset = async (staple, slot = 'Snacks') => {
-    const extraItem = {
+  // Handler: Quick-log preset campus staple
+  const handleQuickLogPreset = async (staple, mealSlot = 'Snacks') => {
+    const existingLog = todayLogs.find(l => l.mealType === mealSlot);
+    const existingItems = existingLog && Array.isArray(existingLog.items) ? [...existingLog.items] : [];
+
+    existingItems.push({
       name: staple.name,
       portion: 1.0,
       proteinPerServing: staple.proteinG,
@@ -331,11 +337,7 @@ export const MusclePassPage = () => {
       proteinConsumed: staple.proteinG,
       caloriesConsumed: staple.calories,
       isExtra: true
-    };
-
-    const existingSlotLog = todayLogs.find(l => l.mealType === slot);
-    const existingItems = existingSlotLog?.items ? [...existingSlotLog.items] : [];
-    existingItems.push(extraItem);
+    });
 
     let totalP = 0;
     let totalC = 0;
@@ -345,7 +347,7 @@ export const MusclePassPage = () => {
     }
 
     await handleSaveLog({
-      mealType: slot,
+      mealType: mealSlot,
       status: 'COMPLETED',
       items: existingItems,
       proteinConsumed: Math.round(totalP * 10) / 10,
@@ -353,24 +355,26 @@ export const MusclePassPage = () => {
     });
   };
 
-  // Handler: Log Outside Food from custom modal
+  // Handler: Outside Food Modal Submit
   const handleLogOutsideFood = async (e) => {
     e.preventDefault();
     if (!outsideFoodName.trim()) return;
 
-    const extraItem = {
+    const prot = Number(outsideProteinG) || 0;
+    const cals = Number(outsideCalories) || 0;
+
+    const existingLog = todayLogs.find(l => l.mealType === outsideMealSlot);
+    const existingItems = existingLog && Array.isArray(existingLog.items) ? [...existingLog.items] : [];
+
+    existingItems.push({
       name: outsideFoodName.trim(),
       portion: 1.0,
-      proteinPerServing: Number(outsideProteinG) || 0,
-      caloriesPerServing: Number(outsideCalories) || 0,
-      proteinConsumed: Number(outsideProteinG) || 0,
-      caloriesConsumed: Number(outsideCalories) || 0,
+      proteinPerServing: prot,
+      caloriesPerServing: cals,
+      proteinConsumed: prot,
+      caloriesConsumed: cals,
       isExtra: true
-    };
-
-    const existingSlotLog = todayLogs.find(l => l.mealType === outsideMealSlot);
-    const existingItems = existingSlotLog?.items ? [...existingSlotLog.items] : [];
-    existingItems.push(extraItem);
+    });
 
     let totalP = 0;
     let totalC = 0;
@@ -429,32 +433,44 @@ export const MusclePassPage = () => {
   return (
     <div className="max-w-5xl mx-auto px-3 sm:px-6 lg:px-8 py-6 space-y-6 pb-28 md:pb-16 animate-fade-in">
       
-      {/* ── 1. PROMPT 7-DAY DEMO BANNER (IF NOT CLAIMED) ────────────────────── */}
+      {/* ── 1. PROMPT 7-DAY DEMO BANNER WITH BUY PREMIUM OPTION BELOW DEMO ──── */}
       {!entitlement.trialClaimed && (
-        <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-emerald-600 via-emerald-700 to-teal-800 text-white shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="space-y-1">
+        <div className="p-5 sm:p-7 rounded-3xl bg-gradient-to-r from-emerald-700 via-emerald-800 to-teal-900 text-white shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-5 border border-emerald-600/40">
+          <div className="space-y-1.5">
             <div className="flex items-center space-x-2">
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-white/20 text-white">
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-white/20 text-white">
                 Exclusive Trial
               </span>
-              <span className="text-xs font-bold text-emerald-100">Zero Payment Required</span>
+              <span className="text-xs font-bold text-emerald-200">Zero Payment Required</span>
             </div>
-            <h2 className="text-lg sm:text-xl font-black tracking-tight">
+            <h2 className="text-lg sm:text-2xl font-black tracking-tight">
               Start Your 7-Day Free Premium Demo
             </h2>
-            <p className="text-xs text-emerald-100 max-w-xl">
+            <p className="text-xs sm:text-sm text-emerald-100/90 max-w-xl font-medium">
               Explore your personalized nutrition experience powered by your actual campus mess menu.
             </p>
           </div>
 
-          <button
-            onClick={handleStartFreeTrial}
-            disabled={isStartingTrial}
-            className="px-6 py-3 rounded-2xl bg-white hover:bg-emerald-50 text-emerald-800 font-black text-xs shadow-md transition-all cursor-pointer flex items-center space-x-2 shrink-0 self-start sm:self-auto"
-          >
-            <Zap className="w-4 h-4 text-emerald-600 fill-emerald-600" />
-            <span>{isStartingTrial ? 'Activating...' : 'START 7-DAY FREE DEMO'}</span>
-          </button>
+          <div className="flex flex-col items-stretch sm:items-end gap-2.5 shrink-0 self-start sm:self-auto min-w-[220px]">
+            {/* 1. START 7-DAY FREE DEMO */}
+            <button
+              onClick={handleStartFreeTrial}
+              disabled={isStartingTrial}
+              className="w-full px-6 py-3 rounded-2xl bg-white hover:bg-emerald-50 text-emerald-900 font-black text-xs shadow-md transition-all cursor-pointer flex items-center justify-center space-x-2"
+            >
+              <Zap className="w-4 h-4 text-emerald-600 fill-emerald-600" />
+              <span>{isStartingTrial ? 'Activating...' : 'START 7-DAY FREE DEMO'}</span>
+            </button>
+
+            {/* 2. BUY PREMIUM OPTION (DIRECTLY BELOW DEMO) */}
+            <button
+              onClick={() => setIsBuyPremiumModalOpen(true)}
+              className="w-full px-5 py-2.5 rounded-2xl bg-gradient-to-r from-amber-400 via-amber-300 to-yellow-400 hover:from-amber-300 hover:to-yellow-300 text-amber-950 font-black text-xs shadow-md transition-all cursor-pointer flex items-center justify-center space-x-2 border border-amber-300"
+            >
+              <Crown className="w-4 h-4 text-amber-950 fill-amber-950" />
+              <span>BUY PREMIUM PASS</span>
+            </button>
+          </div>
         </div>
       )}
 
@@ -482,15 +498,23 @@ export const MusclePassPage = () => {
                 {isTrialActive ? '7-Day Demo' : 'Pro Pass'}
               </span>
             </div>
-            <p className="text-xs text-slate-500 font-medium">
+            <p className="text-xs text-slate-500 font-medium mt-0.5">
               Eat Smart. Train Better. Progress Daily. • {formatCollegeDateDisplay()}
             </p>
           </div>
         </div>
 
-        {/* Right: Quick Target Badge & Profile Shortcut */}
-        <div className="flex items-center space-x-2.5 self-start md:self-auto">
-          <div className="px-3.5 py-1.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold flex items-center space-x-1.5">
+        {/* Right: Quick Target Badge, Buy Premium & Settings Shortcut */}
+        <div className="flex flex-wrap items-center gap-2.5 self-start md:self-auto">
+          <button
+            onClick={() => setIsBuyPremiumModalOpen(true)}
+            className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-400 via-amber-300 to-yellow-400 hover:from-amber-300 hover:to-yellow-300 text-amber-950 text-xs font-black transition-all cursor-pointer flex items-center space-x-1.5 shadow-2xs border border-amber-300"
+          >
+            <Crown className="w-3.5 h-3.5 fill-amber-950" />
+            <span>Buy Premium</span>
+          </button>
+
+          <div className="px-3.5 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold flex items-center space-x-1.5">
             <Target className="w-3.5 h-3.5 text-emerald-600" />
             <span>{activeProteinTarget}g Target ({activeWeight} kg)</span>
           </div>
@@ -723,6 +747,103 @@ export const MusclePassPage = () => {
           </div>
         </div>
       )}
+
+      {/* ── BUY PREMIUM PLAN MODAL ─────────────────────────────────────────── */}
+      <Modal
+        isOpen={isBuyPremiumModalOpen}
+        onClose={() => setIsBuyPremiumModalOpen(false)}
+        maxWidth="max-w-2xl"
+      >
+        <div className="space-y-6 p-2">
+          {/* Header */}
+          <div className="flex items-center space-x-3.5 pb-4 border-b border-slate-100">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 via-amber-300 to-yellow-500 text-amber-950 flex items-center justify-center shadow-md shrink-0">
+              <Crown className="w-6 h-6 fill-amber-950" />
+            </div>
+            <div>
+              <div className="flex items-center space-x-2">
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-gradient-to-r from-amber-400 to-yellow-500 text-amber-950 shadow-2xs">
+                  Official Membership
+                </span>
+                <span className="text-[11px] font-bold text-emerald-600">Razorpay 256-Bit Secure</span>
+              </div>
+              <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight mt-0.5">
+                Upgrade to Muscle Pass Premium
+              </h2>
+              <p className="text-xs text-slate-500 font-medium">
+                Uninterrupted mess nutrition intelligence, plate portion sizing, and student macro analytics.
+              </p>
+            </div>
+          </div>
+
+          {/* Pricing Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {MUSCLE_PASS_PLAN_LIST.map((plan) => {
+              return (
+                <div
+                  key={plan.id}
+                  className={`p-5 rounded-3xl border transition-all flex flex-col justify-between space-y-4 relative ${
+                    plan.popular
+                      ? 'bg-gradient-to-br from-amber-500/10 via-yellow-500/5 to-emerald-500/10 border-amber-400 shadow-md ring-2 ring-amber-300'
+                      : 'bg-white border-slate-200/90 hover:border-amber-300 shadow-xs'
+                  }`}
+                >
+                  {plan.badge && (
+                    <span className="absolute -top-2.5 right-4 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-400 text-amber-950 shadow-2xs">
+                      {plan.badge}
+                    </span>
+                  )}
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-base font-black text-slate-900">{plan.name}</h3>
+                      {plan.savingsLabel && (
+                        <span className="text-[10px] font-black text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full">
+                          {plan.savingsLabel}
+                        </span>
+                      )}
+                    </div>
+                    
+                    <div className="flex items-baseline space-x-1.5">
+                      <span className="text-3xl font-black text-slate-900">₹{plan.price}</span>
+                      <span className="text-xs text-slate-400 font-bold">/ {plan.durationLabel}</span>
+                    </div>
+
+                    <p className="text-xs text-slate-500 font-medium leading-relaxed">
+                      {plan.tagline}
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={async () => {
+                      setIsBuyPremiumModalOpen(false);
+                      await handleSubscribe(plan.id);
+                    }}
+                    disabled={isProcessingPayment}
+                    className={`w-full py-3 rounded-2xl text-xs font-black transition-all cursor-pointer flex items-center justify-center space-x-2 shadow-sm ${
+                      plan.popular
+                        ? 'bg-gradient-to-r from-amber-400 via-amber-300 to-yellow-400 hover:from-amber-300 hover:to-yellow-300 text-amber-950 border border-amber-300'
+                        : 'bg-slate-900 hover:bg-slate-800 text-white'
+                    }`}
+                  >
+                    <CreditCard className="w-3.5 h-3.5" />
+                    <span>Get {plan.durationLabel} Pass</span>
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Secure Reassurance Footer */}
+          <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center justify-between text-xs text-slate-500 font-semibold">
+            <div className="flex items-center space-x-2">
+              <ShieldCheck className="w-4 h-4 text-emerald-600" />
+              <span>Razorpay Verified • UPI (Google Pay, PhonePe, Paytm), Cards &amp; NetBanking</span>
+            </div>
+            <span className="text-[10px] text-slate-400 uppercase font-black tracking-wider">Instant</span>
+          </div>
+        </div>
+      </Modal>
 
     </div>
   );

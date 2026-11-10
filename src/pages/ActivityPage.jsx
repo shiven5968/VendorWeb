@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import { StatusBadge, EmptyState, DashboardCard, SectionHeader, Modal, RatingStars } from '../components/ui';
-import { MessageSquare, Plus, CheckCircle2, Clock, Star, Lock, Send, Phone } from 'lucide-react';
+import { MessageSquare, Plus, CheckCircle2, Clock, Star, Lock, Send, Phone, Mail, Copy, Check } from 'lucide-react';
 import { clsx } from 'clsx';
 import { formatRatingRelativeTime, formatCollegeDateTime } from '../utils/dateTime';
 import { OfficialContactSection } from '../components/OfficialContactSection';
@@ -29,6 +29,7 @@ export const ActivityPage = () => {
   const [category, setCategory] = useState('Food Quality');
   const [issueText, setIssueText] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [copiedEmail, setCopiedEmail] = useState(false);
 
   // Student personal rating history
   const myRatings = (userRatings && userRatings.length > 0)
@@ -38,7 +39,7 @@ export const ActivityPage = () => {
   const displayedRatings = isStaff ? (allRatings || []) : myRatings;
   const displayedComplaints = isStaff ? (allComplaints || []) : (userComplaints || []);
 
-  const categories = ['Food Quality', 'Hygiene', 'Taste', 'Quantity', 'Service', 'Cleanliness', 'Other'];
+  const categories = ['Food Quality', 'Hygiene', 'Taste', 'Quantity', 'Service', 'Cleanliness', 'App / Website', 'Other'];
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -52,6 +53,16 @@ export const ActivityPage = () => {
       console.error('Error creating complaint:', err);
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleCopyEmail = () => {
+    try {
+      navigator.clipboard?.writeText('messmates.tech@gmail.com');
+      setCopiedEmail(true);
+      setTimeout(() => setCopiedEmail(false), 2500);
+    } catch {
+      // fallback
     }
   };
 
@@ -185,11 +196,11 @@ export const ActivityPage = () => {
 
           {displayedRatings.length === 0 ? (
             <EmptyState 
-              icon={Star}
-              title={isStaff ? "No ratings recorded yet" : "No meal ratings yet"}
+              icon={Star} 
+              title={isStaff ? "No ratings recorded yet" : "No meal ratings yet"} 
               description={isStaff 
                 ? "Student meal ratings will appear here as they are submitted."
-                : "You haven't rated any mess meals yet. Rate your breakfast, lunch, snacks, or dinner after dining to see your personal history here!"}
+                : "You haven't rated any mess meals yet. Rate your breakfast, lunch, snacks, or dinner after dining to see your personal history here!"} 
               actionLabel={!isStaff ? "Go to Today's Menu" : undefined}
               onAction={!isStaff ? () => setCurrentPage('dashboard') : undefined}
             />
@@ -236,7 +247,7 @@ export const ActivityPage = () => {
                         </div>
                       </div>
 
-                      {/* Second Row: Dynamic Contextual Relative Wording & Read-Only Distinction */}
+                      {/* Second Row */}
                       <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-slate-100 dark:border-slate-800 text-xs">
                         <div className="flex items-center space-x-2 text-slate-600 dark:text-slate-400 font-semibold">
                           <Clock className="w-3.5 h-3.5 text-emerald-500" />
@@ -289,15 +300,53 @@ export const ActivityPage = () => {
       {activeTab === 'complaints' && (
         <div className="space-y-4">
           
-          <div className="flex items-center justify-between px-1">
+          {/* ── APP GRIEVANCES & DIRECT TECH SUPPORT BANNER ────────────────────── */}
+          <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white shadow-sm border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="space-y-1.5">
+              <div className="flex items-center space-x-2">
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                  App &amp; Tech Grievances
+                </span>
+                <span className="text-[11px] text-slate-400 font-bold">Direct Developer Support</span>
+              </div>
+              <h3 className="text-base sm:text-lg font-black text-white tracking-tight">
+                Facing an app bug, login error, or payment issue?
+              </h3>
+              <p className="text-xs text-slate-300 max-w-xl font-medium leading-relaxed">
+                For technical complaints regarding the website, student login, or Muscle Pass, email our team directly at <strong className="text-emerald-400">messmates.tech@gmail.com</strong>.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
+              <a
+                href="mailto:messmates.tech@gmail.com?subject=MessMates%20App%20Complaint%20/%20Technical%20Issue&body=Hello%20MessMates%20Support%20Team%2C%0A%0AStudent%20Name%3A%20%0AHostel%20%2F%20College%3A%20%0AIssue%20Description%3A%20%0A"
+                className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black transition-all flex items-center space-x-1.5 shadow-sm"
+              >
+                <Mail className="w-3.5 h-3.5" />
+                <span>Email Support</span>
+              </a>
+
+              <button
+                type="button"
+                onClick={handleCopyEmail}
+                className="px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition-all border border-slate-700 flex items-center space-x-1.5 cursor-pointer"
+                title="Copy messmates.tech@gmail.com"
+              >
+                {copiedEmail ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                <span>{copiedEmail ? 'Copied!' : 'Copy'}</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between px-1 pt-1">
             <div>
               <h2 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-tight">
-                {isStaff ? "Grievance Management Pipeline" : "Your Complaints & Grievances"}
+                {isStaff ? "Grievance Management Pipeline" : "Hostel Mess Complaints"}
               </h2>
               <p className="text-xs text-slate-500">
                 {isStaff 
                   ? "Track, review, and mark student complaints as resolved"
-                  : "Submit mess complaints directly to administration and operations"}
+                  : "Submit mess dining complaints directly to administration and catering operations"}
               </p>
             </div>
 
@@ -429,6 +478,14 @@ export const ActivityPage = () => {
             </div>
           </div>
 
+          {/* Quick Notice for App Grievances */}
+          <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-300 flex items-start space-x-2.5">
+            <Mail className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+            <p className="leading-snug">
+              <strong>Facing an app bug or technical issue?</strong> You can also email our developers directly at <a href="mailto:messmates.tech@gmail.com" className="text-emerald-600 font-bold underline">messmates.tech@gmail.com</a> with screenshots for immediate debugging.
+            </p>
+          </div>
+
           <div className="space-y-2">
             <label className="text-xs font-black uppercase text-slate-500 dark:text-slate-400">
               Description
@@ -437,7 +494,7 @@ export const ActivityPage = () => {
               rows={4}
               value={issueText}
               onChange={(e) => setIssueText(e.target.value)}
-              placeholder="Describe the issue in detail (e.g. food quality, undercooked dishes, timing delays)..."
+              placeholder="Describe the issue in detail (e.g. food quality, hygiene, timing delays, or app issues)..."
               className="w-full p-3.5 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 resize-none transition-shadow outline-none"
               required
             />
