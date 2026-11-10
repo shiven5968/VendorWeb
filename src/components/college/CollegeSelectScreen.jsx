@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { Search, X, Building2, MapPin, CheckCircle2, Clock, ArrowRight, ChevronDown } from 'lucide-react';
+import { Search, X, Building2, MapPin, CheckCircle2, Clock, ArrowRight, ChevronDown, Sparkles } from 'lucide-react';
 import { MessMatesLogo } from '../MessMatesLogo';
 import { INSTITUTIONS, searchInstitutions, isInstitutionActive } from '../../config/institutions';
 
@@ -47,27 +47,45 @@ export const CollegeSelectScreen = ({
     onConfirmInstitution(selectedInstitution);
   };
 
+  // Dynamic layout adjustment: shrinks logo and spacing when user selects or searches
+  const isAdjusted = Boolean(selectedInstitution || isDropdownOpen);
+
   return (
-    <div className="w-full max-w-lg mx-auto px-4 py-4 sm:py-8 animate-in fade-in duration-300">
+    <div className={`w-full max-w-lg mx-auto px-4 transition-all duration-300 ease-in-out ${
+      isAdjusted ? 'py-4 sm:py-6' : 'py-8 sm:py-14'
+    }`}>
       
-      {/* 1. Header & Official Branding */}
-      <div className="text-center space-y-2 mb-6 sm:mb-8">
-        <div className="flex justify-center mb-2.5">
-          <MessMatesLogo variant="full" size="md" />
+      {/* ── 1. BIG HERO LOGO & TAGLINE (UPPER POSITION) ─────────────────────── */}
+      <div className={`text-center transition-all duration-300 ease-in-out ${
+        isAdjusted ? 'mb-4 sm:mb-5' : 'mb-6 sm:mb-8'
+      }`}>
+        {/* Dynamic Big Logo positioned UP */}
+        <div className={`flex justify-center transition-all duration-300 ease-in-out ${
+          isAdjusted ? 'mb-2 scale-90' : 'mb-4 scale-100 sm:scale-110'
+        }`}>
+          <MessMatesLogo 
+            variant="full" 
+            size={isAdjusted ? 'md' : '2xl'} 
+          />
         </div>
 
-        <div className="space-y-1">
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
-            Hey there!
+        {/* Tagline directly below Logo */}
+        <div className="space-y-1 transition-all duration-300">
+          <h1 className={`font-black text-emerald-600 dark:text-emerald-400 tracking-tight transition-all duration-300 ${
+            isAdjusted ? 'text-base sm:text-lg' : 'text-xl sm:text-2xl md:text-3xl'
+          }`}>
+            Know your meal before you eat it
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium">
-            Select your college or university to continue.
+          <p className={`text-slate-500 dark:text-slate-400 font-medium transition-all duration-300 ${
+            isAdjusted ? 'text-[11px] sm:text-xs' : 'text-xs sm:text-sm'
+          }`}>
+            Select your college or university to continue
           </p>
         </div>
       </div>
 
-      {/* 2. Dynamic Searchable Input & Dropdown */}
-      <div ref={dropdownRef} className="relative mb-5">
+      {/* ── 2. COLLEGE SELECTOR SEARCH INPUT & DROPDOWN ─────────────────────── */}
+      <div ref={dropdownRef} className="relative mb-4">
         <div className="relative">
           <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
             <Search className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
@@ -111,9 +129,9 @@ export const CollegeSelectScreen = ({
           </div>
         </div>
 
-        {/* 3. Dynamic Institution Results Dropdown — Visible only on focus/click/typing */}
+        {/* Dynamic Institution Results Dropdown */}
         {isDropdownOpen && (
-          <div className="absolute z-30 left-0 right-0 mt-2 p-1.5 rounded-2xl bg-white dark:bg-slate-900 border-2 border-emerald-500/30 dark:border-emerald-500/40 shadow-xl max-h-[300px] sm:max-h-[340px] overflow-y-auto space-y-1.5 animate-in fade-in slide-in-from-top-2 duration-150">
+          <div className="absolute z-30 left-0 right-0 mt-2 p-1.5 rounded-2xl bg-white dark:bg-slate-900 border-2 border-emerald-500/30 dark:border-emerald-500/40 shadow-xl max-h-[280px] sm:max-h-[320px] overflow-y-auto space-y-1.5 animate-in fade-in slide-in-from-top-2 duration-150">
             {filteredInstitutions.length > 0 ? (
               filteredInstitutions.map((inst) => {
                 const isSelected = selectedInstitutionId === inst.id;
@@ -192,9 +210,9 @@ export const CollegeSelectScreen = ({
         )}
       </div>
 
-      {/* 4. Selection Confirmation & Continue Action */}
+      {/* ── 3. AUTOMATICALLY ADJUSTED CONFIRMATION CARD ─────────────────────── */}
       {selectedInstitution && (
-        <div className="mt-3 pt-4 border-t border-slate-200/80 dark:border-slate-800/80 space-y-3 animate-in fade-in duration-200">
+        <div className="mt-3 pt-4 border-t border-slate-200/80 dark:border-slate-800/80 space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
           <div className="flex items-center justify-between text-xs px-1">
             <span className="text-slate-500 font-medium">Selected Institution:</span>
             <span className="font-bold text-slate-900 dark:text-white flex items-center space-x-1">
@@ -205,7 +223,7 @@ export const CollegeSelectScreen = ({
           <button
             type="button"
             onClick={handleContinue}
-            className="w-full py-3 px-5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-black shadow-lg shadow-emerald-600/20 hover:shadow-emerald-600/30 transition-all flex items-center justify-center space-x-2 group active:scale-[0.99] cursor-pointer"
+            className="w-full py-3.5 px-5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-black shadow-lg shadow-emerald-600/20 hover:shadow-emerald-600/30 transition-all flex items-center justify-center space-x-2 group active:scale-[0.99] cursor-pointer"
           >
             <span>Continue to {selectedInstitution.shortName || selectedInstitution.name}</span>
             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />

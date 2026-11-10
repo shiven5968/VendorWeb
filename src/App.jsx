@@ -215,7 +215,7 @@ const AppContent = () => {
   if (!user) {
     return (
       <div className="min-h-screen flex flex-col justify-between bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
-        <main className="flex-1 min-h-screen flex items-center justify-center p-4">
+        <main className={`flex-1 min-h-screen flex justify-center p-4 transition-all duration-300 ${!selectedCollegeId ? "items-start pt-10 sm:pt-20 md:pt-24" : "items-center"}`}>
           <Suspense fallback={<PageLoadingFallback />}>
             {!selectedCollegeId ? (
               <CollegeSelectScreen

@@ -12,7 +12,7 @@ import wmWhite from '../assets/branding/messmates-wordmark-white.png';
  * - Proportional & balanced for modern UI (not oversized, blended seamlessly)
  *
  * @param {'full'|'icon'|'wordmark'} variant - Display mode ('full', 'icon', 'wordmark')
- * @param {'xs'|'sm'|'md'|'lg'|'xl'} size - Preset sizes ('xs', 'sm', 'md', 'lg', 'xl')
+ * @param {'xs'|'sm'|'md'|'lg'|'xl'|'2xl'|'hero'} size - Preset sizes
  * @param {string} className - Container custom styling
  * @param {string} imgClassName - Custom image styling
  * @param {boolean} dark - Force dark wordmark (white text)
@@ -34,7 +34,9 @@ export const MessMatesLogo = ({
     sm: 'h-7 w-auto',
     md: 'h-8 sm:h-9 w-auto',
     lg: 'h-11 sm:h-12 w-auto',
-    xl: 'h-14 sm:h-16 w-auto'
+    xl: 'h-14 sm:h-16 w-auto',
+    '2xl': 'h-16 sm:h-20 w-auto',
+    hero: 'h-20 sm:h-24 w-auto'
   };
 
   const currentHeight = sizeMap[size] || sizeMap.md;
@@ -85,7 +87,7 @@ export const MessMatesLogo = ({
         />
       </div>
       {showTagline && (
-        <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 tracking-wider uppercase mt-1">
+        <span className="text-[10px] sm:text-xs font-bold text-emerald-600 dark:text-emerald-400 tracking-wider uppercase mt-1.5">
           Know Your Meal Before You Eat It
         </span>
       )}
