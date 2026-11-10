@@ -503,7 +503,7 @@ export const LoginPage = ({
                     placeholder="e.g. 2025B01011362 or student@abes.ac.in"
                     value={loginData.identifier}
                     onChange={handleLoginChange}
-                    className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500/20"
+                    className="w-full pl-10 pr-3.5 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-base font-semibold outline-none focus:ring-2 focus:ring-emerald-500/20"
                   />
                 ) : (
                   <input
@@ -515,7 +515,7 @@ export const LoginPage = ({
                     placeholder={activeRole === 'warden' ? 'amita@abes.ac.in or alok@abes.ac.in' : 'committee@abes.ac.in'}
                     value={loginData.identifier}
                     onChange={handleLoginChange}
-                    className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500/20"
+                    className="w-full pl-10 pr-3.5 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-base font-semibold outline-none focus:ring-2 focus:ring-emerald-500/20"
                   />
                 )}
               </div>
@@ -543,7 +543,7 @@ export const LoginPage = ({
                   placeholder="••••••••"
                   value={loginData.password}
                   onChange={handleLoginChange}
-                  className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500/20"
+                  className="w-full pl-10 pr-3.5 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-base font-semibold outline-none focus:ring-2 focus:ring-emerald-500/20"
                 />
               </div>
             </div>
@@ -551,7 +551,7 @@ export const LoginPage = ({
             <button
               type="submit"
               disabled={isLoginSubmitting}
-              className="w-full py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs shadow-md transition-colors flex items-center justify-center space-x-1.5 mt-2 disabled:opacity-50"
+              className="w-full min-h-[48px] py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-sm shadow-md transition-colors flex items-center justify-center space-x-1.5 mt-2 disabled:opacity-50 cursor-pointer"
             >
               {isLoginSubmitting ? (
                 <>
@@ -688,7 +688,7 @@ export const LoginPage = ({
                 <button
                   type="submit"
                   disabled={isOtpSending}
-                  className="w-full py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs shadow-md transition-colors flex items-center justify-center space-x-1.5 mt-2 disabled:opacity-50 uppercase tracking-wider"
+                  className="w-full min-h-[48px] py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-sm shadow-md transition-colors flex items-center justify-center space-x-1.5 mt-2 disabled:opacity-50 uppercase tracking-wider cursor-pointer"
                 >
                   {isOtpSending ? (
                     <>
@@ -762,7 +762,7 @@ export const LoginPage = ({
                 <button
                   type="submit"
                   disabled={isOtpVerifying || isRegisterSubmitting || enteredOtp.length !== 6}
-                  className="w-full py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs shadow-md transition-colors flex items-center justify-center space-x-1.5 disabled:opacity-50 uppercase tracking-wider"
+                  className="w-full min-h-[48px] py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-sm shadow-md transition-colors flex items-center justify-center space-x-1.5 disabled:opacity-50 uppercase tracking-wider cursor-pointer"
                 >
                   {isOtpVerifying || isRegisterSubmitting ? (
                     <>

@@ -27,7 +27,7 @@ export const SearchModal = () => {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             autoFocus
-            className="flex-1 bg-transparent text-slate-900 dark:text-white placeholder-slate-400 text-sm sm:text-base outline-none"
+            className="flex-1 bg-transparent text-slate-900 dark:text-white placeholder-slate-400 text-base outline-none"
           />
           <button
             onClick={() => setIsSearchOpen(false)}

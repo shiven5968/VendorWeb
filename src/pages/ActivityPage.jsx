@@ -495,7 +495,7 @@ export const ActivityPage = () => {
               value={issueText}
               onChange={(e) => setIssueText(e.target.value)}
               placeholder="Describe the issue in detail (e.g. food quality, hygiene, timing delays, or app issues)..."
-              className="w-full p-3.5 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 resize-none transition-shadow outline-none"
+              className="w-full p-3.5 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-base sm:text-xs placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 resize-none transition-shadow outline-none"
               required
             />
           </div>
@@ -511,7 +511,7 @@ export const ActivityPage = () => {
             <button 
               type="submit"
               disabled={!issueText.trim() || submitting}
-              className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-xl text-xs font-black transition-all shadow-md flex items-center justify-center space-x-1.5 cursor-pointer"
+              className="min-h-[44px] px-6 py-3 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-xl text-sm font-black transition-all shadow-md flex items-center justify-center space-x-1.5 cursor-pointer"
             >
               <Send className="w-3.5 h-3.5" />
               <span>{submitting ? 'Submitting...' : 'Submit Complaint'}</span>

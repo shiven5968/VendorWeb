@@ -200,6 +200,14 @@ const AppContent = () => {
     }
   }, [user, role, setCurrentPage]);
 
+  // Automatic Mobile Viewport & Scroll Restoration on Page/Route/Screen Change
+  useEffect(() => {
+    if (document.activeElement && typeof document.activeElement.blur === 'function') {
+      document.activeElement.blur();
+    }
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  }, [currentPage, selectedCollegeId, isLoginFlow]);
+
   // Loading Screen — shown during initial Firebase auth resolution or profile fetch for active sessions
   if (isInitialAuthLoading || (user && !profile && isProfileLoading)) {
     return (
@@ -214,8 +222,8 @@ const AppContent = () => {
   // 1. PUBLIC LAYOUT: Universal Multi-College Entry
   if (!user) {
     return (
-      <div className="min-h-screen flex flex-col justify-between bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
-        <main className={`flex-1 min-h-screen flex justify-center p-4 transition-all duration-300 ${!selectedCollegeId ? "items-start pt-10 sm:pt-20 md:pt-24" : "items-center"}`}>
+      <div className="min-h-[100dvh] flex flex-col justify-between bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
+        <main className={`flex-1 min-h-[100dvh] flex justify-center p-3 sm:p-4 transition-all duration-300 ${!selectedCollegeId ? "items-start pt-10 sm:pt-20 md:pt-24" : "items-center"}`}>
           <Suspense fallback={<PageLoadingFallback />}>
             {!selectedCollegeId ? (
               <CollegeSelectScreen
@@ -315,7 +323,7 @@ const AppContent = () => {
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-300 relative">
       <Navbar />
-      <main className="flex-1 min-h-[calc(100vh-56px)] transition-all duration-300 flex flex-col">
+      <main className="flex-1 min-h-[calc(100dvh-56px)] transition-all duration-300 flex flex-col pb-24 md:pb-0">
         <Suspense fallback={<PageLoadingFallback />}>
           {renderAuthenticatedPage()}
         </Suspense>

@@ -143,7 +143,7 @@ export const VotingPage = () => {
               placeholder="e.g. Which dessert should be served for Sunday dinner?"
               value={question}
               onChange={e => setQuestion(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white outline-none focus:border-purple-500"
+              className="w-full px-3.5 py-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-base sm:text-xs font-bold text-slate-900 dark:text-white outline-none focus:border-purple-500"
             />
           </div>
 
@@ -159,7 +159,7 @@ export const VotingPage = () => {
                 placeholder="Option 1 *"
                 value={opt1}
                 onChange={e => setOpt1(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white outline-none focus:border-purple-500"
+                className="w-full px-3.5 py-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-base sm:text-xs font-bold text-slate-900 dark:text-white outline-none focus:border-purple-500"
               />
             </div>
 
@@ -170,7 +170,7 @@ export const VotingPage = () => {
                 placeholder="Option 2 *"
                 value={opt2}
                 onChange={e => setOpt2(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white outline-none focus:border-purple-500"
+                className="w-full px-3.5 py-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-base sm:text-xs font-bold text-slate-900 dark:text-white outline-none focus:border-purple-500"
               />
             </div>
 
@@ -181,7 +181,7 @@ export const VotingPage = () => {
                 placeholder="Option 3 *"
                 value={opt3}
                 onChange={e => setOpt3(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white outline-none focus:border-purple-500"
+                className="w-full px-3.5 py-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-base sm:text-xs font-bold text-slate-900 dark:text-white outline-none focus:border-purple-500"
               />
             </div>
 
@@ -191,7 +191,7 @@ export const VotingPage = () => {
                 placeholder="Option 4 (Optional)"
                 value={opt4}
                 onChange={e => setOpt4(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white outline-none focus:border-purple-500"
+                className="w-full px-3.5 py-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-base sm:text-xs font-bold text-slate-900 dark:text-white outline-none focus:border-purple-500"
               />
             </div>
           </div>

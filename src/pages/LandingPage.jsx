@@ -17,7 +17,7 @@ export const LandingPage = ({ onSelectRole, institution = getDefaultInstitution(
         </div>
 
         {/* Selected College Pill with Change College Action */}
-        <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/90 dark:border-emerald-800/80 shadow-xs">
+        <div className="inline-flex flex-wrap items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-full bg-emerald-50 max-w-full dark:bg-emerald-950/60 border border-emerald-200/90 dark:border-emerald-800/80 shadow-xs">
           <Building2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
           <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
             {currentInstitution.name}
@@ -40,7 +40,7 @@ export const LandingPage = ({ onSelectRole, institution = getDefaultInstitution(
           )}
         </div>
 
-        <p className="font-saviour text-lg sm:text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 tracking-wider uppercase whitespace-nowrap">
+        <p className="font-saviour text-xs min-[360px]:text-sm sm:text-lg md:text-xl font-extrabold text-emerald-600 dark:text-emerald-400 tracking-wider uppercase whitespace-nowrap text-center">
           Know Your Meal Before You Eat It
         </p>
 

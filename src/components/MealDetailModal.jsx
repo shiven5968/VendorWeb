@@ -285,7 +285,7 @@ export const MealDetailModal = () => {
                     placeholder="Optional feedback comment..."
                     value={feedbackText}
                     onChange={e => setFeedbackText(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-xs text-white outline-none focus:border-emerald-500"
+                    className="w-full px-3.5 py-3 rounded-xl bg-slate-800 border border-slate-700 text-base sm:text-xs text-white outline-none focus:border-emerald-500"
                   />
 
                   {errorMessage && (
@@ -303,7 +303,7 @@ export const MealDetailModal = () => {
                   <button
                     type="submit"
                     disabled={selectedStars === 0 || submittingRating}
-                    className={`w-full py-2.5 rounded-xl font-black text-xs transition-all shadow-md ${
+                    className={`w-full min-h-[48px] py-3 rounded-xl font-black text-sm transition-all shadow-md ${
                       selectedStars > 0 && !submittingRating
                         ? 'bg-emerald-600 hover:bg-emerald-500 text-white cursor-pointer'
                         : 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'

@@ -32,13 +32,13 @@ export const AboutUsSection = () => {
             key={founder.id}
             className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm hover:border-emerald-500/40 hover:shadow-xl transition-all flex flex-col items-center text-center space-y-4 relative group"
           >
-            {/* Founder Portrait (Crisp & Clean, No Badges) */}
-            <div className="relative w-32 h-32 sm:w-36 sm:h-36 rounded-3xl overflow-hidden shadow-lg border-2 border-emerald-500/20 group-hover:border-emerald-500 transition-all bg-slate-100 dark:bg-slate-800">
+            {/* Founder Portrait (Unzoomed Full Executive Posture with Hands & Torso) */}
+            <div className="relative w-48 sm:w-56 aspect-[3/4] rounded-3xl overflow-hidden shadow-lg border-2 border-emerald-500/20 group-hover:border-emerald-500 transition-all bg-slate-100 dark:bg-slate-800">
               <img
                 src={founder.photo}
                 alt={founder.name}
                 loading="eager"
-                className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-300"
+                className="w-full h-full object-cover object-top group-hover:scale-[1.02] transition-transform duration-300"
               />
             </div>
 

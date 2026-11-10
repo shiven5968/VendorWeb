@@ -500,21 +500,21 @@ export const StudentDashboard = () => {
                     </div>
                   </div>
 
-                  {/* Glorified Action Buttons in Card Footer */}
-                  <div className="p-2.5 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
+                  {/* Glorified Action Buttons in Card Footer (Touch-Friendly >= 44px) */}
+                  <div className="p-3 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2.5">
                     <button
                       type="button"
                       onClick={() => setSelectedMealModal(meal)}
-                      className="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-[11px] font-bold hover:bg-slate-100 transition-colors shadow-xs flex items-center space-x-1 cursor-pointer"
+                      className="min-h-[44px] px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold hover:bg-slate-100 transition-colors shadow-xs flex items-center space-x-1 cursor-pointer flex-1 justify-center"
                     >
                       <span>Details</span>
-                      <ChevronRight className="w-3 h-3 text-slate-400" />
+                      <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
                     </button>
 
                     <button
                       type="button"
                       onClick={() => openRateModal(meal)}
-                      className={`px-3 py-1.5 rounded-xl text-[11px] font-black transition-all flex items-center space-x-1 cursor-pointer ${
+                      className={`min-h-[44px] px-3.5 py-2.5 rounded-xl text-xs font-black transition-all flex items-center space-x-1.5 cursor-pointer flex-1 justify-center ${
                         myRating
                           ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30'
                           : timing.isRatingAllowed
@@ -522,8 +522,8 @@ export const StudentDashboard = () => {
                           : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700'
                       }`}
                     >
-                      <Star className={`w-3 h-3 ${myRating ? 'text-amber-500 fill-amber-500' : 'fill-current'}`} />
-                      <span>{myRating ? `${myRating.rating}★` : timing.isRatingAllowed ? 'Rate' : 'Window'}</span>
+                      <Star className={`w-3.5 h-3.5 ${myRating ? 'text-amber-500 fill-amber-500' : 'fill-current'}`} />
+                      <span>{myRating ? `${myRating.rating}★` : timing.isRatingAllowed ? 'Rate Meal' : 'Window'}</span>
                     </button>
                   </div>
                 </div>

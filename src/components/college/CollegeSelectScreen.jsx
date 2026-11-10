@@ -44,6 +44,9 @@ export const CollegeSelectScreen = ({
 
   const handleContinue = () => {
     if (!selectedInstitution) return;
+    if (document.activeElement && typeof document.activeElement.blur === 'function') {
+      document.activeElement.blur();
+    }
     onConfirmInstitution(selectedInstitution);
   };
 
@@ -61,7 +64,7 @@ export const CollegeSelectScreen = ({
       }`}>
         {/* Dynamic 4K Vector Big Logo positioned UP */}
         <div className={`flex justify-center transition-all duration-300 ease-in-out ${
-          isAdjusted ? 'mb-2 scale-90' : 'mb-3.5 scale-100 sm:scale-110'
+          isAdjusted ? 'mb-2' : 'mb-3.5'
         }`}>
           <MessMatesLogo 
             variant="full" 
@@ -102,7 +105,7 @@ export const CollegeSelectScreen = ({
               setIsDropdownOpen(true);
             }}
             placeholder="Search your college or university..."
-            className="w-full pl-10 pr-12 py-3 rounded-2xl bg-white dark:bg-slate-900 border-2 border-slate-200/90 dark:border-slate-800 text-xs sm:text-sm font-semibold text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-400 shadow-sm transition-all cursor-pointer"
+            className="w-full pl-10 pr-12 py-3 rounded-2xl bg-white dark:bg-slate-900 border-2 border-slate-200/90 dark:border-slate-800 text-base sm:text-sm font-semibold text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-400 shadow-sm transition-all cursor-pointer"
           />
           <div className="absolute inset-y-0 right-0 pr-2.5 flex items-center space-x-1">
             {searchQuery && (
@@ -225,7 +228,7 @@ export const CollegeSelectScreen = ({
           <button
             type="button"
             onClick={handleContinue}
-            className="w-full py-3.5 px-5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-black shadow-lg shadow-emerald-600/20 hover:shadow-emerald-600/30 transition-all flex items-center justify-center space-x-2 group active:scale-[0.99] cursor-pointer"
+            className="w-full min-h-[48px] py-3.5 px-5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm sm:text-base font-black shadow-lg shadow-emerald-600/20 hover:shadow-emerald-600/30 transition-all flex items-center justify-center space-x-2 group active:scale-[0.99] cursor-pointer"
           >
             <span>Continue to {selectedInstitution.shortName || selectedInstitution.name}</span>
             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />

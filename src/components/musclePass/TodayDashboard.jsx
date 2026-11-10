@@ -154,36 +154,36 @@ export const TodayDashboard = ({
           </div>
 
           {/* Right: Tactile Macro Tiles */}
-          <div className="grid grid-cols-3 gap-3 w-full lg:w-auto">
-            <div className="p-4 sm:p-5 rounded-2xl bg-slate-50 border border-slate-200/80 text-center min-w-[110px]">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">
+          <div className="grid grid-cols-3 gap-2 sm:gap-3 w-full lg:w-auto">
+            <div className="p-3 sm:p-5 rounded-2xl bg-slate-50 border border-slate-200/80 text-center min-w-0 flex-1 sm:min-w-[100px]">
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1 truncate">
                 Meals
               </span>
-              <span className="text-2xl font-black text-slate-900">
+              <span className="text-xl sm:text-2xl font-black text-slate-900">
                 {summary.completedMealsCount || 0} / 4
               </span>
-              <span className="text-xs text-slate-500 font-semibold block mt-0.5">logged</span>
+              <span className="text-[11px] sm:text-xs text-slate-500 font-semibold block mt-0.5 truncate">logged</span>
             </div>
 
-            <div className="p-4 sm:p-5 rounded-2xl bg-slate-50 border border-slate-200/80 text-center min-w-[110px]">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">
+            <div className="p-3 sm:p-5 rounded-2xl bg-slate-50 border border-slate-200/80 text-center min-w-0 flex-1 sm:min-w-[100px]">
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1 truncate">
                 Calories
               </span>
-              <span className="text-2xl font-black text-slate-900 flex items-center justify-center space-x-1">
-                <Flame className="w-4 h-4 text-amber-500 shrink-0" />
+              <span className="text-xl sm:text-2xl font-black text-slate-900 flex items-center justify-center space-x-1">
+                <Flame className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500 shrink-0" />
                 <span>{summary.consumedCalories || 0}</span>
               </span>
-              <span className="text-xs text-slate-500 font-semibold block mt-0.5">kcal intake</span>
+              <span className="text-[11px] sm:text-xs text-slate-500 font-semibold block mt-0.5 truncate">kcal intake</span>
             </div>
 
-            <div className="p-4 sm:p-5 rounded-2xl bg-emerald-50/70 border border-emerald-200/80 text-center min-w-[110px]">
-              <span className="text-[10px] font-black text-emerald-800 uppercase tracking-wider block mb-1">
+            <div className="p-3 sm:p-5 rounded-2xl bg-emerald-50/70 border border-emerald-200/80 text-center min-w-0 flex-1 sm:min-w-[100px]">
+              <span className="text-[10px] font-black text-emerald-800 uppercase tracking-wider block mb-1 truncate">
                 Remaining
               </span>
-              <span className="text-2xl font-black text-emerald-700">
+              <span className="text-xl sm:text-2xl font-black text-emerald-700">
                 {remaining}g
               </span>
-              <span className="text-xs text-emerald-800 font-semibold block mt-0.5">protein left</span>
+              <span className="text-[11px] sm:text-xs text-emerald-800 font-semibold block mt-0.5 truncate">protein left</span>
             </div>
           </div>
 
