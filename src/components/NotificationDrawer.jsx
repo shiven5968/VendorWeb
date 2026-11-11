@@ -43,7 +43,7 @@ export const NotificationDrawer = () => {
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden bg-slate-900/50 backdrop-blur-sm transition-opacity">
-      <div className="absolute inset-y-0 right-0 max-w-full flex pl-10">
+      <div className="absolute inset-y-0 right-0 max-w-full flex pl-4 sm:pl-10">
         <div className="w-screen max-w-md bg-white dark:bg-slate-900 shadow-2xl border-l border-slate-200 dark:border-slate-800 flex flex-col">
           
           {/* Header */}
@@ -63,7 +63,7 @@ export const NotificationDrawer = () => {
               {unreadCount > 0 && (
                 <button
                   onClick={markAllNotificationsRead}
-                  className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center space-x-1"
+                  className="min-h-[44px] px-2 text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center space-x-1"
                 >
                   <CheckCheck className="w-3.5 h-3.5" />
                   <span>Mark All Read</span>
@@ -71,7 +71,7 @@ export const NotificationDrawer = () => {
               )}
               <button
                 onClick={() => setIsNotificationOpen(false)}
-                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                className="min-w-[44px] min-h-[44px] inline-flex items-center justify-center p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>

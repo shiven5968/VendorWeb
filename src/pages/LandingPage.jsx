@@ -7,7 +7,7 @@ export const LandingPage = ({ onSelectRole, institution = getDefaultInstitution(
   const currentInstitution = institution || getDefaultInstitution();
 
   return (
-    <div className="min-h-[85vh] flex flex-col justify-between max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-in fade-in duration-200">
+    <div className="min-h-[85dvh] flex flex-col justify-between max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-in fade-in duration-200">
       
       {/* HERO SECTION */}
       <div className="text-center space-y-4 pt-4 sm:pt-6 flex flex-col items-center">
@@ -40,7 +40,7 @@ export const LandingPage = ({ onSelectRole, institution = getDefaultInstitution(
           )}
         </div>
 
-        <p className="font-saviour text-xs min-[360px]:text-sm sm:text-lg md:text-xl font-extrabold text-emerald-600 dark:text-emerald-400 tracking-wider uppercase whitespace-nowrap text-center">
+        <p className="font-saviour text-xs min-[360px]:text-sm sm:text-lg md:text-xl font-extrabold text-emerald-600 dark:text-emerald-400 tracking-wide sm:tracking-wider uppercase whitespace-nowrap text-center">
           Know Your Meal Before You Eat It
         </p>
 

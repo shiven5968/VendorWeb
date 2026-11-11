@@ -211,7 +211,7 @@ const AppContent = () => {
   // Loading Screen — shown during initial Firebase auth resolution or profile fetch for active sessions
   if (isInitialAuthLoading || (user && !profile && isProfileLoading)) {
     return (
-      <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center space-y-4 text-white">
+      <div className="min-h-[100dvh] bg-slate-900 flex flex-col items-center justify-center space-y-4 text-white">
         <MessMatesLogo size="md" dark />
         <Loader2 className="w-6 h-6 text-emerald-500 animate-spin" />
         <p className="text-xs font-semibold text-slate-400">Loading your session...</p>
@@ -321,9 +321,9 @@ const AppContent = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-300 relative">
+    <div className="min-h-[100dvh] flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-300 relative pb-24 md:pb-0">
       <Navbar />
-      <main className="flex-1 min-h-[calc(100dvh-56px)] transition-all duration-300 flex flex-col pb-24 md:pb-0">
+      <main className="w-full min-w-0 flex-1 min-h-[calc(100dvh-56px)] transition-all duration-300 flex flex-col">
         <Suspense fallback={<PageLoadingFallback />}>
           {renderAuthenticatedPage()}
         </Suspense>

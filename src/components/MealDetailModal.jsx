@@ -124,7 +124,7 @@ export const MealDetailModal = () => {
                 </span>
                 <span className="text-[10px] text-slate-400 font-bold">Standard Mess Serving</span>
               </div>
-              <div className="grid grid-cols-5 gap-1.5 sm:gap-2 bg-slate-50 dark:bg-slate-800/60 p-3 rounded-2xl border border-slate-200/80 dark:border-slate-800 text-center">
+              <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 bg-slate-50 dark:bg-slate-800/60 p-3 rounded-2xl border border-slate-200/80 dark:border-slate-800 text-center">
                 <div>
                   <span className="text-[10px] font-bold text-slate-400 uppercase">Calories</span>
                   <p className="text-sm sm:text-base font-black text-slate-900 dark:text-white">{meal.calories}</p>

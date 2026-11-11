@@ -1,13 +1,33 @@
 /**
  * MessMates — College Timezone & Date Utility
  * Canonical Timezone: Asia/Kolkata (ABES Engineering College, Ghaziabad, UP)
- * 
+ *
  * Guarantees that menu schedules, daily operational photos, hygiene inspections,
  * meal ratings, and dashboard timestamps all resolve using the same standard college time.
  * At 12:00 AM midnight Asia/Kolkata, date transitions cleanly to the next calendar day.
  */
 
 export const COLLEGE_TIMEZONE = 'Asia/Kolkata';
+
+/**
+ * Safely converts Date, ISO string, timestamp ms, or Firestore Timestamp into a valid Date.
+ */
+export function toCollegeDate(input = new Date()) {
+  if (!input) return new Date();
+  if (input instanceof Date) {
+    return isNaN(input.getTime()) ? new Date() : input;
+  }
+  if (typeof input?.toDate === 'function') {
+    const d = input.toDate();
+    return isNaN(d?.getTime?.()) ? new Date() : d;
+  }
+  if (typeof input?.seconds === 'number') {
+    const d = new Date(input.seconds * 1000);
+    return isNaN(d.getTime()) ? new Date() : d;
+  }
+  const parsed = new Date(input);
+  return isNaN(parsed.getTime()) ? new Date() : parsed;
+}
 
 /**
  * Returns a new Date object representing the current instant.
@@ -20,7 +40,8 @@ export function getCollegeNow() {
  * Returns today's calendar date in YYYY-MM-DD string formatted in Asia/Kolkata.
  * Example: "2026-09-04"
  */
-export function getCollegeDateString(date = new Date()) {
+export function getCollegeDateString(dateInput = new Date()) {
+  const date = toCollegeDate(dateInput);
   const formatter = new Intl.DateTimeFormat('en-CA', {
     timeZone: COLLEGE_TIMEZONE,
     year: 'numeric',
@@ -31,9 +52,21 @@ export function getCollegeDateString(date = new Date()) {
 }
 
 /**
+ * Returns a YYYY-MM-DD college date string offset by N calendar days in Asia/Kolkata.
+ * Example: getCollegeDateOffsetString(1, now) gives tomorrow's canonical IST date cleanly.
+ */
+export function getCollegeDateOffsetString(daysOffset = 0, referenceDate = new Date()) {
+  const baseDateStr = getCollegeDateString(referenceDate);
+  const [y, m, d] = baseDateStr.split('-').map(Number);
+  const shifted = new Date(Date.UTC(y, m - 1, d + daysOffset, 12, 0, 0));
+  return shifted.toISOString().split('T')[0];
+}
+
+/**
  * Returns the weekday name (e.g., 'Monday', 'Tuesday', ..., 'Sunday') in Asia/Kolkata.
  */
-export function getCollegeDayName(date = new Date()) {
+export function getCollegeDayName(dateInput = new Date()) {
+  const date = toCollegeDate(dateInput);
   const formatter = new Intl.DateTimeFormat('en-US', {
     timeZone: COLLEGE_TIMEZONE,
     weekday: 'long'
@@ -42,10 +75,24 @@ export function getCollegeDayName(date = new Date()) {
 }
 
 /**
+ * Returns the weekday name for today + daysOffset calendar days in Asia/Kolkata.
+ */
+export function getCollegeDayNameWithOffset(daysOffset = 0, referenceDate = new Date()) {
+  const baseDateStr = getCollegeDateString(referenceDate);
+  const [y, m, d] = baseDateStr.split('-').map(Number);
+  const shifted = new Date(Date.UTC(y, m - 1, d + daysOffset, 12, 0, 0));
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: 'UTC',
+    weekday: 'long'
+  }).format(shifted);
+}
+
+/**
  * Formats a date for student, committee, and executive headers in Asia/Kolkata.
  * Example: "Friday, Sep 4, 2026"
  */
-export function formatCollegeDateDisplay(date = new Date()) {
+export function formatCollegeDateDisplay(dateInput = new Date()) {
+  const date = toCollegeDate(dateInput);
   const formatter = new Intl.DateTimeFormat('en-US', {
     timeZone: COLLEGE_TIMEZONE,
     weekday: 'long',
@@ -57,17 +104,36 @@ export function formatCollegeDateDisplay(date = new Date()) {
 }
 
 /**
+ * Formats a calendar date offset by N days from referenceDate in Asia/Kolkata.
+ * Example: "Thursday, Nov 12, 2026"
+ */
+export function formatCollegeDateWithOffset(daysOffset = 0, referenceDate = new Date()) {
+  const baseDateStr = getCollegeDateString(referenceDate);
+  const [y, m, d] = baseDateStr.split('-').map(Number);
+  const shifted = new Date(Date.UTC(y, m - 1, d + daysOffset, 12, 0, 0));
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: 'UTC',
+    weekday: 'long',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  }).format(shifted);
+}
+
+/**
  * Returns current hours (0-23) and minutes (0-59) in Asia/Kolkata.
  */
-export function getCollegeTimeParts(date = new Date()) {
+export function getCollegeTimeParts(dateInput = new Date()) {
+  const date = toCollegeDate(dateInput);
   const formatter = new Intl.DateTimeFormat('en-US', {
     timeZone: COLLEGE_TIMEZONE,
     hour: 'numeric',
     minute: 'numeric',
-    hour12: false
+    hourCycle: 'h23'
   });
   const parts = formatter.formatToParts(date);
-  const hour = parseInt(parts.find(p => p.type === 'hour')?.value || '0', 10);
+  const rawHour = parseInt(parts.find(p => p.type === 'hour')?.value || '0', 10);
+  const hour = rawHour === 24 ? 0 : rawHour;
   const minute = parseInt(parts.find(p => p.type === 'minute')?.value || '0', 10);
   return { hour, minute };
 }
@@ -77,8 +143,8 @@ export function getCollegeTimeParts(date = new Date()) {
  */
 export function isTodayInCollege(targetDate) {
   if (!targetDate) return false;
-  const targetStr = typeof targetDate === 'string' 
-    ? targetDate.split('T')[0] 
+  const targetStr = typeof targetDate === 'string'
+    ? targetDate.split('T')[0]
     : getCollegeDateString(targetDate);
   return targetStr === getCollegeDateString();
 }
@@ -87,16 +153,15 @@ export function isTodayInCollege(targetDate) {
  * Returns a college date string for N days in the past in Asia/Kolkata.
  */
 export function getPastCollegeDateString(daysAgo = 0) {
-  const d = new Date();
-  d.setDate(d.getDate() - daysAgo);
-  return getCollegeDateString(d);
+  return getCollegeDateOffsetString(-daysAgo, new Date());
 }
 
 /**
  * Formats a timestamp into full date and time string in Asia/Kolkata (IST).
  * Example: "04 Sep 2026, 05:30 PM IST"
  */
-export function formatCollegeDateTime(date = new Date()) {
+export function formatCollegeDateTime(dateInput = new Date()) {
+  const date = toCollegeDate(dateInput);
   const formatter = new Intl.DateTimeFormat('en-IN', {
     timeZone: COLLEGE_TIMEZONE,
     day: '2-digit',
@@ -121,7 +186,7 @@ export function formatRatingRelativeTime(timestamp) {
   if (!timestamp) return 'You rated this meal';
 
   try {
-    const ratingDate = new Date(timestamp);
+    const ratingDate = toCollegeDate(timestamp);
     if (isNaN(ratingDate.getTime())) return 'You rated this meal';
 
     const ratingDateStr = getCollegeDateString(ratingDate);
@@ -166,15 +231,8 @@ export function formatRatingRelativeTime(timestamp) {
  */
 export function getCollegeWeekInfo(dateInput = new Date()) {
   try {
-    const formatter = new Intl.DateTimeFormat('en-CA', {
-      timeZone: COLLEGE_TIMEZONE,
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit'
-    });
-    const dateObj = dateInput instanceof Date ? dateInput : new Date(dateInput);
-    const validDate = isNaN(dateObj.getTime()) ? new Date() : dateObj;
-    const dateStr = formatter.format(validDate);
+    const validDate = toCollegeDate(dateInput);
+    const dateStr = getCollegeDateString(validDate);
     const [y, m, d] = dateStr.split('-').map(Number);
 
     // Current date in UTC with IST calendar values
@@ -209,7 +267,7 @@ export function getCollegeWeekInfo(dateInput = new Date()) {
       ? `${monDay} – ${sunDay} ${sunMonth} ${sunYear}`
       : `${monDay} ${monMonth} – ${sunDay} ${sunMonth} ${sunYear}`;
 
-    const monthLabel = `${fullMonthNames[validDate.getMonth()]} ${validDate.getFullYear()}`;
+    const monthLabel = `${fullMonthNames[m - 1]} ${y}`;
 
     return {
       weekId,
@@ -242,20 +300,19 @@ export function getPastCollegeWeeks(count = 4, referenceDate = new Date()) {
   const currentWeekInfo = getCollegeWeekInfo(referenceDate);
 
   for (let i = 0; i < count; i++) {
-    const d = new Date(referenceDate);
-    d.setDate(d.getDate() - (i * 7));
+    const d = new Date(toCollegeDate(referenceDate));
+    d.setUTCDate(d.getUTCDate() - (i * 7));
     const info = getCollegeWeekInfo(d);
-    const label = i === 0 
-      ? 'This Week' 
-      : i === 1 
-      ? 'Last Week' 
-      : i === 2 
-      ? '2 Weeks Ago' 
-      : i === 3 
-      ? '3 Weeks Ago' 
+    const label = i === 0
+      ? 'This Week'
+      : i === 1
+      ? 'Last Week'
+      : i === 2
+      ? '2 Weeks Ago'
+      : i === 3
+      ? '3 Weeks Ago'
       : `${i} Weeks Ago`;
 
-    // Avoid duplicate week entries if referenceDate shifted within same week
     if (!weeks.some(w => w.weekId === info.weekId)) {
       weeks.push({
         ...info,
@@ -277,7 +334,7 @@ export function getCollegeDateForDayInCurrentWeek(dayName, referenceDate = new D
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
   const dayIdx = days.indexOf(dayName);
   if (dayIdx === -1) return getCollegeDateString(referenceDate);
-  
+
   const [y, m, d] = weekInfo.weekStartStr.split('-').map(Number);
   const targetDate = new Date(Date.UTC(y, m - 1, d + dayIdx));
   return targetDate.toISOString().split('T')[0];

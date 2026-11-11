@@ -18,6 +18,7 @@ import {
   getMealTimingStatus,
   isRatingAllowedForMeal,
   getActiveAndNextMealSlot,
+  resolveHomeMealSchedule,
   formatHourMinute,
   sortMealsByOfficialOrder
 } from '../services/mealTiming';
@@ -850,7 +851,7 @@ export const AppProvider = ({ children }) => {
   // 6. PROTEIN & MUSCLE PASS
   const getTodayUserProtein = () => {
     if (!currentUser) return 0;
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = getCollegeDateString(currentTime);
     const userTodayLogs = (proteinLogs || []).filter(
       l => l.userId === (currentUser.uid || currentUser.id) && l.timestamp?.startsWith(todayStr)
     );
@@ -1052,8 +1053,9 @@ export const AppProvider = ({ children }) => {
 
   // Real-time meal slot helpers
   const mealSlotInfo = getActiveAndNextMealSlot(currentTime);
-  const getTimingStatus = (category) => getMealTimingStatus(category, currentTime);
-  const checkIsRatingAllowed = (category) => isRatingAllowedForMeal(category, currentTime);
+  const homeScheduleContext = resolveHomeMealSchedule(currentTime);
+  const getTimingStatus = (category, options = {}) => getMealTimingStatus(category, currentTime, options);
+  const checkIsRatingAllowed = (category, options = {}) => isRatingAllowedForMeal(category, currentTime, options);
 
   return (
     <AppContext.Provider
@@ -1061,6 +1063,7 @@ export const AppProvider = ({ children }) => {
         // Real-Time Clock & Timers
         currentTime,
         mealSlotInfo,
+        homeScheduleContext,
         getTimingStatus,
         checkIsRatingAllowed,
         officialTimings: OFFICIAL_MEAL_TIMINGS,

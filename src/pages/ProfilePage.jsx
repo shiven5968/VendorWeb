@@ -232,7 +232,7 @@ export const ProfilePage = () => {
                 </label>
                 <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800 text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center space-x-2">
                   <Utensils className="w-4 h-4 text-emerald-500" />
-                  <span>{currentUser?.hostelBlock || 'DNB Block'} • {menuGroup.name}</span>
+                  <span>{currentUser?.hostelBlock || 'DNB Block'} • {menuGroup?.label || 'Pending Allocation'}</span>
                 </div>
               </div>
             </div>

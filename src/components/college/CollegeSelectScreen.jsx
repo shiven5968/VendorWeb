@@ -63,7 +63,7 @@ export const CollegeSelectScreen = ({
         isAdjusted ? 'mb-4 sm:mb-5' : 'mb-6 sm:mb-8'
       }`}>
         {/* Dynamic 4K Vector Big Logo positioned UP */}
-        <div className={`flex justify-center transition-all duration-300 ease-in-out ${
+        <div className={`w-full max-w-full flex justify-center px-2 transition-all duration-300 ease-in-out ${
           isAdjusted ? 'mb-2' : 'mb-3.5'
         }`}>
           <MessMatesLogo 
@@ -74,15 +74,15 @@ export const CollegeSelectScreen = ({
 
         {/* Tagline directly below Logo - strictly single line in 'The Saviour' font */}
         <div className="w-full flex flex-col items-center justify-center space-y-1 transition-all duration-300 overflow-visible">
-          <h1 className={`font-saviour font-extrabold text-emerald-600 dark:text-emerald-400 tracking-wider uppercase whitespace-nowrap text-center transition-all duration-300 select-none ${
+          <h1 className={`font-saviour font-extrabold text-emerald-600 dark:text-emerald-400 tracking-wide sm:tracking-wider uppercase whitespace-nowrap text-center transition-all duration-300 select-none ${
             isAdjusted 
-              ? 'text-xs min-[400px]:text-sm sm:text-base' 
-              : 'text-[13px] min-[390px]:text-sm sm:text-lg md:text-xl'
+              ? 'text-[11px] min-[400px]:text-xs sm:text-base' 
+              : 'text-[11px] min-[360px]:text-xs min-[390px]:text-sm sm:text-lg md:text-xl'
           }`}>
             Know your meal before you eat it
           </h1>
-          <p className={`text-slate-500 dark:text-slate-400 font-medium whitespace-nowrap transition-all duration-300 ${
-            isAdjusted ? 'text-[10px] sm:text-xs' : 'text-xs sm:text-sm'
+          <p className={`text-slate-500 dark:text-slate-400 font-medium text-center min-[340px]:whitespace-nowrap transition-all duration-300 ${
+            isAdjusted ? 'text-[11px] sm:text-xs' : 'text-xs sm:text-sm'
           }`}>
             Select your college or university to continue
           </p>

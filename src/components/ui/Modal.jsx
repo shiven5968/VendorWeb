@@ -29,7 +29,7 @@ export const Modal = ({ isOpen, onClose, title, children, maxWidth = 'max-w-lg',
         aria-hidden="true"
       />
       <div className={clsx(
-        'relative w-full bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-2xl shadow-2xl border-0 sm:border border-slate-200 dark:border-slate-800 max-h-[90vh] overflow-y-auto animate-slide-up',
+        'relative w-full bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-2xl shadow-2xl border-0 sm:border border-slate-200 dark:border-slate-800 max-h-[90dvh] overflow-y-auto animate-slide-up',
         maxWidth,
         className
       )}>
@@ -41,7 +41,7 @@ export const Modal = ({ isOpen, onClose, title, children, maxWidth = 'max-w-lg',
             {onClose && (
               <button
                 onClick={onClose}
-                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors ml-auto"
+                className="min-w-[44px] min-h-[44px] inline-flex items-center justify-center p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors ml-auto"
                 aria-label="Close"
               >
                 <X className="w-4 h-4" />
