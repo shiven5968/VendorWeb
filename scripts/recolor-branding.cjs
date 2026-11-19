@@ -2,8 +2,8 @@ const sharp = require('sharp');
 const fs = require('fs');
 const path = require('path');
 
-const iconPath = 'C:/Users/Parth Sharma/.gemini/antigravity/brain/9eb6780c-8819-4623-bfc6-869cf5247e98/.user_uploaded/media_1793656326080_cc48a776.png';
-const wordmarkPath = 'C:/Users/Parth Sharma/.gemini/antigravity/brain/9eb6780c-8819-4623-bfc6-869cf5247e98/.user_uploaded/media_1793656326080_7254536b.png';
+const iconPath = path.resolve('public/icon-192.png');
+const wordmarkPath = path.resolve('public/messmates-logo.png');
 
 async function recolorImage(inputPath, targetRGB, outputPath, scaleFactor = 4) {
   // targetRGB is [r, g, b]

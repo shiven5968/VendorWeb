@@ -6,7 +6,7 @@ const path = require('path');
 const edgePath = 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe';
 const debugPort = 9222;
 const dir = path.join(__dirname, 'new_screenshots');
-const artifactDir = 'C:\\Users\\Parth Sharma\\.gemini\\antigravity\\brain\\9eb6780c-8819-4623-bfc6-869cf5247e98';
+const artifactDir = path.resolve('new_screenshots');
 
 if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 

@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 
 const qrDir = path.join(__dirname, 'src', 'assets', 'qr');
-const artifactDir = 'C:\\Users\\Parth Sharma\\.gemini\\antigravity\\brain\\9eb6780c-8819-4623-bfc6-869cf5247e98';
+const artifactDir = path.resolve('src/assets/qr');
 
 if (!fs.existsSync(qrDir)) fs.mkdirSync(qrDir, { recursive: true });
 

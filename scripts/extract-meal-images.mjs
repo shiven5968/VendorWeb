@@ -2,7 +2,7 @@ import sharp from 'sharp';
 import fs from 'fs';
 import path from 'path';
 
-const srcPath = 'C:/Users/Parth Sharma/.gemini/antigravity/brain/9eb6780c-8819-4623-bfc6-869cf5247e98/.user_uploaded/media_1788035992186.jpg';
+const srcPath = './public/meal-images/meal_source.jpg';
 const outDir = path.join(process.cwd(), 'public', 'meal-images');
 if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
 
@@ -70,7 +70,7 @@ const mappings = [
 ];
 
 async function generateAll() {
-  console.log('Extracting and upscaling all individual meal images from AI reference collage...');
+  console.log('Extracting and upscaling all individual meal images from reference collage...');
   for (const m of mappings) {
     const col = colBoxes[m.day];
     const row = rowBoxes[m.meal];
