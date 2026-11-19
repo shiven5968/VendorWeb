@@ -536,7 +536,7 @@ export const MusclePassPage = () => {
           { id: 'today', label: 'TODAY', icon: Flame },
           { id: 'meals', label: 'MY MEALS', icon: UtensilsCrossed },
           { id: 'progress', label: 'PROGRESS', icon: TrendingUp },
-          { id: 'coach', label: 'AI COACH', icon: Bot },
+          { id: 'coach', label: 'NUTRITION COACH', icon: Sparkles },
           { id: 'profile', label: 'MY PROFILE', icon: User }
         ].map(tab => {
           const Icon = tab.icon;
@@ -607,7 +607,7 @@ export const MusclePassPage = () => {
         />
       )}
 
-      {/* 4. AI COACH */}
+      {/* 4. NUTRITION COACH */}
       {activeTab === 'coach' && (
         <AICoachSection
           profile={profile}

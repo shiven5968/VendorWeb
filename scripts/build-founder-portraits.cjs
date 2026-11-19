@@ -3,8 +3,8 @@ const fs = require('fs');
 const path = require('path');
 
 async function processFounderPhotos() {
-  const parthSrc = 'C:/Users/Parth Sharma/.gemini/antigravity/brain/9eb6780c-8819-4623-bfc6-869cf5247e98/.user_uploaded/media_1794334129110_f3222537.jpg';
-  const shivSrc = 'C:/Users/Parth Sharma/.gemini/antigravity/brain/9eb6780c-8819-4623-bfc6-869cf5247e98/.user_uploaded/media_1794333247753_dbb73b2f.jpg';
+  const parthSrc = path.join(__dirname, '../public/founders/parth_sharma.jpg');
+  const shivSrc = path.join(__dirname, '../public/founders/shivendra_pratap_singh.jpg');
 
   console.log('Processing founder photos with full torso & hands visible...');
 

@@ -1,5 +1,5 @@
 /**
- * MessMates — Campus AI Nutrition Coach Service
+ * MessMates — Campus Nutrition Coach Service
  * 
  * Provides deterministic, educational nutrition intelligence grounded strictly
  * in the student's actual campus mess menu and recorded intake data.

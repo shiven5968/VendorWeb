@@ -6,8 +6,8 @@ const ROOT = path.resolve(__dirname, '..');
 const BRANDING_DIR = path.join(ROOT, 'src/assets/branding');
 const PUBLIC_DIR = path.join(ROOT, 'public');
 
-const USER_WM_SRC = 'C:/Users/Parth Sharma/.gemini/antigravity/brain/9eb6780c-8819-4623-bfc6-869cf5247e98/.user_uploaded/media_1794417953475_1a98f535.png';
-const USER_ICON_SRC = 'C:/Users/Parth Sharma/.gemini/antigravity/brain/9eb6780c-8819-4623-bfc6-869cf5247e98/.user_uploaded/media_1794417953475_f283950c.png';
+const USER_WM_SRC = path.join(PUBLIC_DIR, 'messmates-logo.png');
+const USER_ICON_SRC = path.join(PUBLIC_DIR, 'icon-192.png');
 const HIGHRES_ICON_SRC = path.join(BRANDING_DIR, 'messmates-logo-icon-tight.png');
 
 const BRAND_PINE = '#013e1d';
